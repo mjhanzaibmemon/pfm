@@ -1,0 +1,4 @@
+# Deny ALL web access to storage directory
+# Uploaded files must be served through a controlled PHP script,
+# never directly accessible to prevent script execution and unauthorized access
+Require all denied
