@@ -1,0 +1,32 @@
+.css_client_id_label { }
+.css_client_id_line {font-weight:bold;}
+.css_client_id_obj {text-align:left;}
+.css_membs_num_label { }
+.css_membs_num_line {font-size:14px;font-weight:bold;}
+.css_membs_num_obj {font-size:14px;background-color:#fafa96;font-weight:bold;text-align:left;}
+.css_total_label { }
+.css_total_line {color:#9e0f38;font-weight:bold;}
+.css_total_obj {text-align:left;}
+.css_cat_label { }
+.css_cat_line {font-weight:bold;}
+.css_cat_obj { }
+.css_sub_cat_label { }
+.css_sub_cat_line {font-weight:bold;}
+.css_sub_cat_obj { }
+.css_bus_name_label { }
+.css_bus_name_line {font-weight:bold;}
+.css_bus_name_obj { }
+.css_email_label { }
+.css_email_line { }
+.css_email_obj { }
+.css_main_contact_label { }
+.css_main_contact_line { }
+.css_main_contact_obj { }
+.css_status_label { }
+.css_status_line {font-weight:bold;}
+.css_status_obj { }
+.css_cost_per_buyer_label { }
+.css_cost_per_buyer_line {color:#266bff;font-weight:bold;}
+.css_cost_per_buyer_obj {font-weight:bold;text-align:left;}
+.css_bus_cat_id_obj {text-align:left;}
+.css_bus_subcat_id_obj {text-align:left;}

@@ -1,0 +1,6994 @@
+<?php
+//
+   if (!session_id())
+   {
+   include_once('form_clients_steps_renew_session.php');
+           include_once("../_lib/lib/php/fix.php");
+   @ini_set('session.cookie_httponly', 1);
+   @ini_set('session.use_only_cookies', 1);
+   @ini_set('session.cookie_secure', 0);
+   @session_start() ;
+       if (!function_exists("sc_check_mobile"))
+       {
+           include_once("../_lib/lib/php/nm_check_mobile.php");
+       }
+       $_SESSION['scriptcase']['device_mobile'] = sc_check_mobile();
+       $_SESSION['scriptcase']['proc_mobile']   = $_SESSION['scriptcase']['device_mobile'];
+       if (!isset($_SESSION['scriptcase']['display_mobile']))
+       {
+           $_SESSION['scriptcase']['display_mobile'] = true;
+       }
+       if ($_SESSION['scriptcase']['device_mobile'])
+       {
+           if ($_SESSION['scriptcase']['display_mobile'] && isset($_POST['_sc_force_mobile']) && 'out' == $_POST['_sc_force_mobile'])
+           {
+               $_SESSION['scriptcase']['display_mobile'] = false;
+           }
+           elseif (!$_SESSION['scriptcase']['display_mobile'] && isset($_POST['_sc_force_mobile']) && 'in' == $_POST['_sc_force_mobile'])
+           {
+               $_SESSION['scriptcase']['display_mobile'] = true;
+           }
+       }
+        if (isset($_GET['_sc_force_mobile'])) {
+            $_SESSION['scriptcase']['force_mobile'] = 'Y' == $_GET['_sc_force_mobile'];
+        }
+        if (isset($_SESSION['scriptcase']['force_mobile'])) {
+            if ($_SESSION['scriptcase']['force_mobile']) {
+                $_SESSION['scriptcase']['device_mobile'] = true;
+            }
+            $_SESSION['scriptcase']['display_mobile'] = $_SESSION['scriptcase']['force_mobile'];
+        }
+       if ($_SESSION['scriptcase']['device_mobile'] && $_SESSION['scriptcase']['display_mobile'])
+       {
+          include_once('form_clients_steps_renew_mob.php');
+          exit;
+       }
+   }
+
+   $_SESSION['scriptcase']['form_clients_steps_renew']['error_buffer'] = '';
+
+   $_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_perfil']          = "conn_mysql";
+   $_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_prod']       = "";
+   $_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_imagens']    = "";
+   $_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_imag_temp']  = "";
+   $_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_cache']  = "";
+   $_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_doc']        = "";
+   $NM_dir_atual = getcwd();
+   if (empty($NM_dir_atual))
+   {
+       $str_path_sys  = (isset($_SERVER['SCRIPT_FILENAME'])) ? $_SERVER['SCRIPT_FILENAME'] : $_SERVER['ORIG_PATH_TRANSLATED'];
+       $str_path_sys  = str_replace("\\", '/', $str_path_sys);
+   }
+   else
+   {
+       $sc_nm_arquivo = explode("/", $_SERVER['PHP_SELF']);
+       $str_path_sys  = str_replace("\\", "/", getcwd()) . "/" . $sc_nm_arquivo[count($sc_nm_arquivo)-1];
+   }
+   //check publication with the prod
+   $str_path_apl_url = $_SERVER['PHP_SELF'];
+   $str_path_apl_url = str_replace("\\", '/', $str_path_apl_url);
+   $str_path_apl_url = substr($str_path_apl_url, 0, strrpos($str_path_apl_url, "/"));
+   $str_path_apl_url = substr($str_path_apl_url, 0, strrpos($str_path_apl_url, "/")+1);
+   $str_path_apl_dir = substr($str_path_sys, 0, strrpos($str_path_sys, "/"));
+   $str_path_apl_dir = substr($str_path_apl_dir, 0, strrpos($str_path_apl_dir, "/")+1);
+   //check prod
+   if(empty($_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_prod']))
+   {
+           /*check prod*/$_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_prod'] = $str_path_apl_url . "_lib/prod";
+   }
+   //check img
+   if(empty($_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_imagens']))
+   {
+           /*check img*/$_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_imagens'] = $str_path_apl_url . "_lib/file/img";
+   }
+   //check tmp
+   if(empty($_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_imag_temp']))
+   {
+           /*check tmp*/$_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_imag_temp'] = $str_path_apl_url . "_lib/tmp";
+   }
+   //check cache
+   if(empty($_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_cache']))
+   {
+           /*check cache*/$_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_cache'] = $str_path_apl_dir . "_lib/file/cache";
+   }
+   //check doc
+   if(empty($_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_doc']))
+   {
+           /*check doc*/$_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_doc'] = $str_path_apl_dir . "_lib/file/doc";
+   }
+   //end check publication with the prod
+//
+class form_clients_steps_renew_ini
+{
+   var $nm_cod_apl;
+   var $nm_nome_apl;
+   var $nm_seguranca;
+   var $nm_grupo;
+   var $nm_grupo_versao;
+   var $nm_autor;
+   var $nm_versao_sc;
+   var $nm_tp_lic_sc;
+   var $nm_dt_criacao;
+   var $nm_hr_criacao;
+   var $nm_autor_alt;
+   var $nm_dt_ult_alt;
+   var $nm_hr_ult_alt;
+   var $nm_timestamp;
+   var $cor_bg_table;
+   var $border_grid;
+   var $cor_bg_grid;
+   var $cor_cab_grid;
+   var $cor_borda;
+   var $cor_txt_cab_grid;
+   var $cab_fonte_tipo;
+   var $cab_fonte_tamanho;
+   var $rod_fonte_tipo;
+   var $rod_fonte_tamanho;
+   var $cor_rod_grid;
+   var $cor_txt_rod_grid;
+   var $cor_barra_nav;
+   var $cor_titulo;
+   var $cor_txt_titulo;
+   var $titulo_fonte_tipo;
+   var $titulo_fonte_tamanho;
+   var $cor_grid_impar;
+   var $cor_grid_par;
+   var $cor_txt_grid;
+   var $texto_fonte_tipo;
+   var $texto_fonte_tamanho;
+   var $cor_lin_grupo;
+   var $cor_txt_grupo;
+   var $grupo_fonte_tipo;
+   var $grupo_fonte_tamanho;
+   var $cor_lin_sub_tot;
+   var $cor_txt_sub_tot;
+   var $sub_tot_fonte_tipo;
+   var $sub_tot_fonte_tamanho;
+   var $cor_lin_tot;
+   var $cor_txt_tot;
+   var $tot_fonte_tipo;
+   var $tot_fonte_tamanho;
+   var $cor_link_cab;
+   var $cor_link_dados;
+   var $img_fun_pag;
+   var $img_fun_cab;
+   var $img_fun_rod;
+   var $img_fun_tit;
+   var $img_fun_gru;
+   var $img_fun_tot;
+   var $img_fun_sub;
+   var $img_fun_imp;
+   var $img_fun_par;
+   var $root;
+   var $server;
+   var $sc_protocolo;
+   var $path_prod;
+   var $path_link;
+   var $path_aplicacao;
+   var $path_embutida;
+   var $path_botoes;
+   var $path_img_global;
+   var $path_img_modelo;
+   var $path_icones;
+   var $path_imagens;
+   var $path_imag_cab;
+   var $path_imag_temp;
+   var $path_libs;
+   var $path_doc;
+   var $str_lang;
+   var $str_schema_all;
+   var $str_google_fonts;
+   var $str_conf_reg;
+   var $path_cep;
+   var $path_secure;
+   var $path_js;
+   var $path_adodb;
+   var $path_grafico;
+   var $path_atual;
+   var $Gd_missing;
+   var $sc_site_ssl;
+   var $link_blank_steps_pmt_links;
+   var $link_blank_new_member_appn;
+   var $link_form_clients_steps_renew_inline;
+   var $nm_cont_lin;
+   var $nm_limite_lin;
+   var $nm_limite_lin_prt;
+   var $nm_falta_var;
+   var $nm_falta_var_db;
+   var $nm_tpbanco;
+   var $nm_servidor;
+   var $nm_usuario;
+   var $nm_senha;
+   var $nm_database_encoding;
+   var $nm_arr_db_extra_args = array();
+   var $nm_con_db2 = array();
+   var $nm_con_persistente;
+   var $nm_con_use_schema;
+   var $nm_tabela;
+   var $nm_col_dinamica   = array();
+   var $nm_order_dinamico = array();
+   var $nm_hidden_pages   = array();
+   var $nm_page_names     = array();
+   var $nm_page_blocks    = array();
+   var $nm_block_page     = array();
+   var $nm_hidden_blocos  = array();
+   var $sc_tem_trans_banco;
+   var $nm_bases_all;
+   var $nm_bases_access;
+   var $nm_bases_db2;
+   var $nm_bases_ibase;
+   var $nm_bases_informix;
+   var $nm_bases_mssql;
+   var $nm_bases_mysql;
+   var $nm_bases_postgres;
+   var $nm_bases_oracle;
+   var $nm_bases_sqlite;
+   var $nm_bases_sybase;
+   var $nm_bases_vfp;
+   var $nm_bases_odbc;
+   var $nm_bases_progress;
+   var $sc_page;
+   var $sc_lig_md5 = array();
+   var $sc_lig_target = array();
+   var $sc_lig_iframe = array();
+   var $force_db_utf8 = true;
+//
+   function init()
+   {
+       global
+             $nm_url_saida, $nm_apl_dependente, $script_case_init;
+
+      @ini_set('magic_quotes_runtime', 0);
+      $this->sc_page = $script_case_init;
+      $_SESSION['scriptcase']['sc_num_page'] = $script_case_init;
+      $_SESSION['scriptcase']['sc_ctl_ajax'] = 'part';
+      $_SESSION['scriptcase']['sc_cnt_sql']  = 0;
+      $this->sc_charset['UTF-8'] = 'utf-8';
+      $this->sc_charset['ISO-2022-JP'] = 'iso-2022-jp';
+      $this->sc_charset['ISO-2022-KR'] = 'iso-2022-kr';
+      $this->sc_charset['ISO-8859-1'] = 'iso-8859-1';
+      $this->sc_charset['ISO-8859-2'] = 'iso-8859-2';
+      $this->sc_charset['ISO-8859-3'] = 'iso-8859-3';
+      $this->sc_charset['ISO-8859-4'] = 'iso-8859-4';
+      $this->sc_charset['ISO-8859-5'] = 'iso-8859-5';
+      $this->sc_charset['ISO-8859-6'] = 'iso-8859-6';
+      $this->sc_charset['ISO-8859-7'] = 'iso-8859-7';
+      $this->sc_charset['ISO-8859-8'] = 'iso-8859-8';
+      $this->sc_charset['ISO-8859-8-I'] = 'iso-8859-8-i';
+      $this->sc_charset['ISO-8859-9'] = 'iso-8859-9';
+      $this->sc_charset['ISO-8859-10'] = 'iso-8859-10';
+      $this->sc_charset['ISO-8859-13'] = 'iso-8859-13';
+      $this->sc_charset['ISO-8859-14'] = 'iso-8859-14';
+      $this->sc_charset['ISO-8859-15'] = 'iso-8859-15';
+      $this->sc_charset['WINDOWS-1250'] = 'windows-1250';
+      $this->sc_charset['WINDOWS-1251'] = 'windows-1251';
+      $this->sc_charset['WINDOWS-1252'] = 'windows-1252';
+      $this->sc_charset['TIS-620'] = 'tis-620';
+      $this->sc_charset['WINDOWS-1253'] = 'windows-1253';
+      $this->sc_charset['WINDOWS-1254'] = 'windows-1254';
+      $this->sc_charset['WINDOWS-1255'] = 'windows-1255';
+      $this->sc_charset['WINDOWS-1256'] = 'windows-1256';
+      $this->sc_charset['WINDOWS-1257'] = 'windows-1257';
+      $this->sc_charset['KOI8-R'] = 'koi8-r';
+      $this->sc_charset['BIG-5'] = 'big5';
+      $this->sc_charset['EUC-CN'] = 'EUC-CN';
+      $this->sc_charset['GB18030'] = 'GB18030';
+      $this->sc_charset['GB2312'] = 'gb2312';
+      $this->sc_charset['EUC-JP'] = 'euc-jp';
+      $this->sc_charset['SJIS'] = 'shift-jis';
+      $this->sc_charset['EUC-KR'] = 'euc-kr';
+      $_SESSION['scriptcase']['charset_entities']['UTF-8'] = 'UTF-8';
+      $_SESSION['scriptcase']['charset_entities']['ISO-8859-1'] = 'ISO-8859-1';
+      $_SESSION['scriptcase']['charset_entities']['ISO-8859-5'] = 'ISO-8859-5';
+      $_SESSION['scriptcase']['charset_entities']['ISO-8859-15'] = 'ISO-8859-15';
+      $_SESSION['scriptcase']['charset_entities']['WINDOWS-1251'] = 'cp1251';
+      $_SESSION['scriptcase']['charset_entities']['WINDOWS-1252'] = 'cp1252';
+      $_SESSION['scriptcase']['charset_entities']['BIG-5'] = 'BIG5';
+      $_SESSION['scriptcase']['charset_entities']['EUC-CN'] = 'GB2312';
+      $_SESSION['scriptcase']['charset_entities']['GB2312'] = 'GB2312';
+      $_SESSION['scriptcase']['charset_entities']['SJIS'] = 'Shift_JIS';
+      $_SESSION['scriptcase']['charset_entities']['EUC-JP'] = 'EUC-JP';
+      $_SESSION['scriptcase']['charset_entities']['KOI8-R'] = 'KOI8-R';
+      $_SESSION['scriptcase']['trial_version'] = 'N';
+      $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['decimal_db'] = "."; 
+
+      $this->nm_cod_apl      = "form_clients_steps_renew"; 
+      $this->nm_nome_apl     = ""; 
+      $this->nm_seguranca    = ""; 
+      $this->nm_grupo        = "PFM_Staff"; 
+      $this->nm_grupo_versao = "56"; 
+      $this->nm_autor        = "admin"; 
+      $this->nm_script_by    = "netmake"; 
+      $this->nm_script_type  = "PHP"; 
+      $this->nm_versao_sc    = "v9"; 
+      $this->nm_tp_lic_sc    = "ep_bronze"; 
+      $this->nm_dt_criacao   = "20231003"; 
+      $this->nm_hr_criacao   = "170419"; 
+      $this->nm_autor_alt    = "admin"; 
+      $this->nm_dt_ult_alt   = "20250423"; 
+      $this->nm_hr_ult_alt   = "143735"; 
+      list($NM_usec, $NM_sec) = explode(" ", microtime()); 
+      $this->nm_timestamp    = (float) $NM_sec; 
+      $this->nm_app_version  = "1.1.38"; 
+// 
+      $this->border_grid           = ""; 
+      $this->cor_bg_grid           = ""; 
+      $this->cor_bg_table          = ""; 
+      $this->cor_borda             = ""; 
+      $this->cor_cab_grid          = ""; 
+      $this->cor_txt_pag           = ""; 
+      $this->cor_link_pag          = ""; 
+      $this->pag_fonte_tipo        = ""; 
+      $this->pag_fonte_tamanho     = ""; 
+      $this->cor_txt_cab_grid      = ""; 
+      $this->cab_fonte_tipo        = ""; 
+      $this->cab_fonte_tamanho     = ""; 
+      $this->rod_fonte_tipo        = ""; 
+      $this->rod_fonte_tamanho     = ""; 
+      $this->cor_rod_grid          = ""; 
+      $this->cor_txt_rod_grid      = ""; 
+      $this->cor_barra_nav         = ""; 
+      $this->cor_titulo            = ""; 
+      $this->cor_txt_titulo        = ""; 
+      $this->titulo_fonte_tipo     = ""; 
+      $this->titulo_fonte_tamanho  = ""; 
+      $this->cor_grid_impar        = ""; 
+      $this->cor_grid_par          = ""; 
+      $this->cor_txt_grid          = ""; 
+      $this->texto_fonte_tipo      = ""; 
+      $this->texto_fonte_tamanho   = ""; 
+      $this->cor_lin_grupo         = ""; 
+      $this->cor_txt_grupo         = ""; 
+      $this->grupo_fonte_tipo      = ""; 
+      $this->grupo_fonte_tamanho   = ""; 
+      $this->cor_lin_sub_tot       = ""; 
+      $this->cor_txt_sub_tot       = ""; 
+      $this->sub_tot_fonte_tipo    = ""; 
+      $this->sub_tot_fonte_tamanho = ""; 
+      $this->cor_lin_tot           = ""; 
+      $this->cor_txt_tot           = ""; 
+      $this->tot_fonte_tipo        = ""; 
+      $this->tot_fonte_tamanho     = ""; 
+      $this->cor_link_cab          = ""; 
+      $this->cor_link_dados        = ""; 
+      $this->img_fun_pag           = ""; 
+      $this->img_fun_cab           = ""; 
+      $this->img_fun_rod           = ""; 
+      $this->img_fun_tit           = ""; 
+      $this->img_fun_gru           = ""; 
+      $this->img_fun_tot           = ""; 
+      $this->img_fun_sub           = ""; 
+      $this->img_fun_imp           = ""; 
+      $this->img_fun_par           = ""; 
+// 
+      $NM_dir_atual = getcwd();
+      if (empty($NM_dir_atual))
+      {
+          $str_path_sys          = (isset($_SERVER['SCRIPT_FILENAME'])) ? $_SERVER['SCRIPT_FILENAME'] : $_SERVER['ORIG_PATH_TRANSLATED'];
+          $str_path_sys          = str_replace("\\", '/', $str_path_sys);
+      }
+      else
+      {
+          $sc_nm_arquivo         = explode("/", $_SERVER['PHP_SELF']);
+          $str_path_sys          = str_replace("\\", "/", getcwd()) . "/" . $sc_nm_arquivo[count($sc_nm_arquivo)-1];
+      }
+      //check publication with the prod
+      $str_path_apl_url = $_SERVER['PHP_SELF'];
+      $str_path_apl_url = str_replace("\\", '/', $str_path_apl_url);
+      $str_path_apl_url = substr($str_path_apl_url, 0, strrpos($str_path_apl_url, "/"));
+      $str_path_apl_url = substr($str_path_apl_url, 0, strrpos($str_path_apl_url, "/")+1);
+      $str_path_apl_dir = substr($str_path_sys, 0, strrpos($str_path_sys, "/"));
+      $str_path_apl_dir = substr($str_path_apl_dir, 0, strrpos($str_path_apl_dir, "/")+1);
+// 
+      $this->sc_site_ssl     = (isset($_SERVER['HTTP_REFERER']) && strtolower(substr($_SERVER['HTTP_REFERER'], 0, 5)) == 'https') ? true : false;
+      $this->sc_protocolo    = ($this->sc_site_ssl) ? 'https://' : 'http://';
+      $this->path_prod       = $_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_prod'];
+      $this->path_imagens    = $_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_imagens'];
+      $this->path_imag_temp  = $_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_imag_temp'];
+      $this->path_cache      = $_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_cache'];
+      $this->path_doc        = $_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_doc'];
+      if (!isset($_SESSION['scriptcase']['str_lang']) || empty($_SESSION['scriptcase']['str_lang']))
+      {
+          $_SESSION['scriptcase']['str_lang'] = "en_us";
+      }
+      if (!isset($_SESSION['scriptcase']['str_conf_reg']) || empty($_SESSION['scriptcase']['str_conf_reg']))
+      {
+          $_SESSION['scriptcase']['str_conf_reg'] = "en_us";
+      }
+      $this->str_lang        = $_SESSION['scriptcase']['str_lang'];
+      $this->str_conf_reg    = $_SESSION['scriptcase']['str_conf_reg'];
+      $this->str_schema_all  = (isset($_SESSION['scriptcase']['str_schema_all']) && !empty($_SESSION['scriptcase']['str_schema_all'])) ? $_SESSION['scriptcase']['str_schema_all'] : "Sc9_SweetBlue/Sc9_SweetBlue";
+      $this->str_google_fonts  = isset($str_google_fonts)?$str_google_fonts:'';
+      $this->server          = (isset($_SERVER['SERVER_NAME'])) ? $_SERVER['SERVER_NAME'] : $_SERVER['HTTP_HOST'];
+      if (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] != 80 && !$this->sc_site_ssl )
+      {
+          $this->server         .= ":" . $_SERVER['SERVER_PORT'];
+      }
+      $this->server_pdf      = $this->sc_protocolo . $this->server;
+      $this->server          = "";
+      $this->sc_protocolo    = "";
+      $str_path_web          = $_SERVER['PHP_SELF'];
+      $str_path_web          = str_replace("\\", '/', $str_path_web);
+      $str_path_web          = str_replace('//', '/', $str_path_web);
+      $this->root            = substr($str_path_sys, 0, -1 * strlen($str_path_web));
+      $this->path_aplicacao  = substr($str_path_sys, 0, strrpos($str_path_sys, '/'));
+      $this->path_aplicacao  = substr($this->path_aplicacao, 0, strrpos($this->path_aplicacao, '/')) . '/form_clients_steps_renew';
+      $this->path_embutida   = substr($this->path_aplicacao, 0, strrpos($this->path_aplicacao, '/') + 1);
+      $this->path_aplicacao .= '/';
+      $this->path_link       = substr($str_path_web, 0, strrpos($str_path_web, '/'));
+      $this->path_link       = substr($this->path_link, 0, strrpos($this->path_link, '/')) . '/';
+      $this->path_help       = $this->path_link . "_lib/webhelp/";
+      $this->path_lang       = "../_lib/lang/";
+      $this->path_lang_js    = "../_lib/js/";
+      $this->path_botoes     = $this->path_link . "_lib/img";
+      $this->path_img_global = $this->path_link . "_lib/img";
+      $this->path_img_modelo = $this->path_link . "_lib/img";
+      $this->path_icones     = $this->path_link . "_lib/img";
+      $this->path_imag_cab   = $this->path_link . "_lib/img";
+      $this->path_btn        = $this->root . $this->path_link . "_lib/buttons/";
+      $this->path_css        = $this->root . $this->path_link . "_lib/css/";
+      $this->path_lib_php    = $this->root . $this->path_link . "_lib/lib/php/";
+      $this->url_lib_js      = $this->path_link . "_lib/lib/js/";
+      $this->url_lib         = $this->path_link . '/_lib/';
+      $this->url_third       = $this->path_prod . '/third/';
+      $this->path_cep        = $this->path_prod . "/cep";
+      $this->path_cor        = $this->path_prod . "/cor";
+      $this->path_js         = $this->path_prod . "/lib/js";
+      $this->path_tiny_mce   = $this->path_prod . "/third/tinymce/js/tinymce/tinymce.min.js";
+      $this->path_libs       = $this->root . $this->path_prod . "/lib/php";
+      $this->path_third      = $this->root . $this->path_prod . "/third";
+      $this->path_secure     = $this->root . $this->path_prod . "/secure";
+      $this->path_adodb      = $this->root . $this->path_prod . "/third/adodb";
+
+      include("../_lib/css/" . $this->str_schema_all . "_form.php");
+      $temp_Str_btn_form = (isset($_SESSION['scriptcase']['str_button_all'])) ? $_SESSION['scriptcase']['str_button_all'] : "scriptcase9_SweetBlue";
+      include($this->path_btn . $temp_Str_btn_form . '/' . $temp_Str_btn_form . $_SESSION['scriptcase']['reg_conf']['css_dir'] . '.php');
+      $this->css_help_tooltip_faicon = !isset($css_help_tooltip_faicon) || "" == trim($css_help_tooltip_faicon) ? "fas fa-question-circle" : trim($css_help_tooltip_faicon);
+      $this->css_schema_info_tooltiptheme = !isset($css_schema_info_tooltiptheme) || "" == trim($css_schema_info_tooltiptheme) ? "" : trim($css_schema_info_tooltiptheme);
+      $this->tippy_themes = [];
+      $this->tippy_theme_default = '';
+      if ('' != $this->css_schema_info_tooltiptheme) {
+          $this->scGetTippyCssTheme($this->tippy_themes, $this->css_schema_info_tooltiptheme);
+          $this->tippy_theme_default = $this->css_schema_info_tooltiptheme;
+      }
+
+      $_SESSION['scriptcase']['dir_temp'] = $this->root . $this->path_imag_temp;
+      if (isset($_SESSION['scriptcase']['form_clients_steps_renew']['session_timeout']['lang'])) {
+          $this->str_lang = $_SESSION['scriptcase']['form_clients_steps_renew']['session_timeout']['lang'];
+      }
+      elseif (!isset($_SESSION['scriptcase']['form_clients_steps_renew']['actual_lang']) || $_SESSION['scriptcase']['form_clients_steps_renew']['actual_lang'] != $this->str_lang) {
+          $_SESSION['scriptcase']['form_clients_steps_renew']['actual_lang'] = $this->str_lang;
+          setcookie('sc_actual_lang_PFM_Staff',$this->str_lang,'0','/');
+      }
+      global $inicial_form_clients_steps_renew;
+      if (isset($_SESSION['scriptcase']['user_logout']))
+      {
+          foreach ($_SESSION['scriptcase']['user_logout'] as $ind => $parms)
+          {
+              if (isset($_SESSION[$parms['V']]) && $_SESSION[$parms['V']] == $parms['U'])
+              {
+                  $nm_apl_dest = $parms['R'];
+                  $dir = explode("/", $nm_apl_dest);
+                  if (count($dir) == 1)
+                  {
+                      $nm_apl_dest = str_replace(".php", "", $nm_apl_dest);
+                      $nm_apl_dest = $this->path_link . SC_dir_app_name($nm_apl_dest) . "/";
+                  }
+                  unset($_SESSION['scriptcase']['user_logout'][$ind]);
+                  if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag) && $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag)
+                  {
+                      $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['redir']['action']  = $nm_apl_dest;
+                      $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['redir']['target']  = $parms['T'];
+                      $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['redir']['metodo']  = "post";
+                      $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['redir']['script_case_init']  = $this->sc_page;
+                      form_clients_steps_renew_pack_ajax_response();
+                      exit;
+                  }
+?>
+                  <!DOCTYPE html>
+                  <html>
+                  <body>
+                  <form name="FRedirect" method="POST" action="<?php echo $nm_apl_dest; ?>" target="<?php echo $parms['T']; ?>">
+                  </form>
+                  <script>
+                   document.FRedirect.submit();
+                  </script>
+                  </body>
+                  </html>
+<?php
+                  exit;
+              }
+          }
+      }
+      $str_path = substr($this->path_prod, 0, strrpos($this->path_prod, '/') + 1); 
+      if (!is_file($this->root . $str_path . 'devel/class/xmlparser/nmXmlparserIniSys.class.php'))
+      {
+          unset($_SESSION['scriptcase']['nm_sc_retorno']);
+          unset($_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_conexao']);
+      }
+      include($this->path_lang . $this->str_lang . ".lang.php");
+      include($this->path_lang . "config_region.php");
+      include($this->path_lang . "lang_config_region.php");
+      $_SESSION['scriptcase']['charset'] = "UTF-8";
+      ini_set('default_charset', $_SESSION['scriptcase']['charset']);
+      $_SESSION['scriptcase']['charset_html']  = (isset($this->sc_charset[$_SESSION['scriptcase']['charset']])) ? $this->sc_charset[$_SESSION['scriptcase']['charset']] : $_SESSION['scriptcase']['charset'];
+
+      asort($this->Nm_lang_conf_region);
+      foreach ($this->Nm_lang_conf_region as $ind => $dados)
+      {
+         if ($_SESSION['scriptcase']['charset'] != "UTF-8" && NM_is_utf8($dados))
+         {
+             $this->Nm_lang_conf_region[$ind] = sc_convert_encoding($dados, $_SESSION['scriptcase']['charset'], "UTF-8");
+         }
+      }
+      if (isset($this->Nm_lang['lang_errm_dbcn_conn']))
+      {
+          $_SESSION['scriptcase']['db_conn_error'] = $this->Nm_lang['lang_errm_dbcn_conn'];
+      }
+      if (!function_exists("mb_convert_encoding"))
+      {
+          echo "<div><font size=6>" . $this->Nm_lang['lang_othr_prod_xtmb'] . "</font></div>";exit;
+      } 
+      elseif (!function_exists("sc_convert_encoding"))
+      {
+          echo "<div><font size=6>" . $this->Nm_lang['lang_othr_prod_xtsc'] . "</font></div>";exit;
+      } 
+      foreach ($this->Nm_conf_reg[$this->str_conf_reg] as $ind => $dados)
+      {
+          if ($_SESSION['scriptcase']['charset'] != "UTF-8" && NM_is_utf8($dados))
+          {
+              $this->Nm_conf_reg[$this->str_conf_reg][$ind] = sc_convert_encoding($dados, $_SESSION['scriptcase']['charset'], "UTF-8");
+          }
+      }
+      $this->Nm_lang['lang_errm_ajax_rqrd'] = $this->Nm_lang['lang_errm_ajax_rqrd'];
+      foreach ($this->Nm_lang as $ind => $dados)
+      {
+          if ($_SESSION['scriptcase']['charset'] != "UTF-8" && NM_is_utf8($ind))
+          {
+              $ind = sc_convert_encoding($ind, $_SESSION['scriptcase']['charset'], "UTF-8");
+              $this->Nm_lang[$ind] = $dados;
+          }
+          if ($_SESSION['scriptcase']['charset'] != "UTF-8" && NM_is_utf8($dados))
+          {
+              $this->Nm_lang[$ind] = sc_convert_encoding($dados, $_SESSION['scriptcase']['charset'], "UTF-8");
+          }
+          $this->Nm_lang[$ind] = str_replace('"', '&quot;',  $this->Nm_lang[$ind]);
+      }
+      if (isset($_SESSION['scriptcase']['form_clients_steps_renew']['session_timeout']['redir'])) {
+          $SS_cod_html  = '<!DOCTYPE html>
+
+';
+          $SS_cod_html .= "<HTML>\r\n";
+          $SS_cod_html .= " <HEAD>\r\n";
+          $SS_cod_html .= "  <TITLE></TITLE>\r\n";
+          $SS_cod_html .= "   <META http-equiv=\"Content-Type\" content=\"text/html; charset=" . $_SESSION['scriptcase']['charset_html'] . "\"/>\r\n";
+          if ($_SESSION['scriptcase']['proc_mobile']) {
+              $SS_cod_html .= "   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0\"/>\r\n";
+          }
+          $SS_cod_html .= "   <META http-equiv=\"Expires\" content=\"Fri, Jan 01 1900 00:00:00 GMT\"/>\r\n";
+          $SS_cod_html .= "    <META http-equiv=\"Pragma\" content=\"no-cache\"/>\r\n";
+          if ($_SESSION['scriptcase']['form_clients_steps_renew']['session_timeout']['redir_tp'] == "R") {
+              $SS_cod_html .= "  </HEAD>\r\n";
+              $SS_cod_html .= "   <body>\r\n";
+          }
+          else {
+              $SS_cod_html .= "    <link rel=\"shortcut icon\" href=\"../_lib/img/grp__NM__bg__NM__pfm_img.png\">\r\n";
+              $SS_cod_html .= "    <link rel=\"stylesheet\" type=\"text/css\" href=\"../_lib/css/" . $this->str_schema_all . "_form.css\"/>\r\n";
+              $SS_cod_html .= "    <link rel=\"stylesheet\" type=\"text/css\" href=\"../_lib/css/" . $this->str_schema_all . "_form" . $_SESSION['scriptcase']['reg_conf']['css_dir'] . ".css\"/>\r\n";
+              $SS_cod_html .= "  </HEAD>\r\n";
+              $SS_cod_html .= "   <body class=\"scFormPage\">\r\n";
+              $SS_cod_html .= "    <table align=\"center\"><tr><td style=\"padding: 0\"><div class=\"scFormBorder\">\r\n";
+              $SS_cod_html .= "    <table width='100%' cellspacing=0 cellpadding=0><tr><td class=\"scFormDataOdd\" style=\"padding: 15px 30px; text-align: center\">\r\n";
+              $SS_cod_html .= $this->Nm_lang['lang_errm_expired_session'] . "\r\n";
+              $SS_cod_html .= "     <form name=\"Fsession_redir\" method=\"post\"\r\n";
+              $SS_cod_html .= "           target=\"_self\">\r\n";
+              $SS_cod_html .= "           <input type=\"button\" name=\"sc_sai_seg\" value=\"OK\" onclick=\"sc_session_redir('" . $_SESSION['scriptcase']['form_clients_steps_renew']['session_timeout']['redir'] . "');\">\r\n";
+              $SS_cod_html .= "     </form>\r\n";
+              $SS_cod_html .= "    </td></tr></table>\r\n";
+              $SS_cod_html .= "    </div></td></tr></table>\r\n";
+          }
+          $SS_cod_html .= "    <script type=\"text/javascript\">\r\n";
+          if ($_SESSION['scriptcase']['form_clients_steps_renew']['session_timeout']['redir_tp'] == "R") {
+              $SS_cod_html .= "      sc_session_redir('" . $_SESSION['scriptcase']['form_clients_steps_renew']['session_timeout']['redir'] . "');\r\n";
+          }
+          $SS_cod_html .= "      function sc_session_redir(url_redir)\r\n";
+          $SS_cod_html .= "      {\r\n";
+          $SS_cod_html .= "         if (window.parent && window.parent.document != window.document && typeof window.parent.sc_session_redir === 'function')\r\n";
+          $SS_cod_html .= "         {\r\n";
+          $SS_cod_html .= "            window.parent.sc_session_redir(url_redir);\r\n";
+          $SS_cod_html .= "         }\r\n";
+          $SS_cod_html .= "         else\r\n";
+          $SS_cod_html .= "         {\r\n";
+          $SS_cod_html .= "             if (window.opener && typeof window.opener.sc_session_redir === 'function')\r\n";
+          $SS_cod_html .= "             {\r\n";
+          $SS_cod_html .= "                 window.close();\r\n";
+          $SS_cod_html .= "                 window.opener.sc_session_redir(url_redir);\r\n";
+          $SS_cod_html .= "             }\r\n";
+          $SS_cod_html .= "             else\r\n";
+          $SS_cod_html .= "             {\r\n";
+          $SS_cod_html .= "                 window.location = url_redir;\r\n";
+          $SS_cod_html .= "             }\r\n";
+          $SS_cod_html .= "         }\r\n";
+          $SS_cod_html .= "      }\r\n";
+          $SS_cod_html .= "    </script>\r\n";
+          $SS_cod_html .= " </body>\r\n";
+          $SS_cod_html .= "</HTML>\r\n";
+          unset($_SESSION['scriptcase']['form_clients_steps_renew']['session_timeout']);
+          unset($_SESSION['sc_session']);
+      }
+      if (isset($SS_cod_html) && isset($_GET['nmgp_opcao']) && (substr($_GET['nmgp_opcao'], 0, 14) == "ajax_aut_comp_" || substr($_GET['nmgp_opcao'], 0, 13) == "ajax_autocomp"))
+      {
+          unset($_SESSION['sc_session']);
+          $oJson = new Services_JSON();
+          echo $oJson->encode("ss_time_out");
+          exit;
+      }
+      elseif (isset($SS_cod_html) && isset($_POST['nmgp_opcao']) && ($_POST['nmgp_opcao'] == "ajax_dyn_refresh_field" || $_POST['nmgp_opcao'] == "ajax_add_dyn_search" || $_POST['nmgp_opcao'] == "ajax_ch_bi_dyn_search"))
+      {
+          unset($_SESSION['sc_session']);
+          $this->Arr_result = array();
+          $this->Arr_result['ss_time_out'] = true;
+          $oJson = new Services_JSON();
+          echo $oJson->encode($this->Arr_result);
+          exit;
+      }
+      elseif (isset($SS_cod_html) && isset($_POST['rs']) && !is_array($_POST['rs']) && 'ajax_' == substr($_POST['rs'], 0, 5) && isset($_POST['rsargs']) && !empty($_POST['rsargs']))
+      {
+          $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['redir']['action']  = "./";
+          $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['redir']['target']  = "_self";
+          $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['redir']['metodo']  = "post";
+          $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['redir']['script_case_init']  = $this->sc_page;
+          form_clients_steps_renew_pack_ajax_response();
+          exit;
+      }
+      elseif (isset($SS_cod_html))
+      {
+          echo $SS_cod_html;
+          exit;
+      }
+      if (isset($_SESSION['sc_session']['SC_parm_violation']) && !isset($_SESSION['scriptcase']['form_clients_steps_renew']['session_timeout']['redir']))
+      {
+          unset($_SESSION['sc_session']['SC_parm_violation']);
+          echo "<!DOCTYPE html>";
+          echo "<html>";
+          echo "<body>";
+          echo "<table align=\"center\" width=\"50%\" border=1 height=\"50px\">";
+          echo "<tr>";
+          echo "   <td align=\"center\">";
+          echo "       <b><font size=4>" . $this->Nm_lang['lang_errm_ajax_data'] . "</font>";
+          echo "   </b></td>";
+          echo " </tr>";
+          echo "</table>";
+          echo "</body>";
+          echo "</html>";
+          exit;
+      }
+      $Tmp_apl_lig = "blank_new_member_appn";
+      if (is_file($this->root . $this->path_link . "_lib/_app_data/blank_new_member_appn_ini.php"))
+      {
+          require($this->root . $this->path_link . "_lib/_app_data/blank_new_member_appn_ini.php");
+          $Tmp_apl_lig = $arr_data['friendly_url'];
+          if (isset($arr_data['md5']) && trim($arr_data['md5']) == "LigMd5")
+          {
+              $this->sc_lig_md5["blank_new_member_appn"] = 'S';
+          }
+      }
+      $Tmp_apl_lig = "blank_steps_pmt_links";
+      if (is_file($this->root . $this->path_link . "_lib/_app_data/blank_steps_pmt_links_ini.php"))
+      {
+          require($this->root . $this->path_link . "_lib/_app_data/blank_steps_pmt_links_ini.php");
+          $Tmp_apl_lig = $arr_data['friendly_url'];
+          if (isset($arr_data['md5']) && trim($arr_data['md5']) == "LigMd5")
+          {
+              $this->sc_lig_md5["blank_steps_pmt_links"] = 'S';
+          }
+      }
+      $PHP_ver = str_replace(".", "", phpversion()); 
+      if (substr($PHP_ver, 0, 3) < 434)
+      {
+          echo "<div><font size=6>" . $this->Nm_lang['lang_othr_prod_phpv'] . "</font></div>";exit;
+      }
+      if (file_exists($this->path_libs . "/ver.dat"))
+      {
+          $SC_ver = file($this->path_libs . "/ver.dat"); 
+          $SC_ver = str_replace(".", "", $SC_ver[0]); 
+          if (substr($SC_ver, 0, 5) < 40015)
+          {
+              echo "<div><font size=6>" . $this->Nm_lang['lang_othr_prod_incp'] . "</font></div>";exit;
+          } 
+      } 
+      if (-1 != version_compare(phpversion(), '5.0.0'))
+      {
+         $this->path_grafico    = $this->root . $this->path_prod . "/third/jpgraph5/src";
+      }
+      else
+      {
+          $this->path_grafico    = $this->root . $this->path_prod . "/third/jpgraph4/src";
+      }
+      $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['path_doc'] = $this->path_doc; 
+      $_SESSION['scriptcase']['nm_path_prod'] = $this->root . $this->path_prod . "/"; 
+      $_SESSION['scriptcase']['nm_root_cep']  = $this->root; 
+      $_SESSION['scriptcase']['nm_path_cep']  = $this->path_cep; 
+      if (empty($this->path_imag_cab))
+      {
+          $this->path_imag_cab = $this->path_img_global;
+      }
+      if (!isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['iframe_menu'])) {
+          $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['iframe_menu'] = "";
+      }
+      if (!isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_iframe'])) {
+          $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_iframe'] = "";
+      }
+      if (!is_dir($this->root . $this->path_prod))
+      {
+          $str_message = "<html>
+
+<head>
+    <title>{var_str_title}</title>
+    <style>
+        body {
+            margin: 0px;
+            padding: 0px;
+            overflow-x: hidden;
+            min-width: 320px;
+            background: #FFFFFF;
+            font-family: 'Lato', 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            line-height: 1.4285em;
+            color: rgba(0, 0, 0, 0.87);
+            font-smoothing: antialiased;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+        }
+
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+
+        user agent stylesheet body {
+            display: block;
+            margin: 8px;
+        }
+
+        html {
+            font-size: 14px;
+        }
+
+        html {
+            line-height: 1.15;
+            -ms-text-size-adjust: 100%;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+
+        ::selection {
+            background-color: #CCE2FF;
+            color: rgba(0, 0, 0, 0.87);
+        }
+
+        .ui.container {
+            width: 933px;
+            min-width: 992px;
+            max-width: 1199px;
+            margin-left: auto !important;
+            margin-right: auto !important;
+        }
+
+        .ui.container {
+            display: block;
+            max-width: 100% !important;
+        }
+
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+
+        .ui.message:last-child {
+            margin-bottom: 0em;
+        }
+
+        .ui.message:first-child {
+            margin-top: 0em;
+        }
+
+        .ui.message {
+            font-size: 1em;
+        }
+
+        .ui.message {
+            position: relative;
+            min-height: 1em;
+            margin: 1em 0em;
+            background: #F8F8F9;
+            padding: 1em 1.5em;
+            line-height: 1.4285em;
+            color: rgba(0, 0, 0, 0.87);
+            transition: opacity 0.1s ease, color 0.1s ease, background 0.1s ease, box-shadow 0.1s ease;
+            border-radius: 0.28571429rem;
+            box-shadow: 0px 0px 0px 1px rgba(34, 36, 38, 0.22) inset, 0px 0px 0px 0px rgba(0, 0, 0, 0);
+        }
+
+        article,
+        aside,
+        footer,
+        header,
+        nav,
+        section {
+            display: block;
+        }
+
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+
+        .ui.message> :last-child {
+            margin-bottom: 0em;
+        }
+
+        .ui.message> :first-child {
+            margin-top: 0em;
+        }
+
+        .ui.message .header+p {
+            margin-top: 0.25em;
+        }
+
+        .ui.message p {
+            opacity: 0.85;
+            margin: 0.75em 0em;
+        }
+
+        p {
+            margin: 0em 0em 1em;
+            line-height: 1.4285em;
+        }
+
+        .ui.message .header:not(.ui) {
+            font-size: 1.14285714em;
+        }
+
+        .ui.message .header {
+            display: block;
+            font-family: 'Lato', 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            font-weight: bold;
+            margin: -0.14285714em 0em 1.2rem 0em;
+        }
+
+        .ui.button {
+            cursor: pointer;
+            display: inline-block;
+            min-height: 1em;
+            outline: 0;
+            border: none;
+            vertical-align: baseline;
+            background: #e0e1e2 none;
+            color: rgba(0, 0, 0, .6);
+            font-family: Lato, 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            margin: 0 .25em 0 0;
+            padding: .78571429em 1.5em .78571429em;
+            text-transform: none;
+            text-shadow: none;
+            font-weight: 700;
+            line-height: 1em;
+            font-style: normal;
+            text-align: center;
+            text-decoration: none;
+            border-radius: .28571429rem;
+            box-shadow: 0 0 0 1px transparent inset, 0 0 0 0 rgba(34, 36, 38, .15) inset;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            transition: opacity .1s ease, background-color .1s ease, color .1s ease, box-shadow .1s ease, background .1s ease;
+            will-change: '';
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .ui.button,
+        .ui.buttons .button,
+        .ui.buttons .or {
+            font-size: 1rem;
+            flex-flow: row nowrap;
+            justify-content: center;
+            align-items: center;
+            column-gap: .5rem;
+            display: flex;
+        }
+        
+        .ui.primary.button,
+        .ui.primary.buttons .button {
+            background-color: #2185d0;
+            color: #fff;
+            text-shadow: none;
+            background-image: none;
+        }
+        
+        .ui.primary.button {
+            box-shadow: 0 0 0 0 rgba(34, 36, 38, .15) inset;
+        }
+
+        [type=reset], [type=submit], button, html [type=button] {
+            -webkit-appearance: button;
+        }
+
+        .icon{
+            position: relative;
+            width: 1.2rem;
+            height: 1.2rem;
+            display: block;
+            color: inherit;
+            background-repeat: no-repeat;
+        }
+
+        .icon.database{
+            background-image: url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 448 512\" fill=\"%23FFFFFF\"><path d=\"M448 80v48c0 44.2-100.3 80-224 80S0 172.2 0 128V80C0 35.8 100.3 0 224 0S448 35.8 448 80zM393.2 214.7c20.8-7.4 39.9-16.9 54.8-28.6V288c0 44.2-100.3 80-224 80S0 332.2 0 288V186.1c14.9 11.8 34 21.2 54.8 28.6C99.7 230.7 159.5 240 224 240s124.3-9.3 169.2-25.3zM0 346.1c14.9 11.8 34 21.2 54.8 28.6C99.7 390.7 159.5 400 224 400s124.3-9.3 169.2-25.3c20.8-7.4 39.9-16.9 54.8-28.6V432c0 44.2-100.3 80-224 80S0 476.2 0 432V346.1z\"/></svg>');
+        }
+    </style>
+</head>
+
+<body>
+    <div class='ui container' style='padding-top:2rem'>
+        <section class='ui message'>
+            <div class='content'>
+                <div class='header'>
+                    <h1 class='ui header'>{var_str_title}</h1>
+                </div>
+                <p>{var_str_message}</p>
+                <p>{var_str_message_conn}</p>
+                {v_str_btn_inside}
+            </div>
+        </section>
+    </div>";
+          $str_message_end = "</body>
+</html>";
+          $str_message = str_replace('{var_str_title}', $this->Nm_lang['lang_errm_cmlb_nfndtitle'], $str_message);
+          $str_message = str_replace('{var_str_message}', $this->Nm_lang['lang_errm_cmlb_nfnd'], $str_message);
+          $str_message = str_replace('{v_str_btn_inside}', '', $str_message);
+          echo $str_message;
+          if (!$_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['iframe_menu'] && (!isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['sc_outra_jan']) || $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['sc_outra_jan'] != 'form_clients_steps_renew')) 
+          { 
+              if (isset($_SESSION['scriptcase']['nm_sc_retorno']) && !empty($_SESSION['scriptcase']['nm_sc_retorno'])) 
+              { 
+?>
+                  <input type="button" id="sai" onClick="window.location='<?php echo $_SESSION['scriptcase']['nm_sc_retorno'] ?>'; return false" class="scButton_default" value="<?php echo $this->Nm_lang['lang_btns_back'] ?>" title="<?php echo $this->Nm_lang['lang_btns_back_hint'] ?>" style="<?php echo $sCondStyle; ?>vertical-align: middle;display: ''">
+
+<?php
+              } 
+              else 
+              { 
+?>
+                  <input type="button" id="sai" onClick="window.location='<?php echo $nm_url_saida ?>'; return false" class="scButton_danger" value="<?php echo $this->Nm_lang['lang_btns_exit'] ?>" title="<?php echo $this->Nm_lang['lang_btns_exit_hint'] ?>" style="<?php echo $sCondStyle; ?>vertical-align: middle;display: ''">
+
+<?php
+              } 
+          } 
+          echo $str_message_end;
+          exit ;
+      }
+
+      $this->path_atual  = getcwd();
+      $opsys = strtolower(php_uname());
+
+      global $under_dashboard, $dashboard_app, $own_widget, $parent_widget, $compact_mode, $remove_margin, $remove_border, $remove_background;
+      if (!isset($_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['under_dashboard']))
+      {
+          $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['under_dashboard'] = false;
+          $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['dashboard_app']   = '';
+          $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['own_widget']      = '';
+          $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['parent_widget']   = '';
+          $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['compact_mode']    = false;
+          $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['remove_margin']   = false;
+          $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['remove_border']   = false;
+          $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['remove_background'] = false;
+      }
+      if (isset($_GET['under_dashboard']) && 1 == $_GET['under_dashboard'])
+      {
+          if (isset($_GET['own_widget']) && 'dbifrm_widget' == substr($_GET['own_widget'], 0, 13)) {
+              $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['own_widget'] = $_GET['own_widget'];
+              $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['under_dashboard'] = true;
+              if (isset($_GET['dashboard_app'])) {
+                  $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['dashboard_app'] = $_GET['dashboard_app'];
+              }
+              if (isset($_GET['parent_widget'])) {
+                  $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['parent_widget'] = $_GET['parent_widget'];
+              }
+              if (isset($_GET['compact_mode'])) {
+                  $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['compact_mode'] = 1 == $_GET['compact_mode'];
+              }
+              if (isset($_GET['remove_margin'])) {
+                  $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['remove_margin'] = 1 == $_GET['remove_margin'];
+              }
+              if (isset($_GET['remove_border'])) {
+                  $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['remove_border'] = 1 == $_GET['remove_border'];
+              }
+              if (isset($_GET['remove_background'])) {
+                  $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['remove_background'] = 1 == $_GET['remove_background'];
+              }
+          }
+      }
+      elseif (isset($under_dashboard) && 1 == $under_dashboard)
+      {
+          if (isset($own_widget) && 'dbifrm_widget' == substr($own_widget, 0, 13)) {
+              $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['own_widget'] = $own_widget;
+              $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['under_dashboard'] = true;
+              if (isset($dashboard_app)) {
+                  $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['dashboard_app'] = $dashboard_app;
+              }
+              if (isset($parent_widget)) {
+                  $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['parent_widget'] = $parent_widget;
+              }
+              if (isset($compact_mode)) {
+                  $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['compact_mode'] = 1 == $compact_mode;
+              }
+              if (isset($remove_margin)) {
+                  $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['remove_margin'] = 1 == $remove_margin;
+              }
+              if (isset($remove_border)) {
+                  $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['remove_border'] = 1 == $remove_border;
+              }
+              if (isset($remove_background)) {
+                  $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['remove_background'] = 1 == $remove_background;
+              }
+          }
+      }
+      if (!isset($_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['maximized']))
+      {
+          $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['maximized'] = false;
+      }
+      if (isset($_GET['maximized']))
+      {
+          $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['maximized'] = 1 == $_GET['maximized'];
+      }
+      $this->link_blank_steps_pmt_links = $this->sc_protocolo . $this->server . $this->path_link . "" . SC_dir_app_name('blank_steps_pmt_links') . "/";
+      $this->sc_lig_target["C_@scinf_pay"] = 'nmsc_iframe_liga_blank_steps_pmt_links';
+      $this->sc_lig_iframe["nmsc_iframe_liga_blank_steps_pmt_links"] = 'nmsc_iframe_liga_blank_steps_pmt_links';
+      $this->link_blank_new_member_appn = $this->sc_protocolo . $this->server . $this->path_link . "" . SC_dir_app_name('blank_new_member_appn') . "/";
+      $this->link_form_clients_steps_renew_inline = $this->sc_protocolo . $this->server . $this->path_link . "" . SC_dir_app_name('form_clients_steps_renew') . "/form_clients_steps_renew_inline.php";
+      if ($_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['under_dashboard'])
+      {
+          $sTmpDashboardApp = $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['dashboard_info']['dashboard_app'];
+          if ('' != $sTmpDashboardApp && isset($_SESSION['scriptcase']['dashboard_targets'][$sTmpDashboardApp]["form_clients_steps_renew"]))
+          {
+              foreach ($_SESSION['scriptcase']['dashboard_targets'][$sTmpDashboardApp]["form_clients_steps_renew"] as $sTmpTargetLink => $sTmpTargetWidget)
+              {
+                  if (isset($this->sc_lig_target[$sTmpTargetLink]))
+                  {
+                      if (isset($this->sc_lig_iframe[$this->sc_lig_target[$sTmpTargetLink]]))
+                      {
+                          $this->sc_lig_iframe[$this->sc_lig_target[$sTmpTargetLink]] = $sTmpTargetWidget;
+                      }
+                      $this->sc_lig_target[$sTmpTargetLink] = $sTmpTargetWidget;
+                  }
+              }
+          }
+      }
+        global $link_compact_mode, $link_remove_margin, $link_remove_border, $link_remove_background, $link_margin_top;
+        if (isset($link_compact_mode) && 'ok' == $link_compact_mode) {
+            if (!isset($_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['link_info'])) {
+                $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['link_info'] = array();
+            }
+            $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['link_info']['compact_mode'] = true;
+        }
+        if (isset($link_remove_margin) && 'ok' == $link_remove_margin) {
+            if (!isset($_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['link_info'])) {
+                $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['link_info'] = array();
+            }
+            $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['link_info']['remove_margin'] = true;
+        }
+        if (isset($link_remove_border) && 'ok' == $link_remove_border) {
+            if (!isset($_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['link_info'])) {
+                $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['link_info'] = array();
+            }
+            $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['link_info']['remove_border'] = true;
+        }
+        if (isset($link_remove_background) && 'ok' == $link_remove_background) {
+            if (!isset($_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['link_info'])) {
+                $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['link_info'] = array();
+            }
+            $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['link_info']['remove_background'] = true;
+        }
+        if (isset($link_margin_top) && '' != $link_margin_top) {
+            if (!isset($_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['link_info'])) {
+                $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['link_info'] = array();
+            }
+            $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['link_info']['margin_top'] = $link_margin_top;
+        }
+
+      $this->nm_cont_lin       = 0;
+      $this->nm_limite_lin     = 0;
+      $this->nm_limite_lin_prt = 0;
+// 
+      include_once($this->path_adodb . "/adodb.inc.php");
+      $this->sc_Include($this->path_libs . "/nm_sec_prod.php", "F", "nm_reg_prod");
+      $this->sc_Include($this->path_libs . "/nm_ini_perfil.php", "F", "perfil_lib");
+      if(function_exists('set_php_timezone'))  set_php_timezone('form_clients_steps_renew'); 
+      $this->sc_Include($this->path_lib_php . "/nm_data.class.php", "C", "nm_data") ; 
+      $this->sc_Include($this->path_lib_php . "/nm_edit.php", "F", "nmgp_Form_Num_Val") ; 
+      $this->sc_Include($this->path_lib_php . "/nm_conv_dados.php", "F", "nm_conv_limpa_dado") ; 
+      $this->sc_Include($this->path_lib_php . "/nm_functions.php", "", "") ; 
+      $this->sc_Include($this->path_lib_php . "/nm_api.php", "", "") ; 
+      $this->sc_Include($this->path_lib_php . "/fix.php", "", "") ; 
+      $this->nm_data = new nm_data("en_us");
+      global $inicial_form_clients_steps_renew, $NM_run_iframe;
+      if ((isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag) && $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag) || (isset($_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['embutida_call']) && $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['embutida_call']) || $NM_run_iframe == 1)
+      {
+           $_SESSION['scriptcase']['sc_ctl_ajax'] = 'part';
+      }
+      perfil_lib($this->path_libs);
+      if (!isset($_SESSION['sc_session'][$this->sc_page]['SC_Check_Perfil']))
+      {
+          if(function_exists("nm_check_perfil_exists")) nm_check_perfil_exists($this->path_libs, $this->path_prod);
+          $_SESSION['sc_session'][$this->sc_page]['SC_Check_Perfil'] = true;
+      }
+      if (function_exists("nm_check_pdf_server")) $this->server_pdf = nm_check_pdf_server($this->path_libs, $this->server_pdf);
+      if (!isset($_SESSION['scriptcase']['sc_num_img']) || empty($_SESSION['scriptcase']['sc_num_img']))
+      { 
+          $_SESSION['scriptcase']['sc_num_img'] = 1; 
+      } 
+      $this->Export_img_zip = false;;
+      $this->Img_export_zip  = array();
+      $this->regionalDefault();
+      $this->sc_tem_trans_banco = false;
+      $this->nm_bases_access     = array("access", "ado_access", "ace_access");
+      $this->nm_bases_db2        = array("db2", "db2_odbc", "odbc_db2", "odbc_db2v6", "pdo_db2_odbc", "pdo_ibm");
+      $this->nm_bases_ibase      = array("ibase", "firebird", "pdo_firebird", "borland_ibase");
+      $this->nm_bases_informix   = array("informix", "informix72", "pdo_informix");
+      $this->nm_bases_mssql      = array("mssql", "ado_mssql", "adooledb_mssql", "odbc_mssql", "mssqlnative", "pdo_sqlsrv", "pdo_dblib", "azure_mssql", "azure_ado_mssql", "azure_adooledb_mssql", "azure_odbc_mssql", "azure_mssqlnative", "azure_pdo_sqlsrv", "azure_pdo_dblib", "googlecloud_mssql", "googlecloud_ado_mssql", "googlecloud_adooledb_mssql", "googlecloud_odbc_mssql", "googlecloud_mssqlnative", "googlecloud_pdo_sqlsrv", "googlecloud_pdo_dblib", "amazonrds_mssql", "amazonrds_ado_mssql", "amazonrds_adooledb_mssql", "amazonrds_odbc_mssql", "amazonrds_mssqlnative", "amazonrds_pdo_sqlsrv", "amazonrds_pdo_dblib");
+      $this->nm_bases_mysql      = array("mysql", "mysqlt", "mysqli", "maxsql", "pdo_mysql", "pdo_mariadb", "azure_mysql", "azure_mysqlt", "azure_mysqli", "azure_maxsql", "azure_pdo_mysql", "azure_pdo_mariadb", "googlecloud_mysql", "googlecloud_mysqlt", "googlecloud_mysqli", "googlecloud_maxsql", "googlecloud_pdo_mysql", "googlecloud_pdo_mariadb", "amazonrds_mysql", "amazonrds_mysqlt", "amazonrds_mysqli", "amazonrds_maxsql", "amazonrds_pdo_mysql", "amazonrds_pdo_mariadb");
+      $this->nm_bases_postgres   = array("postgres", "postgres64", "postgres7", "pdo_pgsql", "azure_postgres", "azure_postgres64", "azure_postgres7", "azure_pdo_pgsql", "googlecloud_postgres", "googlecloud_postgres64", "googlecloud_postgres7", "googlecloud_pdo_pgsql", "amazonrds_postgres", "amazonrds_postgres64", "amazonrds_postgres7", "amazonrds_pdo_pgsql");
+      $this->nm_bases_oracle     = array("oci8", "oci805", "oci8po", "odbc_oracle", "oracle", "pdo_oracle", "oraclecloud_oci8", "oraclecloud_oci805", "oraclecloud_oci8po", "oraclecloud_odbc_oracle", "oraclecloud_oracle", "oraclecloud_pdo_oracle", "amazonrds_oci8", "amazonrds_oci805", "amazonrds_oci8po", "amazonrds_odbc_oracle", "amazonrds_oracle", "amazonrds_pdo_oracle");
+      $this->nm_bases_sqlite     = array("sqlite", "sqlite3", "pdosqlite");
+      $this->nm_bases_sybase     = array("sybase", "pdo_sybase_odbc", "pdo_sybase_dblib");
+      $this->nm_bases_vfp        = array("vfp");
+      $this->nm_bases_odbc       = array("odbc");
+      $this->nm_bases_progress   = array("progress", "pdo_progress_odbc");
+      $this->nm_bases_all        = array_merge($this->nm_bases_access, $this->nm_bases_db2, $this->nm_bases_ibase, $this->nm_bases_informix, $this->nm_bases_mssql, $this->nm_bases_mysql, $this->nm_bases_postgres, $this->nm_bases_oracle, $this->nm_bases_sqlite, $this->nm_bases_sybase, $this->nm_bases_vfp, $this->nm_bases_odbc, $this->nm_bases_progress);
+      $_SESSION['scriptcase']['nm_bases_security']  = "enc_nm_enc_v1D9NmDQJsZ1rwHQBOHgvsZSNiDWFaDoFGHQNwH9BqHArYHQF7DMzGZSXeHEXCHMJeDcJeDQX7Z1rwHuFaHuNOZSrCH5FqDoXGHQJmZ1BiHABYHuBOHgBYDkXKH5FYHIraHQJKZSBiZ1BYHuXGDMrwV9FeDWF/HINUHQJmZkFGHANOHuBqHgvCHArsDuFaHIFUHQJKZ9F7DSBYHuFUDMrwV9FeHEBmVEF7HQNwZkFGHIveHuBODMrYZSXeDuFYVoXGDcJeZ9rqD1BeHuFGDMvsVIB/HEBmVEraHQBqZkBiHAN7HuBqHgvCHArCDWX7HMBqDcXGH9BiD1vOVWXGDMrwV9FeDWF/HIFUHQBsZSBqD1rwHuJwHgvCHEJqH5FYHMJeHQNwH9FUHAN7HuFUHgNKDkBODuFqDoFGDcBqVIJwD1rwHuBqHgBYVkJqDuXKDoXGHQJKH9FUHANOHuFUDMrwV9FeDWFYHINUHQJmZSBqD1rKHuBOHgvCHArCDuFaHIB/DcXGZSFUHAveHQJsDMrwVcB/DWFYHMFaDcNmZSBOD1rKHQBODMrYZSXeDuFYVoXGDcJeZ9rqD1BeV5BqHgvsDkB/V5X7VorqDcBqZ1FaD1rKV5XGDMNKDkBsV5FaZuBODcJeDQFGHAvmV5JwHuBYDkFCDuX7VEF7HQFYH9B/HIveZMB/DEBOHEXeDuX/DoB/D9NwZSX7D1BeV5BOHuvmVcFCDWXCVENUDcBqH9B/HABYD5JeDMzGHAFKV5XKDoF7D9XsDQJsDSBYV5FGHgNKDkFCH5FqVoBqDcNwH9B/HIveD5FaDErKZSJGH5F/DoFUD9NwZSX7D1BOD5F7HuBYVIBOV5FYHMBiD9BsVIraD1rwV5X7HgBeHErCDWX7HMBiD9FYH9X7Z1NaVWXGHgrwVcBUH5XCVoBqHQXGH9B/HAN7D5BqDMvCZSXeDWFqHMBqHQXsZ9XGHIrKHuFaHuNOZSrCH5FqDoXGHQJmZ1FUZ1BeV5BqDEBOZSJGDWr/VoFGDcXOZSX7D1BeD5rqHuvmVcBODWFYDoJsD9BiZ1rqD1rwD5BiDErKZSJGH5F/VoB/D9NwDQJwD1BeV5raHuzGVIBODWFYDoJsDcJUZ1FaHIBOV5FUDErKHEFiDuJeDoBOHQJKDQJsZ1vCV5FGHuNOV9FeDWXCHMBiD9BsVIraD1rwV5X7HgBeHEBUDWFqHIBOD9FYDuBqD1veVWJsHgrwVcFeDuFqHMB/DcBqVINUHIveZMJeHgBeHEXeDWX7HIJsD9XsZ9JeD1BeD5F7DMvmVcFKDWFYVorqDcNwH9B/HAN7D5XGDEBOZSXeV5XCZuJsDcBwDuFaHAveD5NUHgNKDkBOV5FYHMBiHQNmVINUHAvsD5XGHgNKHArsDWBmZuFaHQBiZ9XGDSBYHuFaHuNOZSrCH5FqDoXGHQJmZ1rqHArKHQBOHgNOZSJqH5FYDorqD9NmZSBiDSN7D5JsHgrKDkBsDWXCDoJsDcBwH9B/Z1rYHQJwHgvsZSXeH5FYZuFaDcJeDQFGHAN7D5BqHuNOZSJ3DWXCHIFGD9XOZSFaD1rKV5FaDMzGZSXeDWX7HIJsD9XsZ9JeD1BeD5F7DMvmVcBUHEX/DoJsHQNmZ1XGZ1veZMNU";
+      $this->prep_conect();
+      if (isset($_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['initialize']) && $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['initialize'])  
+      { 
+          $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['Gera_log_access'] = true;
+      } 
+      $this->conectDB();
+      if (!in_array(strtolower($this->nm_tpbanco), $this->nm_bases_all))
+      {
+          echo "<tr>";
+          echo "   <td bgcolor=\"\">";
+          echo "       <b><font size=\"4\">" . $this->Nm_lang['lang_errm_dbcn_nspt'] . "</font>";
+          echo "  " . $perfil_trab;
+          echo "   </b></td>";
+          echo " </tr>";
+          echo "</table>";
+          if (!$_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['iframe_menu'] && (!isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['sc_outra_jan']) || $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['sc_outra_jan'] != 'form_clients_steps_renew')) 
+          { 
+              if (isset($_SESSION['scriptcase']['nm_sc_retorno']) && !empty($_SESSION['scriptcase']['nm_sc_retorno'])) 
+              { 
+                  echo "<a href='" . $_SESSION['scriptcase']['nm_sc_retorno'] . "' target='_self'><img border='0' src='" . $this->path_botoes . "/nm_scriptcase9_SweetBlue_bvoltar.gif' title='" . $this->Nm_lang['lang_btns_rtrn_scrp_hint'] . "' align=absmiddle></a> \n" ; 
+              } 
+              else 
+              { 
+                  echo "<a href='$nm_url_saida' target='_self'><img border='0' src='" . $this->path_botoes . "/nm_scriptcase9_SweetBlue_bsair.gif' title='" . $this->Nm_lang['lang_btns_exit_appl_hint'] . "' align=absmiddle></a> \n" ; 
+              } 
+          } 
+          exit ;
+      } 
+      $this->Nm_accent_access    = array('cmp_i'=>"",'cmp_f'=>"",'cmp_apos'=>"",'arg_i'=>"",'arg_f'=>"",'arg_apos'=>"");
+      $this->Nm_accent_db2       = array('cmp_i'=>"",'cmp_f'=>"",'cmp_apos'=>"",'arg_i'=>"",'arg_f'=>"",'arg_apos'=>"");
+      $this->Nm_accent_ibase     = array('cmp_i'=>"",'cmp_f'=>"",'cmp_apos'=>"",'arg_i'=>"",'arg_f'=>"",'arg_apos'=>"");
+      $this->Nm_accent_informix  = array('cmp_i'=>"",'cmp_f'=>"",'cmp_apos'=>"",'arg_i'=>"",'arg_f'=>"",'arg_apos'=>"");
+      $this->Nm_accent_mssql     = array('cmp_i'=>"",'cmp_f'=>"",'cmp_apos'=>"",'arg_i'=>"",'arg_f'=>"",'arg_apos'=>"");
+      $this->Nm_accent_mysql     = array('cmp_i'=>"",'cmp_f'=>"",'cmp_apos'=>"",'arg_i'=>"",'arg_f'=>"",'arg_apos'=>"");
+      $this->Nm_accent_postgres  = array('cmp_i'=>"unaccent(",'cmp_f'=>")",'cmp_apos'=>"",'arg_i'=>"' || unaccent('",'arg_f'=>"') || '",'arg_apos'=>"");
+      $this->Nm_accent_oracle    = array('cmp_i'=>"",'cmp_f'=>"",'cmp_apos'=>"",'arg_i'=>"",'arg_f'=>"",'arg_apos'=>"");
+      $this->Nm_accent_sqlite    = array('cmp_i'=>"",'cmp_f'=>"",'cmp_apos'=>"",'arg_i'=>"",'arg_f'=>"",'arg_apos'=>"");
+      $this->Nm_accent_sybase    = array('cmp_i'=>"",'cmp_f'=>"",'cmp_apos'=>"",'arg_i'=>"",'arg_f'=>"",'arg_apos'=>"");
+      $this->Nm_accent_vfp       = array('cmp_i'=>"",'cmp_f'=>"",'cmp_apos'=>"",'arg_i'=>"",'arg_f'=>"",'arg_apos'=>"");
+      $this->Nm_accent_odbc      = array('cmp_i'=>"",'cmp_f'=>"",'cmp_apos'=>"",'arg_i'=>"",'arg_f'=>"",'arg_apos'=>"");
+      $this->Nm_accent_progress  = array('cmp_i'=>"",'cmp_f'=>"",'cmp_apos'=>"",'arg_i'=>"",'arg_f'=>"",'arg_apos'=>"");
+
+      $this->Nm_accent_no = array('cmp_i'=>'','cmp_f'=>'','cmp_apos'=>'','arg_i'=>'','arg_f'=>'','arg_apos'=>'');
+      if (in_array(strtolower($this->nm_tpbanco), $this->nm_bases_access)) {
+          $this->Nm_accent_yes = $this->Nm_accent_access;
+      }
+      elseif (in_array(strtolower($this->nm_tpbanco), $this->nm_bases_db2)) {
+          $this->Nm_accent_yes = $this->Nm_accent_db2;
+      }
+      elseif (in_array(strtolower($this->nm_tpbanco), $this->nm_bases_ibase)) {
+          $this->Nm_accent_yes = $this->Nm_accent_ibase;
+      }
+      elseif (in_array(strtolower($this->nm_tpbanco), $this->nm_bases_informix)) {
+          $this->Nm_accent_yes = $this->Nm_accent_informix;
+      }
+      elseif (in_array(strtolower($this->nm_tpbanco), $this->nm_bases_mssql)) {
+          $this->Nm_accent_yes = $this->Nm_accent_mssql;
+      }
+      elseif (in_array(strtolower($this->nm_tpbanco), $this->nm_bases_mysql)) {
+          $this->Nm_accent_yes = $this->Nm_accent_mysql;
+      }
+      elseif (in_array(strtolower($this->nm_tpbanco), $this->nm_bases_postgres)) {
+          $this->Nm_accent_yes = $this->Nm_accent_postgres;
+      }
+      elseif (in_array(strtolower($this->nm_tpbanco), $this->nm_bases_oracle)) {
+          $this->Nm_accent_yes = $this->Nm_accent_oracle;
+      }
+      elseif (in_array(strtolower($this->nm_tpbanco), $this->nm_bases_sqlite)) {
+          $this->Nm_accent_yes = $this->Nm_accent_sqlite;
+      }
+      elseif (in_array(strtolower($this->nm_tpbanco), $this->nm_bases_sybase)) {
+          $this->Nm_accent_yes = $this->Nm_accent_sybase;
+      }
+      elseif (in_array(strtolower($this->nm_tpbanco), $this->nm_bases_vfp)) {
+          $this->Nm_accent_yes = $this->Nm_accent_vfp;
+      }
+      elseif (in_array(strtolower($this->nm_tpbanco), $this->nm_bases_odbc)) {
+          $this->Nm_accent_yes = $this->Nm_accent_odbc;
+      }
+      elseif (in_array(strtolower($this->nm_tpbanco), $this->nm_bases_progress)) {
+          $this->Nm_accent_yes = $this->Nm_accent_progress;
+      }
+      else {
+          $this->Nm_accent_yes = $this->Nm_accent_no;
+      }
+   }
+
+    function scGetTippyCssTheme(&$themeList, $themeName)
+    {
+        if (isset($themeList[$themeName])) {
+            return;
+        }
+
+        $themeNameParts = explode('__NM__', $themeName);
+
+        $themeList[$themeName] = [
+            'tippy' => $themeNameParts[1],
+            'file' => '../_lib/freecss/' . $themeName . '.css'
+        ];
+    }
+
+   function prep_conect()
+   {
+      $con_devel             =  (isset($_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_conexao'])) ? $_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_conexao'] : ""; 
+      $perfil_trab           = ""; 
+      $this->nm_falta_var    = ""; 
+      $this->nm_falta_var_db = ""; 
+      $nm_crit_perfil        = false;
+      if (isset($_SESSION['scriptcase']['sc_connection']) && !empty($_SESSION['scriptcase']['sc_connection']))
+      {
+          foreach ($_SESSION['scriptcase']['sc_connection'] as $NM_con_orig => $NM_con_dest)
+          {
+              if (isset($_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_conexao']) && $_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_conexao'] == $NM_con_orig)
+              {
+/*NM*/            $_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_conexao'] = $NM_con_dest;
+              }
+              if (isset($_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_perfil']) && $_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_perfil'] == $NM_con_orig)
+              {
+/*NM*/            $_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_perfil'] = $NM_con_dest;
+              }
+              if (isset($_SESSION['scriptcase']['form_clients_steps_renew']['glo_con_' . $NM_con_orig]))
+              {
+                  $_SESSION['scriptcase']['form_clients_steps_renew']['glo_con_' . $NM_con_orig] = $NM_con_dest;
+              }
+          }
+      }
+      if (isset($_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_conexao']) && !empty($_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_conexao']))
+      {
+          db_conect_devel($con_devel, $this->root . $this->path_prod, 'PFM_Staff', 2, $this->force_db_utf8); 
+          if (empty($_SESSION['scriptcase']['glo_tpbanco']) && empty($_SESSION['scriptcase']['glo_banco']))
+          {
+              $nm_crit_perfil = true;
+          }
+      }
+      if (isset($_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_perfil']) && !empty($_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_perfil']))
+      {
+          $perfil_trab = $_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_perfil'];
+      }
+      elseif (isset($_SESSION['scriptcase']['glo_perfil']) && !empty($_SESSION['scriptcase']['glo_perfil']))
+      {
+          $perfil_trab = $_SESSION['scriptcase']['glo_perfil'];
+      }
+      if (!empty($perfil_trab))
+      {
+          $_SESSION['scriptcase']['glo_senha_protect'] = "";
+          carrega_perfil($perfil_trab, $this->path_libs, "S");
+          if (empty($_SESSION['scriptcase']['glo_senha_protect']))
+          {
+              $nm_crit_perfil = true;
+          }
+      }
+      else
+      {
+          $perfil_trab = $con_devel;
+      }
+      if (!$_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['embutida_form'] || !$_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['embutida_proc']) 
+      {
+      }
+// 
+      if (!isset($_SESSION['scriptcase']['glo_tpbanco']))
+      {
+          if (!$nm_crit_perfil)
+          {
+              $this->nm_falta_var_db .= "glo_tpbanco; ";
+          }
+      }
+      else
+      {
+          $this->nm_tpbanco = $_SESSION['scriptcase']['glo_tpbanco']; 
+      }
+      if (!isset($_SESSION['scriptcase']['glo_servidor']))
+      {
+          if (!$nm_crit_perfil)
+          {
+              $this->nm_falta_var_db .= "glo_servidor; ";
+          }
+      }
+      else
+      {
+          $this->nm_servidor = $_SESSION['scriptcase']['glo_servidor']; 
+      }
+      if (!isset($_SESSION['scriptcase']['glo_banco']))
+      {
+          if (!$nm_crit_perfil)
+          {
+              $this->nm_falta_var_db .= "glo_banco; ";
+          }
+      }
+      else
+      {
+          $this->nm_banco = $_SESSION['scriptcase']['glo_banco']; 
+      }
+      if (!isset($_SESSION['scriptcase']['glo_usuario']))
+      {
+          if (!$nm_crit_perfil)
+          {
+              $this->nm_falta_var_db .= "glo_usuario; ";
+          }
+      }
+      else
+      {
+          $this->nm_usuario = $_SESSION['scriptcase']['glo_usuario']; 
+      }
+      if (!isset($_SESSION['scriptcase']['glo_senha']))
+      {
+          if (!$nm_crit_perfil)
+          {
+              $this->nm_falta_var_db .= "glo_senha; ";
+          }
+      }
+      else
+      {
+          $this->nm_senha = $_SESSION['scriptcase']['glo_senha']; 
+      }
+      if (isset($_SESSION['scriptcase']['glo_db2_autocommit']))
+      {
+          $this->nm_con_db2['db2_autocommit'] = $_SESSION['scriptcase']['glo_db2_autocommit']; 
+      }
+      if (isset($_SESSION['scriptcase']['glo_database_encoding']))
+      {
+          $this->nm_database_encoding = $_SESSION['scriptcase']['glo_database_encoding']; 
+      }
+      if (isset($_SESSION['scriptcase']['glo_db2_i5_lib']))
+      {
+          $this->nm_con_db2['db2_i5_lib'] = $_SESSION['scriptcase']['glo_db2_i5_lib']; 
+      }
+      if (isset($_SESSION['scriptcase']['glo_db2_i5_naming']))
+      {
+          $this->nm_con_db2['db2_i5_naming'] = $_SESSION['scriptcase']['glo_db2_i5_naming']; 
+      }
+      if (isset($_SESSION['scriptcase']['glo_db2_i5_commit']))
+      {
+          $this->nm_con_db2['db2_i5_commit'] = $_SESSION['scriptcase']['glo_db2_i5_commit']; 
+      }
+      if (isset($_SESSION['scriptcase']['glo_db2_i5_query_optimize']))
+      {
+          $this->nm_con_db2['db2_i5_query_optimize'] = $_SESSION['scriptcase']['glo_db2_i5_query_optimize']; 
+      }
+      if (isset($_SESSION['scriptcase']['glo_use_persistent']))
+      {
+          $this->nm_con_persistente = $_SESSION['scriptcase']['glo_use_persistent']; 
+      }
+      if (isset($_SESSION['scriptcase']['glo_use_schema']))
+      {
+          $this->nm_con_use_schema = $_SESSION['scriptcase']['glo_use_schema']; 
+      }
+      $this->nm_arr_db_extra_args = array(); 
+      if (isset($_SESSION['scriptcase']['glo_use_ssl']))
+      {
+          $this->nm_arr_db_extra_args['use_ssl'] = $_SESSION['scriptcase']['glo_use_ssl']; 
+      }
+      if (isset($_SESSION['scriptcase']['glo_mysql_ssl_key']))
+      {
+          $this->nm_arr_db_extra_args['mysql_ssl_key'] = $_SESSION['scriptcase']['glo_mysql_ssl_key']; 
+      }
+      if (isset($_SESSION['scriptcase']['glo_mysql_ssl_cert']))
+      {
+          $this->nm_arr_db_extra_args['mysql_ssl_cert'] = $_SESSION['scriptcase']['glo_mysql_ssl_cert']; 
+      }
+      if (isset($_SESSION['scriptcase']['glo_mysql_ssl_capath']))
+      {
+          $this->nm_arr_db_extra_args['mysql_ssl_capath'] = $_SESSION['scriptcase']['glo_mysql_ssl_capath']; 
+      }
+      if (isset($_SESSION['scriptcase']['glo_mysql_ssl_ca']))
+      {
+          $this->nm_arr_db_extra_args['mysql_ssl_ca'] = $_SESSION['scriptcase']['glo_mysql_ssl_ca']; 
+      }
+      if (isset($_SESSION['scriptcase']['glo_mysql_ssl_cipher']))
+      {
+          $this->nm_arr_db_extra_args['mysql_ssl_cipher'] = $_SESSION['scriptcase']['glo_mysql_ssl_cipher']; 
+      }
+      if (isset($_SESSION['scriptcase']['oracle_type']))
+      {
+          $this->nm_arr_db_extra_args['oracle_type'] = $_SESSION['scriptcase']['oracle_type']; 
+      }
+      if (isset($_SESSION['scriptcase']['postgres_sslmode']))
+      {
+          $this->nm_arr_db_extra_args['postgres_sslmode'] = $_SESSION['scriptcase']['postgres_sslmode']; 
+      }
+      if (isset($_SESSION['scriptcase']['postgres_sslrootcert']))
+      {
+          $this->nm_arr_db_extra_args['postgres_sslrootcert'] = $_SESSION['scriptcase']['postgres_sslrootcert']; 
+      }
+      if (isset($_SESSION['scriptcase']['postgres_sslkey']))
+      {
+          $this->nm_arr_db_extra_args['postgres_sslkey'] = $_SESSION['scriptcase']['postgres_sslkey']; 
+      }
+      if (isset($_SESSION['scriptcase']['postgres_sslcert']))
+      {
+          $this->nm_arr_db_extra_args['postgres_sslcert'] = $_SESSION['scriptcase']['postgres_sslcert']; 
+      }
+      if (isset($_SESSION['scriptcase']['mssql_encrypt']))
+      {
+          $this->nm_arr_db_extra_args['mssql_encrypt'] = $_SESSION['scriptcase']['mssql_encrypt']; 
+      }
+      if (isset($_SESSION['scriptcase']['mssql_trustservercertificate']))
+      {
+          $this->nm_arr_db_extra_args['mssql_trustservercertificate'] = $_SESSION['scriptcase']['mssql_trustservercertificate']; 
+      }
+      if (isset($_SESSION['scriptcase']['mssql_truststore']))
+      {
+          $this->nm_arr_db_extra_args['mssql_truststore'] = $_SESSION['scriptcase']['mssql_truststore']; 
+      }
+      if (isset($_SESSION['scriptcase']['mssql_truststorepassword']))
+      {
+          $this->nm_arr_db_extra_args['mssql_truststorepassword'] = $_SESSION['scriptcase']['mssql_truststorepassword']; 
+      }
+      if (isset($_SESSION['scriptcase']['mssql_hostnameincertificate']))
+      {
+          $this->nm_arr_db_extra_args['mssql_hostnameincertificate'] = $_SESSION['scriptcase']['mssql_hostnameincertificate']; 
+      }
+      if (isset($_SESSION['scriptcase']['security']))
+      {
+          $this->nm_arr_db_extra_args['security'] = $_SESSION['scriptcase']['security']; 
+      }
+      if (isset($_SESSION['scriptcase']['sslservercertificate']))
+      {
+          $this->nm_arr_db_extra_args['sslservercertificate'] = $_SESSION['scriptcase']['sslservercertificate']; 
+      }
+      if (isset($_SESSION['scriptcase']['sslclientkeystoredb']))
+      {
+          $this->nm_arr_db_extra_args['sslclientkeystoredb'] = $_SESSION['scriptcase']['sslclientkeystoredb']; 
+      }
+      if (isset($_SESSION['scriptcase']['sslclientkeystash']))
+      {
+          $this->nm_arr_db_extra_args['sslclientkeystash'] = $_SESSION['scriptcase']['sslclientkeystash']; 
+      }
+      if (isset($_SESSION['scriptcase']['authentication']))
+      {
+          $this->nm_arr_db_extra_args['authentication'] = $_SESSION['scriptcase']['authentication']; 
+      }
+      if (isset($_SESSION['scriptcase']['sslclientlabel']))
+      {
+          $this->nm_arr_db_extra_args['sslclientlabel'] = $_SESSION['scriptcase']['sslclientlabel']; 
+      }
+      if (isset($_SESSION['scriptcase']['use_ssh']))
+      {
+          $this->nm_arr_db_extra_args['use_ssh'] = $_SESSION['scriptcase']['use_ssh']; 
+      }
+      if (isset($_SESSION['scriptcase']['ssh_server']))
+      {
+          $this->nm_arr_db_extra_args['ssh_server'] = $_SESSION['scriptcase']['ssh_server']; 
+      }
+      if (isset($_SESSION['scriptcase']['ssh_user']))
+      {
+          $this->nm_arr_db_extra_args['ssh_user'] = $_SESSION['scriptcase']['ssh_user']; 
+      }
+      if (isset($_SESSION['scriptcase']['ssh_port']))
+      {
+          $this->nm_arr_db_extra_args['ssh_port'] = $_SESSION['scriptcase']['ssh_port']; 
+      }
+      if (isset($_SESSION['scriptcase']['ssh_privatecert']))
+      {
+          $this->nm_arr_db_extra_args['ssh_privatecert'] = $_SESSION['scriptcase']['ssh_privatecert']; 
+      }
+      if (isset($_SESSION['scriptcase']['ssh_localserver']))
+      {
+          $this->nm_arr_db_extra_args['ssh_localserver'] = $_SESSION['scriptcase']['ssh_localserver']; 
+      }
+      if (isset($_SESSION['scriptcase']['ssh_localport']))
+      {
+          $this->nm_arr_db_extra_args['ssh_localport'] = $_SESSION['scriptcase']['ssh_localport']; 
+      }
+      if (isset($_SESSION['scriptcase']['ssh_localportforwarding']))
+      {
+          $this->nm_arr_db_extra_args['ssh_localportforwarding'] = $_SESSION['scriptcase']['ssh_localportforwarding']; 
+      }
+      $this->date_delim  = "'";
+      $this->date_delim1 = "'";
+      if (in_array(strtolower($this->nm_tpbanco), $this->nm_bases_access))
+      {
+          $this->date_delim  = "#";
+          $this->date_delim1 = "#";
+      }
+      if (isset($_SESSION['scriptcase']['glo_decimal_db']) && !empty($_SESSION['scriptcase']['glo_decimal_db']))
+      {
+         $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['decimal_db'] = $_SESSION['scriptcase']['glo_decimal_db']; 
+      }
+      if (isset($_SESSION['scriptcase']['glo_date_separator']) && !empty($_SESSION['scriptcase']['glo_date_separator']))
+      {
+          $SC_temp = trim($_SESSION['scriptcase']['glo_date_separator']);
+          if (strlen($SC_temp) == 2)
+          {
+              $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['SC_sep_date']  = substr($SC_temp, 0, 1); 
+              $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['SC_sep_date1'] = substr($SC_temp, 1, 1); 
+          }
+          else
+          {
+              $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['SC_sep_date']  = $SC_temp; 
+              $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['SC_sep_date1'] = $SC_temp; 
+          }
+          $this->date_delim  = $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['SC_sep_date'];
+          $this->date_delim1 = $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['SC_sep_date1'];
+      }
+      if (empty($this->nm_tabela))
+      {
+          $this->nm_tabela = "clients_app"; 
+      }
+// 
+      if (!empty($this->nm_falta_var) || !empty($this->nm_falta_var_db) || $nm_crit_perfil)
+      {
+          $str_message = "<html>
+
+<head>
+    <title>{var_str_title}</title>
+    <style>
+        body {
+            margin: 0px;
+            padding: 0px;
+            overflow-x: hidden;
+            min-width: 320px;
+            background: #FFFFFF;
+            font-family: 'Lato', 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            line-height: 1.4285em;
+            color: rgba(0, 0, 0, 0.87);
+            font-smoothing: antialiased;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+        }
+
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+
+        user agent stylesheet body {
+            display: block;
+            margin: 8px;
+        }
+
+        html {
+            font-size: 14px;
+        }
+
+        html {
+            line-height: 1.15;
+            -ms-text-size-adjust: 100%;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+
+        ::selection {
+            background-color: #CCE2FF;
+            color: rgba(0, 0, 0, 0.87);
+        }
+
+        .ui.container {
+            width: 933px;
+            min-width: 992px;
+            max-width: 1199px;
+            margin-left: auto !important;
+            margin-right: auto !important;
+        }
+
+        .ui.container {
+            display: block;
+            max-width: 100% !important;
+        }
+
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+
+        .ui.message:last-child {
+            margin-bottom: 0em;
+        }
+
+        .ui.message:first-child {
+            margin-top: 0em;
+        }
+
+        .ui.message {
+            font-size: 1em;
+        }
+
+        .ui.message {
+            position: relative;
+            min-height: 1em;
+            margin: 1em 0em;
+            background: #F8F8F9;
+            padding: 1em 1.5em;
+            line-height: 1.4285em;
+            color: rgba(0, 0, 0, 0.87);
+            transition: opacity 0.1s ease, color 0.1s ease, background 0.1s ease, box-shadow 0.1s ease;
+            border-radius: 0.28571429rem;
+            box-shadow: 0px 0px 0px 1px rgba(34, 36, 38, 0.22) inset, 0px 0px 0px 0px rgba(0, 0, 0, 0);
+        }
+
+        article,
+        aside,
+        footer,
+        header,
+        nav,
+        section {
+            display: block;
+        }
+
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+
+        .ui.message> :last-child {
+            margin-bottom: 0em;
+        }
+
+        .ui.message> :first-child {
+            margin-top: 0em;
+        }
+
+        .ui.message .header+p {
+            margin-top: 0.25em;
+        }
+
+        .ui.message p {
+            opacity: 0.85;
+            margin: 0.75em 0em;
+        }
+
+        p {
+            margin: 0em 0em 1em;
+            line-height: 1.4285em;
+        }
+
+        .ui.message .header:not(.ui) {
+            font-size: 1.14285714em;
+        }
+
+        .ui.message .header {
+            display: block;
+            font-family: 'Lato', 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            font-weight: bold;
+            margin: -0.14285714em 0em 1.2rem 0em;
+        }
+
+        .ui.button {
+            cursor: pointer;
+            display: inline-block;
+            min-height: 1em;
+            outline: 0;
+            border: none;
+            vertical-align: baseline;
+            background: #e0e1e2 none;
+            color: rgba(0, 0, 0, .6);
+            font-family: Lato, 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            margin: 0 .25em 0 0;
+            padding: .78571429em 1.5em .78571429em;
+            text-transform: none;
+            text-shadow: none;
+            font-weight: 700;
+            line-height: 1em;
+            font-style: normal;
+            text-align: center;
+            text-decoration: none;
+            border-radius: .28571429rem;
+            box-shadow: 0 0 0 1px transparent inset, 0 0 0 0 rgba(34, 36, 38, .15) inset;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            transition: opacity .1s ease, background-color .1s ease, color .1s ease, box-shadow .1s ease, background .1s ease;
+            will-change: '';
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .ui.button,
+        .ui.buttons .button,
+        .ui.buttons .or {
+            font-size: 1rem;
+            flex-flow: row nowrap;
+            justify-content: center;
+            align-items: center;
+            column-gap: .5rem;
+            display: flex;
+        }
+        
+        .ui.primary.button,
+        .ui.primary.buttons .button {
+            background-color: #2185d0;
+            color: #fff;
+            text-shadow: none;
+            background-image: none;
+        }
+        
+        .ui.primary.button {
+            box-shadow: 0 0 0 0 rgba(34, 36, 38, .15) inset;
+        }
+
+        [type=reset], [type=submit], button, html [type=button] {
+            -webkit-appearance: button;
+        }
+
+        .icon{
+            position: relative;
+            width: 1.2rem;
+            height: 1.2rem;
+            display: block;
+            color: inherit;
+            background-repeat: no-repeat;
+        }
+
+        .icon.database{
+            background-image: url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 448 512\" fill=\"%23FFFFFF\"><path d=\"M448 80v48c0 44.2-100.3 80-224 80S0 172.2 0 128V80C0 35.8 100.3 0 224 0S448 35.8 448 80zM393.2 214.7c20.8-7.4 39.9-16.9 54.8-28.6V288c0 44.2-100.3 80-224 80S0 332.2 0 288V186.1c14.9 11.8 34 21.2 54.8 28.6C99.7 230.7 159.5 240 224 240s124.3-9.3 169.2-25.3zM0 346.1c14.9 11.8 34 21.2 54.8 28.6C99.7 390.7 159.5 400 224 400s124.3-9.3 169.2-25.3c20.8-7.4 39.9-16.9 54.8-28.6V432c0 44.2-100.3 80-224 80S0 476.2 0 432V346.1z\"/></svg>');
+        }
+    </style>
+</head>
+
+<body>
+    <div class='ui container' style='padding-top:2rem'>
+        <section class='ui message'>
+            <div class='content'>
+                <div class='header'>
+                    <h1 class='ui header'>{var_str_title}</h1>
+                </div>
+                <p>{var_str_message}</p>
+                <p>{var_str_message_conn}</p>
+                {v_str_btn_inside}
+            </div>
+        </section>
+    </div>";
+          $str_message_end = "</body>
+</html>";
+          $str_message = str_replace('{var_str_title}', $this->Nm_lang['lang_errm_dbcn_create'], $str_message);
+          if (empty($this->nm_falta_var_db))
+          {
+              if (!empty($this->nm_falta_var))
+              {
+                  $str_message = str_replace('{var_str_message}', $this->Nm_lang['lang_errm_glob'] . $this->nm_falta_var, $str_message);
+              }
+              if ($nm_crit_perfil)
+              {
+                  $str_message = str_replace('{var_str_message}', $this->Nm_lang['lang_errm_dbcn_nfnd'] . ' ' . $perfil_trab, $str_message);
+                  $str_message = str_replace('{v_str_btn_inside}', "<button class='ui button primary' style='font-size: 16px!important;'><a href='" . $this->path_prod . "' style='color: white;text-decoration:none'><i class='icon database' style='float: left;padding-right: .5rem;'></i>". $this->Nm_lang['lang_errm_dbcn_create'] ."</a></button>", $str_message);
+              }
+          }
+          else
+          {
+              $str_message = str_replace('{var_str_message}', $this->Nm_lang['lang_errm_dbcn_data'], $str_message);
+          }
+          $str_message = str_replace('{v_str_btn_inside}', '', $str_message);
+          echo $str_message;
+          if (!$_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['iframe_menu'] && (!isset($_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['sc_outra_jan']) || $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['sc_outra_jan'] != 'form_clients_steps_renew')) 
+          { 
+              if (isset($_SESSION['scriptcase']['nm_sc_retorno']) && !empty($_SESSION['scriptcase']['nm_sc_retorno'])) 
+              { 
+?>
+                  <input type="button" id="sai" onClick="window.location='<?php echo $_SESSION['scriptcase']['nm_sc_retorno'] ?>'; return false" class="scButton_default" value="<?php echo $this->Nm_lang['lang_btns_back'] ?>" title="<?php echo $this->Nm_lang['lang_btns_back_hint'] ?>" style="<?php echo $sCondStyle; ?>vertical-align: middle;display: ''">
+
+<?php
+              } 
+              elseif(!empty($nm_url_saida)) 
+              { 
+?>
+                  <input type="button" id="sai" onClick="window.location='<?php echo $nm_url_saida ?>'; return false" class="scButton_danger" value="<?php echo $this->Nm_lang['lang_btns_exit'] ?>" title="<?php echo $this->Nm_lang['lang_btns_exit_hint'] ?>" style="<?php echo $sCondStyle; ?>vertical-align: middle;display: ''">
+
+<?php
+              } 
+          } 
+          echo $str_message_end;
+          exit ;
+      }
+
+      if (in_array(strtolower($this->nm_tpbanco), $this->nm_bases_db2) && $this->force_db_utf8) {
+          putenv('DB2CODEPAGE=1208');
+      }
+
+      if (isset($_SESSION['scriptcase']['glo_db_master_usr']) && !empty($_SESSION['scriptcase']['glo_db_master_usr']))
+      {
+          $this->nm_usuario = $_SESSION['scriptcase']['glo_db_master_usr']; 
+      }
+      if (isset($_SESSION['scriptcase']['glo_db_master_pass']) && !empty($_SESSION['scriptcase']['glo_db_master_pass']))
+      {
+          $this->nm_senha = $_SESSION['scriptcase']['glo_db_master_pass']; 
+      }
+      if (isset($_SESSION['scriptcase']['glo_db_master_cript']) && !empty($_SESSION['scriptcase']['glo_db_master_cript']))
+      {
+          $_SESSION['scriptcase']['glo_senha_protect'] = $_SESSION['scriptcase']['glo_db_master_cript']; 
+      }
+  } 
+// 
+  function conectDB()
+  {
+      $glo_senha_protect = (isset($_SESSION['scriptcase']['glo_senha_protect'])) ? $_SESSION['scriptcase']['glo_senha_protect'] : "S";
+      if (isset($_SESSION['scriptcase']['nm_sc_retorno']) && !empty($_SESSION['scriptcase']['nm_sc_retorno']) && isset($_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_conexao']) && !empty($_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_conexao']))
+      { 
+          $this->Db = db_conect_devel($_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_conexao'], $this->root . $this->path_prod, 'PFM_Staff', 1, $this->force_db_utf8); 
+      } 
+      else 
+      { 
+         if (!isset($this->nm_con_persistente))
+         {
+            $this->nm_con_persistente = 'N';
+         }
+         if (!isset($this->nm_con_db2))
+         {
+            $this->nm_con_db2 = '';
+         }
+         if (!isset($this->nm_database_encoding))
+         {
+            $this->nm_database_encoding = '';
+         }
+         if ($this->force_db_utf8)
+         {
+            $this->nm_database_encoding = 'utf8';
+         }
+         if (!isset($this->nm_arr_db_extra_args))
+         {
+            $this->nm_arr_db_extra_args = array();
+         }
+         $this->Db = db_conect($this->nm_tpbanco, $this->nm_servidor, $this->nm_usuario, $this->nm_senha, $this->nm_banco, $glo_senha_protect, "S", $this->nm_con_persistente, $this->nm_con_db2, $this->nm_database_encoding, $this->nm_arr_db_extra_args); 
+      } 
+      if (in_array(strtolower($this->nm_tpbanco), $this->nm_bases_ibase))
+      {
+          if (function_exists('ibase_timefmt'))
+          {
+              ibase_timefmt('%Y-%m-%d %H:%M:%S');
+          } 
+      } 
+      if (in_array(strtolower($this->nm_tpbanco), $this->nm_bases_sybase))
+      {
+          $this->Db->fetchMode = ADODB_FETCH_BOTH;
+          $this->Db->Execute("set dateformat ymd");
+          $this->Db->Execute("set quoted_identifier ON");
+      } 
+      if (in_array(strtolower($this->nm_tpbanco), $this->nm_bases_db2))
+      {
+          $this->Db->fetchMode = ADODB_FETCH_NUM;
+      } 
+      if (in_array(strtolower($this->nm_tpbanco), $this->nm_bases_mssql))
+      {
+          $this->Db->Execute("set dateformat ymd");
+      } 
+      if (in_array(strtolower($this->nm_tpbanco), $this->nm_bases_oracle))
+      {
+          $this->Db->Execute("alter session set nls_date_format         = 'yyyy-mm-dd hh24:mi:ss'");
+          $this->Db->Execute("alter session set nls_timestamp_format    = 'yyyy-mm-dd hh24:mi:ss'");
+          $this->Db->Execute("alter session set nls_timestamp_tz_format = 'yyyy-mm-dd hh24:mi:ss'");
+          $this->Db->Execute("alter session set nls_time_format         = 'hh24:mi:ss'");
+          $this->Db->Execute("alter session set nls_time_tz_format      = 'hh24:mi:ss'");
+          $this->Db->Execute("alter session set nls_numeric_characters  = '.,'");
+          $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['decimal_db'] = "."; 
+      } 
+  }
+
+  function setConnectionHash() {
+    if (isset($_SESSION['scriptcase']['nm_sc_retorno']) && !empty($_SESSION['scriptcase']['nm_sc_retorno']) && isset($_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_conexao']) && !empty($_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_conexao'])) {
+      list($connectionDbms, $connectionHost, $connectionUser, $connectionPassword, $connectionDatabase) = db_conect_devel($_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_conexao'], $this->root . $this->path_prod, 'PFM_Staff', 1, $this->force_db_utf8);
+    }
+    else {
+      $connectionDbms     = $this->nm_tpbanco;
+      $connectionHost     = $this->nm_servidor;
+      $connectionUser     = $this->nm_usuario;
+      $connectionPassword = $this->nm_senha;
+      $connectionDatabase = $this->nm_banco;
+    }
+
+    $this->connectionHash = "{$connectionDbms}_SC_" . md5("{$connectionHost}_SC_{$connectionUser}_SC_{$connectionPassword}_SC_{$connectionDatabase}");
+  } // setConnectionHash
+// 
+
+   function regionalDefault($sConfReg = '')
+   {
+      if ('' == $sConfReg)
+      {
+         $sConfReg = $this->str_conf_reg;
+      }
+
+      $_SESSION['scriptcase']['reg_conf']['date_format']           = (isset($this->Nm_conf_reg[$sConfReg]['data_format']))              ?  $this->Nm_conf_reg[$sConfReg]['data_format']                  : "mmddyyyy";
+      $_SESSION['scriptcase']['reg_conf']['date_sep']              = (isset($this->Nm_conf_reg[$sConfReg]['data_sep']))                 ?  $this->Nm_conf_reg[$sConfReg]['data_sep']                     : "/";
+      $_SESSION['scriptcase']['reg_conf']['date_week_ini']         = (isset($this->Nm_conf_reg[$sConfReg]['prim_dia_sema']))            ?  $this->Nm_conf_reg[$sConfReg]['prim_dia_sema']                : "SU";
+      $_SESSION['scriptcase']['reg_conf']['time_format']           = (isset($this->Nm_conf_reg[$sConfReg]['hora_format']))              ?  $this->Nm_conf_reg[$sConfReg]['hora_format']                  : "hhiiss";
+      $_SESSION['scriptcase']['reg_conf']['time_sep']              = (isset($this->Nm_conf_reg[$sConfReg]['hora_sep']))                 ?  $this->Nm_conf_reg[$sConfReg]['hora_sep']                     : ":";
+      $_SESSION['scriptcase']['reg_conf']['time_pos_ampm']         = (isset($this->Nm_conf_reg[$sConfReg]['hora_pos_ampm']))            ?  $this->Nm_conf_reg[$sConfReg]['hora_pos_ampm']                : "right_without_space";
+      $_SESSION['scriptcase']['reg_conf']['time_simb_am']          = (isset($this->Nm_conf_reg[$sConfReg]['hora_simbolo_am']))          ?  $this->Nm_conf_reg[$sConfReg]['hora_simbolo_am']              : "am";
+      $_SESSION['scriptcase']['reg_conf']['time_simb_pm']          = (isset($this->Nm_conf_reg[$sConfReg]['hora_simbolo_pm']))          ?  $this->Nm_conf_reg[$sConfReg]['hora_simbolo_pm']              : "pm";
+      $_SESSION['scriptcase']['reg_conf']['simb_neg']              = (isset($this->Nm_conf_reg[$sConfReg]['num_sinal_neg']))            ?  $this->Nm_conf_reg[$sConfReg]['num_sinal_neg']                : "-";
+      $_SESSION['scriptcase']['reg_conf']['grup_num']              = (isset($this->Nm_conf_reg[$sConfReg]['num_sep_agr']))              ?  $this->Nm_conf_reg[$sConfReg]['num_sep_agr']                  : ",";
+      $_SESSION['scriptcase']['reg_conf']['dec_num']               = (isset($this->Nm_conf_reg[$sConfReg]['num_sep_dec']))              ?  $this->Nm_conf_reg[$sConfReg]['num_sep_dec']                  : ".";
+      $_SESSION['scriptcase']['reg_conf']['neg_num']               = (isset($this->Nm_conf_reg[$sConfReg]['num_format_num_neg']))       ?  $this->Nm_conf_reg[$sConfReg]['num_format_num_neg']           : 2;
+      $_SESSION['scriptcase']['reg_conf']['monet_simb']            = (isset($this->Nm_conf_reg[$sConfReg]['unid_mont_simbolo']))        ?  $this->Nm_conf_reg[$sConfReg]['unid_mont_simbolo']            : "$";
+      $_SESSION['scriptcase']['reg_conf']['monet_f_pos']           = (isset($this->Nm_conf_reg[$sConfReg]['unid_mont_format_num_pos'])) ?  $this->Nm_conf_reg[$sConfReg]['unid_mont_format_num_pos']     : 3;
+      $_SESSION['scriptcase']['reg_conf']['monet_f_neg']           = (isset($this->Nm_conf_reg[$sConfReg]['unid_mont_format_num_neg'])) ?  $this->Nm_conf_reg[$sConfReg]['unid_mont_format_num_neg']     : 13;
+      $_SESSION['scriptcase']['reg_conf']['grup_val']              = (isset($this->Nm_conf_reg[$sConfReg]['unid_mont_sep_agr']))        ?  $this->Nm_conf_reg[$sConfReg]['unid_mont_sep_agr']            : ",";
+      $_SESSION['scriptcase']['reg_conf']['dec_val']               = (isset($this->Nm_conf_reg[$sConfReg]['unid_mont_sep_dec']))        ?  $this->Nm_conf_reg[$sConfReg]['unid_mont_sep_dec']            : ".";
+      $_SESSION['scriptcase']['reg_conf']['num_group_digit']       = (isset($this->Nm_conf_reg[$sConfReg]['num_group_digit']))          ?  $this->Nm_conf_reg[$sConfReg]['num_group_digit']              : "1";
+      $_SESSION['scriptcase']['reg_conf']['unid_mont_group_digit'] = (isset($this->Nm_conf_reg[$sConfReg]['unid_mont_group_digit']))    ?  $this->Nm_conf_reg[$sConfReg]['unid_mont_group_digit']        : "1";
+      $_SESSION['scriptcase']['reg_conf']['html_dir']              = (isset($this->Nm_conf_reg[$sConfReg]['ger_ltr_rtl']))              ?  " DIR='" . $this->Nm_conf_reg[$sConfReg]['ger_ltr_rtl'] . "'" : "";
+      $_SESSION['scriptcase']['reg_conf']['css_dir']               = (isset($this->Nm_conf_reg[$sConfReg]['ger_ltr_rtl']))              ?  $this->Nm_conf_reg[$sConfReg]['ger_ltr_rtl'] : "LTR";
+      if ('' == $_SESSION['scriptcase']['reg_conf']['num_group_digit'])
+      {
+          $_SESSION['scriptcase']['reg_conf']['num_group_digit'] = '1';
+      }
+      if ('' == $_SESSION['scriptcase']['reg_conf']['unid_mont_group_digit'])
+      {
+          $_SESSION['scriptcase']['reg_conf']['unid_mont_group_digit'] = '1';
+      }
+   }
+   function sc_Include($path, $tp, $name)
+   {
+       if ((empty($tp) && empty($name)) || ($tp == "F" && !function_exists($name)) || ($tp == "C" && !class_exists($name)))
+       {
+           include_once($path);
+       }
+   } // sc_Include
+   function sc_Sql_Protect($var, $tp, $conex="")
+   {
+       if (empty($conex) || $conex == "conn_mysql")
+       {
+           $TP_banco = $_SESSION['scriptcase']['glo_tpbanco'];
+       }
+       else
+       {
+           eval ("\$TP_banco = \$this->nm_con_" . $conex . "['tpbanco'];");
+       }
+       if ($tp == "date")
+       {
+           $delim  = "'";
+           $delim1 = "'";
+           if (in_array(strtolower($TP_banco), $this->nm_bases_access))
+           {
+               $delim  = "#";
+               $delim1 = "#";
+           }
+           if (isset($_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['SC_sep_date']) && !empty($_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['SC_sep_date']))
+           {
+               $delim  = $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['SC_sep_date'];
+               $delim1 = $_SESSION['sc_session'][$this->sc_page]['form_clients_steps_renew']['SC_sep_date1'];
+           }
+           return $delim . $var . $delim1;
+       }
+       else
+       {
+           return $var;
+       }
+   } // sc_Sql_Protect
+}
+//===============================================================================
+class form_clients_steps_renew_edit
+{
+    var $contr_form_clients_steps_renew;
+    function inicializa()
+    {
+        global $nm_opc_lookup, $nm_opc_php, $script_case_init;
+        require_once("form_clients_steps_renew_apl.php");
+        $this->contr_form_clients_steps_renew = new form_clients_steps_renew_apl();
+    }
+}
+if (!function_exists("NM_is_utf8"))
+{
+    include_once("../_lib/lib/php/nm_utf8.php");
+}
+ob_start();
+//
+//----------------  
+//
+    $_SESSION['scriptcase']['form_clients_steps_renew']['contr_erro'] = 'off';
+    if (!function_exists("NM_is_utf8"))
+    {
+        include_once("../_lib/lib/php/nm_utf8.php");
+    }
+    if (!function_exists("SC_dir_app_ini"))
+    {
+        include_once("../_lib/lib/php/nm_ctrl_app_name.php");
+    }
+    SC_dir_app_ini('PFM_Staff');
+    $sc_conv_var = array();
+    if (!empty($_FILES))
+    {
+        foreach ($_FILES as $nmgp_campo => $nmgp_valores)
+        {
+             if (isset($sc_conv_var[$nmgp_campo]))
+             {
+                 $nmgp_campo = $sc_conv_var[$nmgp_campo];
+             }
+             elseif (isset($sc_conv_var[strtolower($nmgp_campo)]))
+             {
+                 $nmgp_campo = $sc_conv_var[strtolower($nmgp_campo)];
+             }
+             $tmp_scfile_name     = $nmgp_campo . "_scfile_name";
+             $tmp_scfile_type     = $nmgp_campo . "_scfile_type";
+             $$nmgp_campo = is_array($nmgp_valores['tmp_name']) ? $nmgp_valores['tmp_name'][0] : $nmgp_valores['tmp_name'];
+             $$tmp_scfile_type   = is_array($nmgp_valores['type'])     ? $nmgp_valores['type'][0]     : $nmgp_valores['type'];
+             $$tmp_scfile_name   = is_array($nmgp_valores['name'])     ? $nmgp_valores['name'][0]     : $nmgp_valores['name'];
+        }
+    }
+    $Sc_lig_md5 = false;
+    $Sem_Session = (!isset($_SESSION['sc_session'])) ? true : false;
+    $_SESSION['scriptcase']['sem_session'] = false;
+    if (!empty($_POST))
+    {
+        foreach ($_POST as $nmgp_var => $nmgp_val)
+        {
+             if (substr($nmgp_var, 0, 11) == "SC_glo_par_")
+             {
+                 $nmgp_var = substr($nmgp_var, 11);
+                 $nmgp_val = $_SESSION[$nmgp_val];
+             }
+             if ($nmgp_var == "nmgp_parms" && substr($nmgp_val, 0, 8) == "@SC_par@")
+             {
+                 $SC_Ind_Val = explode("@SC_par@", $nmgp_val);
+                 if (count($SC_Ind_Val) == 4 && isset($_SESSION['sc_session'][$SC_Ind_Val[1]][$SC_Ind_Val[2]]['Lig_Md5'][$SC_Ind_Val[3]]))
+                 {
+                     $nmgp_val = $_SESSION['sc_session'][$SC_Ind_Val[1]][$SC_Ind_Val[2]]['Lig_Md5'][$SC_Ind_Val[3]];
+                     $Sc_lig_md5 = true;
+                 }
+                 else
+                 {
+                     $_SESSION['sc_session']['SC_parm_violation'] = true;
+                 }
+             }
+             if (isset($sc_conv_var[$nmgp_var]))
+             {
+                 $nmgp_var = $sc_conv_var[$nmgp_var];
+             }
+             elseif (isset($sc_conv_var[strtolower($nmgp_var)]))
+             {
+                 $nmgp_var = $sc_conv_var[strtolower($nmgp_var)];
+             }
+             nm_limpa_str_form_clients_steps_renew($nmgp_val);
+             $nmgp_val = NM_decode_input($nmgp_val);
+             $$nmgp_var = $nmgp_val;
+        }
+    }
+    if (!empty($_GET))
+    {
+        foreach ($_GET as $nmgp_var => $nmgp_val)
+        {
+             if (substr($nmgp_var, 0, 11) == "SC_glo_par_")
+             {
+                 $nmgp_var = substr($nmgp_var, 11);
+                 $nmgp_val = $_SESSION[$nmgp_val];
+             }
+             if ($nmgp_var == "nmgp_parms" && substr($nmgp_val, 0, 8) == "@SC_par@")
+             {
+                 $SC_Ind_Val = explode("@SC_par@", $nmgp_val);
+                 if (count($SC_Ind_Val) == 4 && isset($_SESSION['sc_session'][$SC_Ind_Val[1]][$SC_Ind_Val[2]]['Lig_Md5'][$SC_Ind_Val[3]]))
+                 {
+                     $nmgp_val = $_SESSION['sc_session'][$SC_Ind_Val[1]][$SC_Ind_Val[2]]['Lig_Md5'][$SC_Ind_Val[3]];
+                     $Sc_lig_md5 = true;
+                 }
+                 else
+                 {
+                     $_SESSION['sc_session']['SC_parm_violation'] = true;
+                 }
+             }
+             if (isset($sc_conv_var[$nmgp_var]))
+             {
+                 $nmgp_var = $sc_conv_var[$nmgp_var];
+             }
+             elseif (isset($sc_conv_var[strtolower($nmgp_var)]))
+             {
+                 $nmgp_var = $sc_conv_var[strtolower($nmgp_var)];
+             }
+             nm_limpa_str_form_clients_steps_renew($nmgp_val);
+             $nmgp_val = NM_decode_input($nmgp_val);
+             $$nmgp_var = $nmgp_val;
+        }
+    }
+    if (!isset($_SERVER['HTTP_REFERER']) || (!isset($nmgp_parms) && !isset($script_case_init) && !isset($_POST['rs']) && !isset($nmgp_start) ))
+    {
+        $Sem_Session = false;
+    }
+    $NM_dir_atual = getcwd();
+    if (empty($NM_dir_atual)) {
+        $str_path_sys  = (isset($_SERVER['SCRIPT_FILENAME'])) ? $_SERVER['SCRIPT_FILENAME'] : $_SERVER['ORIG_PATH_TRANSLATED'];
+        $str_path_sys  = str_replace("\\", '/', $str_path_sys);
+    }
+    else {
+        $sc_nm_arquivo = explode("/", $_SERVER['PHP_SELF']);
+        $str_path_sys  = str_replace("\\", "/", getcwd()) . "/" . $sc_nm_arquivo[count($sc_nm_arquivo)-1];
+    }
+    $str_path_web    = $_SERVER['PHP_SELF'];
+    $str_path_web    = str_replace("\\", '/', $str_path_web);
+    $str_path_web    = str_replace('//', '/', $str_path_web);
+    $path_aplicacao  = substr($str_path_web, 0, strrpos($str_path_web, '/'));
+    $path_aplicacao  = substr($path_aplicacao, 0, strrpos($path_aplicacao, '/'));
+    $root            = substr($str_path_sys, 0, -1 * strlen($str_path_web));
+    if ($Sem_Session && (!isset($nmgp_start) || $nmgp_start != "SC")) {
+        if (isset($_COOKIE['sc_apl_default_PFM_Staff'])) {
+            $apl_def = explode(",", $_COOKIE['sc_apl_default_PFM_Staff']);
+        }
+        elseif (is_file($root . $_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_imag_temp'] . "/sc_apl_default_PFM_Staff.txt")) {
+            $apl_def = explode(",", file_get_contents($root . $_SESSION['scriptcase']['form_clients_steps_renew']['glo_nm_path_imag_temp'] . "/sc_apl_default_PFM_Staff.txt"));
+        }
+        if (isset($apl_def)) {
+            if ($apl_def[0] != "form_clients_steps_renew") {
+                $_SESSION['scriptcase']['sem_session'] = true;
+                if (strtolower(substr($apl_def[0], 0 , 7)) == "http://" || strtolower(substr($apl_def[0], 0 , 8)) == "https://" || substr($apl_def[0], 0 , 2) == "..") {
+                    $_SESSION['scriptcase']['form_clients_steps_renew']['session_timeout']['redir'] = $apl_def[0];
+                }
+                else {
+                    $_SESSION['scriptcase']['form_clients_steps_renew']['session_timeout']['redir'] = $path_aplicacao . "/" . SC_dir_app_name($apl_def[0]) . "/index.php";
+                }
+                $Redir_tp = (isset($apl_def[1])) ? trim(strtoupper($apl_def[1])) : "";
+                $_SESSION['scriptcase']['form_clients_steps_renew']['session_timeout']['redir_tp'] = $Redir_tp;
+            }
+            if (isset($_COOKIE['sc_actual_lang_PFM_Staff'])) {
+                $_SESSION['scriptcase']['form_clients_steps_renew']['session_timeout']['lang'] = $_COOKIE['sc_actual_lang_PFM_Staff'];
+            }
+        }
+    }
+    if (isset($SC_lig_apl_orig) && !$Sc_lig_md5 && (!isset($nmgp_parms) || ($nmgp_parms != "SC_null" && substr($nmgp_parms, 0, 8) != "OrScLink")))
+    {
+        $_SESSION['sc_session']['SC_parm_violation'] = true;
+    }
+    if (isset($nmgp_parms) && $nmgp_parms == "SC_null")
+    {
+        $nmgp_parms = "";
+    }
+    if (isset($SC_where_pdf) && !empty($SC_where_pdf))
+    {
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['where_filter'] = $SC_where_pdf;
+    }
+
+    if (isset($_POST['rs']) && !is_array($_POST['rs']) && 'ajax_' == substr($_POST['rs'], 0, 5) && isset($_POST['rsargs']) && !empty($_POST['rsargs']) && !isset($_SESSION['scriptcase']['form_clients_steps_renew']['session_timeout']['redir']))
+    {
+        if ('ajax_form_clients_steps_renew_validate_dummy02' == $_POST['rs'])
+        {
+            $dummy02 = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_dummy03' == $_POST['rs'])
+        {
+            $dummy03 = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_co_name' == $_POST['rs'])
+        {
+            $co_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_client_id' == $_POST['rs'])
+        {
+            $client_id = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_mailing_address' == $_POST['rs'])
+        {
+            $mailing_address = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_appn_date' == $_POST['rs'])
+        {
+            $appn_date = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_city' == $_POST['rs'])
+        {
+            $city = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_bus_cat_id' == $_POST['rs'])
+        {
+            $bus_cat_id = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_state' == $_POST['rs'])
+        {
+            $state = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_bus_subcat_id' == $_POST['rs'])
+        {
+            $bus_subcat_id = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_zip_code' == $_POST['rs'])
+        {
+            $zip_code = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_bus_subcat_other' == $_POST['rs'])
+        {
+            $bus_subcat_other = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_phone_number' == $_POST['rs'])
+        {
+            $phone_number = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_website_url' == $_POST['rs'])
+        {
+            $website_url = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_email' == $_POST['rs'])
+        {
+            $email = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_acct_instagram' == $_POST['rs'])
+        {
+            $acct_instagram = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_dummy01' == $_POST['rs'])
+        {
+            $dummy01 = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_acct_facebook' == $_POST['rs'])
+        {
+            $acct_facebook = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_dummy04' == $_POST['rs'])
+        {
+            $dummy04 = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_dummy07' == $_POST['rs'])
+        {
+            $dummy07 = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_dummy08' == $_POST['rs'])
+        {
+            $dummy08 = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_main_contact_name' == $_POST['rs'])
+        {
+            $main_contact_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_main_contact_phone' == $_POST['rs'])
+        {
+            $main_contact_phone = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_main_contact_email' == $_POST['rs'])
+        {
+            $main_contact_email = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_main_contact_title' == $_POST['rs'])
+        {
+            $main_contact_title = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_main_contact_img_id' == $_POST['rs'])
+        {
+            $main_contact_img_id = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_doc_type' == $_POST['rs'])
+        {
+            $doc_type = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_doc_file' == $_POST['rs'])
+        {
+            $doc_file = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_appn_note' == $_POST['rs'])
+        {
+            $appn_note = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_memb_name' == $_POST['rs'])
+        {
+            $memb_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_memb_phone' == $_POST['rs'])
+        {
+            $memb_phone = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_memb_email' == $_POST['rs'])
+        {
+            $memb_email = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_memb_note' == $_POST['rs'])
+        {
+            $memb_note = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member1_name' == $_POST['rs'])
+        {
+            $member1_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member1_phone' == $_POST['rs'])
+        {
+            $member1_phone = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member1_email' == $_POST['rs'])
+        {
+            $member1_email = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member1_note' == $_POST['rs'])
+        {
+            $member1_note = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member2_name' == $_POST['rs'])
+        {
+            $member2_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member2_phone' == $_POST['rs'])
+        {
+            $member2_phone = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member2_email' == $_POST['rs'])
+        {
+            $member2_email = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member2_note' == $_POST['rs'])
+        {
+            $member2_note = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member3_name' == $_POST['rs'])
+        {
+            $member3_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member3_phone' == $_POST['rs'])
+        {
+            $member3_phone = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member3_email' == $_POST['rs'])
+        {
+            $member3_email = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member3_note' == $_POST['rs'])
+        {
+            $member3_note = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_dummy05' == $_POST['rs'])
+        {
+            $dummy05 = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_adtl_memb_name' == $_POST['rs'])
+        {
+            $adtl_memb_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_adtl_memb_phone' == $_POST['rs'])
+        {
+            $adtl_memb_phone = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_adtl_memb_note' == $_POST['rs'])
+        {
+            $adtl_memb_note = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_addtl_memb_mail' == $_POST['rs'])
+        {
+            $addtl_memb_mail = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member4_name' == $_POST['rs'])
+        {
+            $member4_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member4_phone' == $_POST['rs'])
+        {
+            $member4_phone = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member4_email' == $_POST['rs'])
+        {
+            $member4_email = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member4_note' == $_POST['rs'])
+        {
+            $member4_note = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member5_name' == $_POST['rs'])
+        {
+            $member5_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member5_phone' == $_POST['rs'])
+        {
+            $member5_phone = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member5_email' == $_POST['rs'])
+        {
+            $member5_email = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member5_note' == $_POST['rs'])
+        {
+            $member5_note = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member6_name' == $_POST['rs'])
+        {
+            $member6_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member6_phone' == $_POST['rs'])
+        {
+            $member6_phone = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member6_email' == $_POST['rs'])
+        {
+            $member6_email = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member6_note' == $_POST['rs'])
+        {
+            $member6_note = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member7_name' == $_POST['rs'])
+        {
+            $member7_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member7_phone' == $_POST['rs'])
+        {
+            $member7_phone = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member7_email' == $_POST['rs'])
+        {
+            $member7_email = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member7_note' == $_POST['rs'])
+        {
+            $member7_note = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member8_name' == $_POST['rs'])
+        {
+            $member8_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member8_phone' == $_POST['rs'])
+        {
+            $member8_phone = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member8_email' == $_POST['rs'])
+        {
+            $member8_email = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member8_note' == $_POST['rs'])
+        {
+            $member8_note = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member9_name' == $_POST['rs'])
+        {
+            $member9_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member9_phone' == $_POST['rs'])
+        {
+            $member9_phone = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member9_email' == $_POST['rs'])
+        {
+            $member9_email = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member9_note' == $_POST['rs'])
+        {
+            $member9_note = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member10_name' == $_POST['rs'])
+        {
+            $member10_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member10_phone' == $_POST['rs'])
+        {
+            $member10_phone = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member10_email' == $_POST['rs'])
+        {
+            $member10_email = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_member10_note' == $_POST['rs'])
+        {
+            $member10_note = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_dummy06' == $_POST['rs'])
+        {
+            $dummy06 = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_xlsx_sample' == $_POST['rs'])
+        {
+            $xlsx_sample = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_more_buyers_xlsx' == $_POST['rs'])
+        {
+            $more_buyers_xlsx = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_buyers_excel_qty' == $_POST['rs'])
+        {
+            $buyers_excel_qty = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_dummy09' == $_POST['rs'])
+        {
+            $dummy09 = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_dummy11' == $_POST['rs'])
+        {
+            $dummy11 = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_rules' == $_POST['rs'])
+        {
+            $rules = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_rules_warn' == $_POST['rs'])
+        {
+            $rules_warn = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_memb_levels' == $_POST['rs'])
+        {
+            $memb_levels = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_est_memb_cost' == $_POST['rs'])
+        {
+            $est_memb_cost = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_pay' == $_POST['rs'])
+        {
+            $pay = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_read_at_sign' == $_POST['rs'])
+        {
+            $read_at_sign = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_applicant_name' == $_POST['rs'])
+        {
+            $applicant_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_applicant_title' == $_POST['rs'])
+        {
+            $applicant_title = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_dummy10' == $_POST['rs'])
+        {
+            $dummy10 = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_validate_applicant_signature' == $_POST['rs'])
+        {
+            $applicant_signature = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][1]);
+        }
+        if ('ajax_form_clients_steps_renew_refresh_bus_cat_id' == $_POST['rs'])
+        {
+            $bus_cat_id = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $nmgp_refresh_fields = NM_utf8_urldecode($_POST['rsargs'][1]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][2]);
+        }
+        if ('ajax_form_clients_steps_renew_event_bus_cat_id_onchange' == $_POST['rs'])
+        {
+            $bus_cat_id = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $member1_name = NM_utf8_urldecode($_POST['rsargs'][1]);
+            $member2_name = NM_utf8_urldecode($_POST['rsargs'][2]);
+            $member3_name = NM_utf8_urldecode($_POST['rsargs'][3]);
+            $member4_name = NM_utf8_urldecode($_POST['rsargs'][4]);
+            $member5_name = NM_utf8_urldecode($_POST['rsargs'][5]);
+            $member6_name = NM_utf8_urldecode($_POST['rsargs'][6]);
+            $member7_name = NM_utf8_urldecode($_POST['rsargs'][7]);
+            $member8_name = NM_utf8_urldecode($_POST['rsargs'][8]);
+            $member9_name = NM_utf8_urldecode($_POST['rsargs'][9]);
+            $member10_name = NM_utf8_urldecode($_POST['rsargs'][10]);
+            $buyers_excel_qty = NM_utf8_urldecode($_POST['rsargs'][11]);
+            $bus_subcat_id = NM_utf8_urldecode($_POST['rsargs'][12]);
+            $est_memb_cost = NM_utf8_urldecode($_POST['rsargs'][13]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][14]);
+        }
+        if ('ajax_form_clients_steps_renew_event_bus_subcat_id_onchange' == $_POST['rs'])
+        {
+            $member1_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $member2_name = NM_utf8_urldecode($_POST['rsargs'][1]);
+            $member3_name = NM_utf8_urldecode($_POST['rsargs'][2]);
+            $member4_name = NM_utf8_urldecode($_POST['rsargs'][3]);
+            $member5_name = NM_utf8_urldecode($_POST['rsargs'][4]);
+            $member6_name = NM_utf8_urldecode($_POST['rsargs'][5]);
+            $member7_name = NM_utf8_urldecode($_POST['rsargs'][6]);
+            $member8_name = NM_utf8_urldecode($_POST['rsargs'][7]);
+            $member9_name = NM_utf8_urldecode($_POST['rsargs'][8]);
+            $member10_name = NM_utf8_urldecode($_POST['rsargs'][9]);
+            $buyers_excel_qty = NM_utf8_urldecode($_POST['rsargs'][10]);
+            $bus_cat_id = NM_utf8_urldecode($_POST['rsargs'][11]);
+            $bus_subcat_id = NM_utf8_urldecode($_POST['rsargs'][12]);
+            $est_memb_cost = NM_utf8_urldecode($_POST['rsargs'][13]);
+            $bus_subcat_other = NM_utf8_urldecode($_POST['rsargs'][14]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][15]);
+        }
+        if ('ajax_form_clients_steps_renew_event_buyers_excel_qty_onchange' == $_POST['rs'])
+        {
+            $member1_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $member2_name = NM_utf8_urldecode($_POST['rsargs'][1]);
+            $member3_name = NM_utf8_urldecode($_POST['rsargs'][2]);
+            $member4_name = NM_utf8_urldecode($_POST['rsargs'][3]);
+            $member5_name = NM_utf8_urldecode($_POST['rsargs'][4]);
+            $member6_name = NM_utf8_urldecode($_POST['rsargs'][5]);
+            $member7_name = NM_utf8_urldecode($_POST['rsargs'][6]);
+            $member8_name = NM_utf8_urldecode($_POST['rsargs'][7]);
+            $member9_name = NM_utf8_urldecode($_POST['rsargs'][8]);
+            $member10_name = NM_utf8_urldecode($_POST['rsargs'][9]);
+            $buyers_excel_qty = NM_utf8_urldecode($_POST['rsargs'][10]);
+            $bus_cat_id = NM_utf8_urldecode($_POST['rsargs'][11]);
+            $bus_subcat_id = NM_utf8_urldecode($_POST['rsargs'][12]);
+            $est_memb_cost = NM_utf8_urldecode($_POST['rsargs'][13]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][14]);
+        }
+        if ('ajax_form_clients_steps_renew_event_main_contact_email_onchange' == $_POST['rs'])
+        {
+            $member1_email = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $main_contact_email = NM_utf8_urldecode($_POST['rsargs'][1]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][2]);
+        }
+        if ('ajax_form_clients_steps_renew_event_main_contact_name_onchange' == $_POST['rs'])
+        {
+            $member1_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $main_contact_name = NM_utf8_urldecode($_POST['rsargs'][1]);
+            $applicant_name = NM_utf8_urldecode($_POST['rsargs'][2]);
+            $member2_name = NM_utf8_urldecode($_POST['rsargs'][3]);
+            $member3_name = NM_utf8_urldecode($_POST['rsargs'][4]);
+            $member4_name = NM_utf8_urldecode($_POST['rsargs'][5]);
+            $member5_name = NM_utf8_urldecode($_POST['rsargs'][6]);
+            $member6_name = NM_utf8_urldecode($_POST['rsargs'][7]);
+            $member7_name = NM_utf8_urldecode($_POST['rsargs'][8]);
+            $member8_name = NM_utf8_urldecode($_POST['rsargs'][9]);
+            $member9_name = NM_utf8_urldecode($_POST['rsargs'][10]);
+            $member10_name = NM_utf8_urldecode($_POST['rsargs'][11]);
+            $buyers_excel_qty = NM_utf8_urldecode($_POST['rsargs'][12]);
+            $bus_cat_id = NM_utf8_urldecode($_POST['rsargs'][13]);
+            $bus_subcat_id = NM_utf8_urldecode($_POST['rsargs'][14]);
+            $est_memb_cost = NM_utf8_urldecode($_POST['rsargs'][15]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][16]);
+        }
+        if ('ajax_form_clients_steps_renew_event_main_contact_phone_onchange' == $_POST['rs'])
+        {
+            $member1_phone = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $main_contact_phone = NM_utf8_urldecode($_POST['rsargs'][1]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][2]);
+        }
+        if ('ajax_form_clients_steps_renew_event_main_contact_title_onchange' == $_POST['rs'])
+        {
+            $applicant_title = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $main_contact_title = NM_utf8_urldecode($_POST['rsargs'][1]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][2]);
+        }
+        if ('ajax_form_clients_steps_renew_event_member10_name_onchange' == $_POST['rs'])
+        {
+            $member1_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $member2_name = NM_utf8_urldecode($_POST['rsargs'][1]);
+            $member3_name = NM_utf8_urldecode($_POST['rsargs'][2]);
+            $member4_name = NM_utf8_urldecode($_POST['rsargs'][3]);
+            $member5_name = NM_utf8_urldecode($_POST['rsargs'][4]);
+            $member6_name = NM_utf8_urldecode($_POST['rsargs'][5]);
+            $member7_name = NM_utf8_urldecode($_POST['rsargs'][6]);
+            $member8_name = NM_utf8_urldecode($_POST['rsargs'][7]);
+            $member9_name = NM_utf8_urldecode($_POST['rsargs'][8]);
+            $member10_name = NM_utf8_urldecode($_POST['rsargs'][9]);
+            $buyers_excel_qty = NM_utf8_urldecode($_POST['rsargs'][10]);
+            $bus_cat_id = NM_utf8_urldecode($_POST['rsargs'][11]);
+            $bus_subcat_id = NM_utf8_urldecode($_POST['rsargs'][12]);
+            $est_memb_cost = NM_utf8_urldecode($_POST['rsargs'][13]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][14]);
+        }
+        if ('ajax_form_clients_steps_renew_event_member1_name_onchange' == $_POST['rs'])
+        {
+            $est_memb_cost = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $member1_name = NM_utf8_urldecode($_POST['rsargs'][1]);
+            $member2_name = NM_utf8_urldecode($_POST['rsargs'][2]);
+            $member3_name = NM_utf8_urldecode($_POST['rsargs'][3]);
+            $member4_name = NM_utf8_urldecode($_POST['rsargs'][4]);
+            $member5_name = NM_utf8_urldecode($_POST['rsargs'][5]);
+            $member6_name = NM_utf8_urldecode($_POST['rsargs'][6]);
+            $member7_name = NM_utf8_urldecode($_POST['rsargs'][7]);
+            $member8_name = NM_utf8_urldecode($_POST['rsargs'][8]);
+            $member9_name = NM_utf8_urldecode($_POST['rsargs'][9]);
+            $member10_name = NM_utf8_urldecode($_POST['rsargs'][10]);
+            $buyers_excel_qty = NM_utf8_urldecode($_POST['rsargs'][11]);
+            $bus_cat_id = NM_utf8_urldecode($_POST['rsargs'][12]);
+            $bus_subcat_id = NM_utf8_urldecode($_POST['rsargs'][13]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][14]);
+        }
+        if ('ajax_form_clients_steps_renew_event_member2_name_onchange' == $_POST['rs'])
+        {
+            $est_memb_cost = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $member1_name = NM_utf8_urldecode($_POST['rsargs'][1]);
+            $member2_name = NM_utf8_urldecode($_POST['rsargs'][2]);
+            $member3_name = NM_utf8_urldecode($_POST['rsargs'][3]);
+            $member4_name = NM_utf8_urldecode($_POST['rsargs'][4]);
+            $member5_name = NM_utf8_urldecode($_POST['rsargs'][5]);
+            $member6_name = NM_utf8_urldecode($_POST['rsargs'][6]);
+            $member7_name = NM_utf8_urldecode($_POST['rsargs'][7]);
+            $member8_name = NM_utf8_urldecode($_POST['rsargs'][8]);
+            $member9_name = NM_utf8_urldecode($_POST['rsargs'][9]);
+            $member10_name = NM_utf8_urldecode($_POST['rsargs'][10]);
+            $buyers_excel_qty = NM_utf8_urldecode($_POST['rsargs'][11]);
+            $bus_cat_id = NM_utf8_urldecode($_POST['rsargs'][12]);
+            $bus_subcat_id = NM_utf8_urldecode($_POST['rsargs'][13]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][14]);
+        }
+        if ('ajax_form_clients_steps_renew_event_member3_name_onchange' == $_POST['rs'])
+        {
+            $member1_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $member2_name = NM_utf8_urldecode($_POST['rsargs'][1]);
+            $member3_name = NM_utf8_urldecode($_POST['rsargs'][2]);
+            $member4_name = NM_utf8_urldecode($_POST['rsargs'][3]);
+            $member5_name = NM_utf8_urldecode($_POST['rsargs'][4]);
+            $member6_name = NM_utf8_urldecode($_POST['rsargs'][5]);
+            $member7_name = NM_utf8_urldecode($_POST['rsargs'][6]);
+            $member8_name = NM_utf8_urldecode($_POST['rsargs'][7]);
+            $member9_name = NM_utf8_urldecode($_POST['rsargs'][8]);
+            $member10_name = NM_utf8_urldecode($_POST['rsargs'][9]);
+            $buyers_excel_qty = NM_utf8_urldecode($_POST['rsargs'][10]);
+            $bus_cat_id = NM_utf8_urldecode($_POST['rsargs'][11]);
+            $bus_subcat_id = NM_utf8_urldecode($_POST['rsargs'][12]);
+            $est_memb_cost = NM_utf8_urldecode($_POST['rsargs'][13]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][14]);
+        }
+        if ('ajax_form_clients_steps_renew_event_member4_name_onchange' == $_POST['rs'])
+        {
+            $member1_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $member2_name = NM_utf8_urldecode($_POST['rsargs'][1]);
+            $member3_name = NM_utf8_urldecode($_POST['rsargs'][2]);
+            $member4_name = NM_utf8_urldecode($_POST['rsargs'][3]);
+            $member5_name = NM_utf8_urldecode($_POST['rsargs'][4]);
+            $member6_name = NM_utf8_urldecode($_POST['rsargs'][5]);
+            $member7_name = NM_utf8_urldecode($_POST['rsargs'][6]);
+            $member8_name = NM_utf8_urldecode($_POST['rsargs'][7]);
+            $member9_name = NM_utf8_urldecode($_POST['rsargs'][8]);
+            $member10_name = NM_utf8_urldecode($_POST['rsargs'][9]);
+            $buyers_excel_qty = NM_utf8_urldecode($_POST['rsargs'][10]);
+            $bus_cat_id = NM_utf8_urldecode($_POST['rsargs'][11]);
+            $bus_subcat_id = NM_utf8_urldecode($_POST['rsargs'][12]);
+            $est_memb_cost = NM_utf8_urldecode($_POST['rsargs'][13]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][14]);
+        }
+        if ('ajax_form_clients_steps_renew_event_member5_name_onchange' == $_POST['rs'])
+        {
+            $member1_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $member2_name = NM_utf8_urldecode($_POST['rsargs'][1]);
+            $member3_name = NM_utf8_urldecode($_POST['rsargs'][2]);
+            $member4_name = NM_utf8_urldecode($_POST['rsargs'][3]);
+            $member5_name = NM_utf8_urldecode($_POST['rsargs'][4]);
+            $member6_name = NM_utf8_urldecode($_POST['rsargs'][5]);
+            $member7_name = NM_utf8_urldecode($_POST['rsargs'][6]);
+            $member8_name = NM_utf8_urldecode($_POST['rsargs'][7]);
+            $member9_name = NM_utf8_urldecode($_POST['rsargs'][8]);
+            $member10_name = NM_utf8_urldecode($_POST['rsargs'][9]);
+            $buyers_excel_qty = NM_utf8_urldecode($_POST['rsargs'][10]);
+            $bus_cat_id = NM_utf8_urldecode($_POST['rsargs'][11]);
+            $bus_subcat_id = NM_utf8_urldecode($_POST['rsargs'][12]);
+            $est_memb_cost = NM_utf8_urldecode($_POST['rsargs'][13]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][14]);
+        }
+        if ('ajax_form_clients_steps_renew_event_member6_name_onchange' == $_POST['rs'])
+        {
+            $member1_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $member2_name = NM_utf8_urldecode($_POST['rsargs'][1]);
+            $member3_name = NM_utf8_urldecode($_POST['rsargs'][2]);
+            $member4_name = NM_utf8_urldecode($_POST['rsargs'][3]);
+            $member5_name = NM_utf8_urldecode($_POST['rsargs'][4]);
+            $member6_name = NM_utf8_urldecode($_POST['rsargs'][5]);
+            $member7_name = NM_utf8_urldecode($_POST['rsargs'][6]);
+            $member8_name = NM_utf8_urldecode($_POST['rsargs'][7]);
+            $member9_name = NM_utf8_urldecode($_POST['rsargs'][8]);
+            $member10_name = NM_utf8_urldecode($_POST['rsargs'][9]);
+            $buyers_excel_qty = NM_utf8_urldecode($_POST['rsargs'][10]);
+            $bus_cat_id = NM_utf8_urldecode($_POST['rsargs'][11]);
+            $bus_subcat_id = NM_utf8_urldecode($_POST['rsargs'][12]);
+            $est_memb_cost = NM_utf8_urldecode($_POST['rsargs'][13]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][14]);
+        }
+        if ('ajax_form_clients_steps_renew_event_member7_name_onchange' == $_POST['rs'])
+        {
+            $member1_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $member2_name = NM_utf8_urldecode($_POST['rsargs'][1]);
+            $member3_name = NM_utf8_urldecode($_POST['rsargs'][2]);
+            $member4_name = NM_utf8_urldecode($_POST['rsargs'][3]);
+            $member5_name = NM_utf8_urldecode($_POST['rsargs'][4]);
+            $member6_name = NM_utf8_urldecode($_POST['rsargs'][5]);
+            $member7_name = NM_utf8_urldecode($_POST['rsargs'][6]);
+            $member8_name = NM_utf8_urldecode($_POST['rsargs'][7]);
+            $member9_name = NM_utf8_urldecode($_POST['rsargs'][8]);
+            $member10_name = NM_utf8_urldecode($_POST['rsargs'][9]);
+            $buyers_excel_qty = NM_utf8_urldecode($_POST['rsargs'][10]);
+            $bus_cat_id = NM_utf8_urldecode($_POST['rsargs'][11]);
+            $bus_subcat_id = NM_utf8_urldecode($_POST['rsargs'][12]);
+            $est_memb_cost = NM_utf8_urldecode($_POST['rsargs'][13]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][14]);
+        }
+        if ('ajax_form_clients_steps_renew_event_member8_name_onchange' == $_POST['rs'])
+        {
+            $member1_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $member2_name = NM_utf8_urldecode($_POST['rsargs'][1]);
+            $member3_name = NM_utf8_urldecode($_POST['rsargs'][2]);
+            $member4_name = NM_utf8_urldecode($_POST['rsargs'][3]);
+            $member5_name = NM_utf8_urldecode($_POST['rsargs'][4]);
+            $member6_name = NM_utf8_urldecode($_POST['rsargs'][5]);
+            $member7_name = NM_utf8_urldecode($_POST['rsargs'][6]);
+            $member8_name = NM_utf8_urldecode($_POST['rsargs'][7]);
+            $member9_name = NM_utf8_urldecode($_POST['rsargs'][8]);
+            $member10_name = NM_utf8_urldecode($_POST['rsargs'][9]);
+            $buyers_excel_qty = NM_utf8_urldecode($_POST['rsargs'][10]);
+            $bus_cat_id = NM_utf8_urldecode($_POST['rsargs'][11]);
+            $bus_subcat_id = NM_utf8_urldecode($_POST['rsargs'][12]);
+            $est_memb_cost = NM_utf8_urldecode($_POST['rsargs'][13]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][14]);
+        }
+        if ('ajax_form_clients_steps_renew_event_member9_name_onchange' == $_POST['rs'])
+        {
+            $member1_name = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $member2_name = NM_utf8_urldecode($_POST['rsargs'][1]);
+            $member3_name = NM_utf8_urldecode($_POST['rsargs'][2]);
+            $member4_name = NM_utf8_urldecode($_POST['rsargs'][3]);
+            $member5_name = NM_utf8_urldecode($_POST['rsargs'][4]);
+            $member6_name = NM_utf8_urldecode($_POST['rsargs'][5]);
+            $member7_name = NM_utf8_urldecode($_POST['rsargs'][6]);
+            $member8_name = NM_utf8_urldecode($_POST['rsargs'][7]);
+            $member9_name = NM_utf8_urldecode($_POST['rsargs'][8]);
+            $member10_name = NM_utf8_urldecode($_POST['rsargs'][9]);
+            $buyers_excel_qty = NM_utf8_urldecode($_POST['rsargs'][10]);
+            $bus_cat_id = NM_utf8_urldecode($_POST['rsargs'][11]);
+            $bus_subcat_id = NM_utf8_urldecode($_POST['rsargs'][12]);
+            $est_memb_cost = NM_utf8_urldecode($_POST['rsargs'][13]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][14]);
+        }
+        if ('ajax_form_clients_steps_renew_submit_form' == $_POST['rs'])
+        {
+            $dummy02 = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $dummy03 = NM_utf8_urldecode($_POST['rsargs'][1]);
+            $co_name = NM_utf8_urldecode($_POST['rsargs'][2]);
+            $client_id = NM_utf8_urldecode($_POST['rsargs'][3]);
+            $mailing_address = NM_utf8_urldecode($_POST['rsargs'][4]);
+            $appn_date = NM_utf8_urldecode($_POST['rsargs'][5]);
+            $city = NM_utf8_urldecode($_POST['rsargs'][6]);
+            $bus_cat_id = NM_utf8_urldecode($_POST['rsargs'][7]);
+            $state = NM_utf8_urldecode($_POST['rsargs'][8]);
+            $bus_subcat_id = NM_utf8_urldecode($_POST['rsargs'][9]);
+            $zip_code = NM_utf8_urldecode($_POST['rsargs'][10]);
+            $bus_subcat_other = NM_utf8_urldecode($_POST['rsargs'][11]);
+            $phone_number = NM_utf8_urldecode($_POST['rsargs'][12]);
+            $website_url = NM_utf8_urldecode($_POST['rsargs'][13]);
+            $email = NM_utf8_urldecode($_POST['rsargs'][14]);
+            $acct_instagram = NM_utf8_urldecode($_POST['rsargs'][15]);
+            $dummy01 = NM_utf8_urldecode($_POST['rsargs'][16]);
+            $acct_facebook = NM_utf8_urldecode($_POST['rsargs'][17]);
+            $dummy04 = NM_utf8_urldecode($_POST['rsargs'][18]);
+            $dummy07 = NM_utf8_urldecode($_POST['rsargs'][19]);
+            $dummy08 = NM_utf8_urldecode($_POST['rsargs'][20]);
+            $main_contact_name = NM_utf8_urldecode($_POST['rsargs'][21]);
+            $main_contact_phone = NM_utf8_urldecode($_POST['rsargs'][22]);
+            $main_contact_email = NM_utf8_urldecode($_POST['rsargs'][23]);
+            $main_contact_title = NM_utf8_urldecode($_POST['rsargs'][24]);
+            $main_contact_img_id = NM_utf8_urldecode($_POST['rsargs'][25]);
+            $doc_type = NM_utf8_urldecode($_POST['rsargs'][26]);
+            $doc_file = NM_utf8_urldecode($_POST['rsargs'][27]);
+            $appn_note = NM_utf8_urldecode($_POST['rsargs'][28]);
+            $memb_name = NM_utf8_urldecode($_POST['rsargs'][29]);
+            $memb_phone = NM_utf8_urldecode($_POST['rsargs'][30]);
+            $memb_email = NM_utf8_urldecode($_POST['rsargs'][31]);
+            $memb_note = NM_utf8_urldecode($_POST['rsargs'][32]);
+            $member1_name = NM_utf8_urldecode($_POST['rsargs'][33]);
+            $member1_phone = NM_utf8_urldecode($_POST['rsargs'][34]);
+            $member1_email = NM_utf8_urldecode($_POST['rsargs'][35]);
+            $member1_note = NM_utf8_urldecode($_POST['rsargs'][36]);
+            $member2_name = NM_utf8_urldecode($_POST['rsargs'][37]);
+            $member2_phone = NM_utf8_urldecode($_POST['rsargs'][38]);
+            $member2_email = NM_utf8_urldecode($_POST['rsargs'][39]);
+            $member2_note = NM_utf8_urldecode($_POST['rsargs'][40]);
+            $member3_name = NM_utf8_urldecode($_POST['rsargs'][41]);
+            $member3_phone = NM_utf8_urldecode($_POST['rsargs'][42]);
+            $member3_email = NM_utf8_urldecode($_POST['rsargs'][43]);
+            $member3_note = NM_utf8_urldecode($_POST['rsargs'][44]);
+            $dummy05 = NM_utf8_urldecode($_POST['rsargs'][45]);
+            $adtl_memb_name = NM_utf8_urldecode($_POST['rsargs'][46]);
+            $adtl_memb_phone = NM_utf8_urldecode($_POST['rsargs'][47]);
+            $adtl_memb_note = NM_utf8_urldecode($_POST['rsargs'][48]);
+            $addtl_memb_mail = NM_utf8_urldecode($_POST['rsargs'][49]);
+            $member4_name = NM_utf8_urldecode($_POST['rsargs'][50]);
+            $member4_phone = NM_utf8_urldecode($_POST['rsargs'][51]);
+            $member4_email = NM_utf8_urldecode($_POST['rsargs'][52]);
+            $member4_note = NM_utf8_urldecode($_POST['rsargs'][53]);
+            $member5_name = NM_utf8_urldecode($_POST['rsargs'][54]);
+            $member5_phone = NM_utf8_urldecode($_POST['rsargs'][55]);
+            $member5_email = NM_utf8_urldecode($_POST['rsargs'][56]);
+            $member5_note = NM_utf8_urldecode($_POST['rsargs'][57]);
+            $member6_name = NM_utf8_urldecode($_POST['rsargs'][58]);
+            $member6_phone = NM_utf8_urldecode($_POST['rsargs'][59]);
+            $member6_email = NM_utf8_urldecode($_POST['rsargs'][60]);
+            $member6_note = NM_utf8_urldecode($_POST['rsargs'][61]);
+            $member7_name = NM_utf8_urldecode($_POST['rsargs'][62]);
+            $member7_phone = NM_utf8_urldecode($_POST['rsargs'][63]);
+            $member7_email = NM_utf8_urldecode($_POST['rsargs'][64]);
+            $member7_note = NM_utf8_urldecode($_POST['rsargs'][65]);
+            $member8_name = NM_utf8_urldecode($_POST['rsargs'][66]);
+            $member8_phone = NM_utf8_urldecode($_POST['rsargs'][67]);
+            $member8_email = NM_utf8_urldecode($_POST['rsargs'][68]);
+            $member8_note = NM_utf8_urldecode($_POST['rsargs'][69]);
+            $member9_name = NM_utf8_urldecode($_POST['rsargs'][70]);
+            $member9_phone = NM_utf8_urldecode($_POST['rsargs'][71]);
+            $member9_email = NM_utf8_urldecode($_POST['rsargs'][72]);
+            $member9_note = NM_utf8_urldecode($_POST['rsargs'][73]);
+            $member10_name = NM_utf8_urldecode($_POST['rsargs'][74]);
+            $member10_phone = NM_utf8_urldecode($_POST['rsargs'][75]);
+            $member10_email = NM_utf8_urldecode($_POST['rsargs'][76]);
+            $member10_note = NM_utf8_urldecode($_POST['rsargs'][77]);
+            $dummy06 = NM_utf8_urldecode($_POST['rsargs'][78]);
+            $xlsx_sample = NM_utf8_urldecode($_POST['rsargs'][79]);
+            $more_buyers_xlsx = NM_utf8_urldecode($_POST['rsargs'][80]);
+            $buyers_excel_qty = NM_utf8_urldecode($_POST['rsargs'][81]);
+            $dummy09 = NM_utf8_urldecode($_POST['rsargs'][82]);
+            $dummy11 = NM_utf8_urldecode($_POST['rsargs'][83]);
+            $rules = NM_utf8_urldecode($_POST['rsargs'][84]);
+            $rules_warn = NM_utf8_urldecode($_POST['rsargs'][85]);
+            $memb_levels = NM_utf8_urldecode($_POST['rsargs'][86]);
+            $est_memb_cost = NM_utf8_urldecode($_POST['rsargs'][87]);
+            $pay = NM_utf8_urldecode($_POST['rsargs'][88]);
+            $read_at_sign = NM_utf8_urldecode($_POST['rsargs'][89]);
+            $applicant_name = NM_utf8_urldecode($_POST['rsargs'][90]);
+            $applicant_title = NM_utf8_urldecode($_POST['rsargs'][91]);
+            $dummy10 = NM_utf8_urldecode($_POST['rsargs'][92]);
+            $applicant_signature = NM_utf8_urldecode($_POST['rsargs'][93]);
+            $doc_file_ul_name = NM_utf8_urldecode($_POST['rsargs'][94]);
+            $doc_file_ul_type = NM_utf8_urldecode($_POST['rsargs'][95]);
+            $main_contact_img_id_ul_name = NM_utf8_urldecode($_POST['rsargs'][96]);
+            $main_contact_img_id_ul_type = NM_utf8_urldecode($_POST['rsargs'][97]);
+            $more_buyers_xlsx_ul_name = NM_utf8_urldecode($_POST['rsargs'][98]);
+            $more_buyers_xlsx_ul_type = NM_utf8_urldecode($_POST['rsargs'][99]);
+            $main_contact_img_id_limpa = NM_utf8_urldecode($_POST['rsargs'][100]);
+            $doc_file_salva = NM_utf8_urldecode($_POST['rsargs'][101]);
+            $doc_file_limpa = NM_utf8_urldecode($_POST['rsargs'][102]);
+            $more_buyers_xlsx_salva = NM_utf8_urldecode($_POST['rsargs'][103]);
+            $more_buyers_xlsx_limpa = NM_utf8_urldecode($_POST['rsargs'][104]);
+            $nm_form_submit = NM_utf8_urldecode($_POST['rsargs'][105]);
+            $nmgp_url_saida = NM_utf8_urldecode($_POST['rsargs'][106]);
+            $nmgp_opcao = NM_utf8_urldecode($_POST['rsargs'][107]);
+            $nmgp_ancora = NM_utf8_urldecode($_POST['rsargs'][108]);
+            $nmgp_num_form = NM_utf8_urldecode($_POST['rsargs'][109]);
+            $nmgp_parms = NM_utf8_urldecode($_POST['rsargs'][110]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][111]);
+            $csrf_token = NM_utf8_urldecode($_POST['rsargs'][112]);
+        }
+        if ('ajax_form_clients_steps_renew_navigate_form' == $_POST['rs'])
+        {
+            $client_id = NM_utf8_urldecode($_POST['rsargs'][0]);
+            $nm_form_submit = NM_utf8_urldecode($_POST['rsargs'][1]);
+            $nmgp_opcao = NM_utf8_urldecode($_POST['rsargs'][2]);
+            $nmgp_ordem = NM_utf8_urldecode($_POST['rsargs'][3]);
+            $nmgp_arg_dyn_search = NM_utf8_urldecode($_POST['rsargs'][4]);
+            $script_case_init = NM_utf8_urldecode($_POST['rsargs'][5]);
+        }
+    }
+
+    if (!empty($glo_perfil))  
+    { 
+        $_SESSION['scriptcase']['glo_perfil'] = $glo_perfil;
+    }   
+    if (isset($glo_servidor)) 
+    {
+        $_SESSION['scriptcase']['glo_servidor'] = $glo_servidor;
+    }
+    if (isset($glo_banco)) 
+    {
+        $_SESSION['scriptcase']['glo_banco'] = $glo_banco;
+    }
+    if (isset($glo_tpbanco)) 
+    {
+        $_SESSION['scriptcase']['glo_tpbanco'] = $glo_tpbanco;
+    }
+    if (isset($glo_usuario)) 
+    {
+        $_SESSION['scriptcase']['glo_usuario'] = $glo_usuario;
+    }
+    if (isset($glo_senha)) 
+    {
+        $_SESSION['scriptcase']['glo_senha'] = $glo_senha;
+    }
+    if (isset($glo_senha_protect)) 
+    {
+        $_SESSION['scriptcase']['glo_senha_protect'] = $glo_senha_protect;
+    }
+    if (isset($script_case_init) && !is_array($script_case_init) && !isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['lig_edit_lookup']))
+    { 
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['lig_edit_lookup']     = false;
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['lig_edit_lookup_cb']  = '';
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['lig_edit_lookup_row'] = '';
+    } 
+    if (isset($script_case_init) && !is_array($script_case_init) && !isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_call']))
+    { 
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_call'] = false;
+    } 
+    if (isset($script_case_init) && !is_array($script_case_init) && !isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_proc']))
+    { 
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_proc'] = false;
+    } 
+    if (isset($script_case_init) && !is_array($script_case_init) && !isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_liga_form_insert']))
+    { 
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_liga_form_insert'] = '';
+    } 
+    if (isset($script_case_init) && !is_array($script_case_init) && !isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_liga_form_update']))
+    { 
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_liga_form_update'] = '';
+    } 
+    if (isset($script_case_init) && !is_array($script_case_init) && !isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_liga_form_delete']))
+    { 
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_liga_form_delete'] = '';
+    } 
+    if (isset($script_case_init) && !is_array($script_case_init) && !isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_liga_form_btn_nav']))
+    { 
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_liga_form_btn_nav'] = '';
+    } 
+    if (isset($script_case_init) && !is_array($script_case_init) && !isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_liga_grid_edit']))
+    { 
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_liga_grid_edit'] = '';
+    } 
+    if (isset($script_case_init) && !is_array($script_case_init) && !isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_liga_grid_edit_link']))
+    { 
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_liga_grid_edit_link'] = '';
+    } 
+    if (isset($script_case_init) && !is_array($script_case_init) && !isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_liga_qtd_reg']))
+    { 
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_liga_qtd_reg'] = '';
+    } 
+    if (isset($script_case_init) && !is_array($script_case_init) && !isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_liga_tp_pag']))
+    { 
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_liga_tp_pag'] = '';
+    } 
+    if (isset($script_case_init) && !is_array($script_case_init) && !isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_modal']))
+    { 
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_modal'] = isset($_GET['nmgp_url_saida']) && 'modal' == $_GET['nmgp_url_saida'];
+    } 
+    if (isset($script_case_init) && !is_array($script_case_init) && $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_proc'])
+    {
+        return;
+    }
+    if (isset($script_case_init) && !is_array($script_case_init) && isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_parms']))
+    { 
+        $tmp_nmgp_parms = '';
+        if (isset($nmgp_parms) && '' != $nmgp_parms)
+        {
+            $tmp_nmgp_parms = $nmgp_parms . '?@?';
+        }
+        $nmgp_parms = $tmp_nmgp_parms . $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_parms'];
+        unset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_parms']);
+    } 
+    if (isset($nmgp_parms) && !empty($nmgp_parms) && !is_array($nmgp_parms)) 
+    { 
+        if (isset($_SESSION['nm_aba_bg_color'])) 
+        { 
+            unset($_SESSION['nm_aba_bg_color']);
+        }   
+        $nmgp_parms = NM_decode_input($nmgp_parms);
+        $nmgp_parms = str_replace("@aspass@", "'", $nmgp_parms);
+        $nmgp_parms = str_replace("*scout", "?@?", $nmgp_parms);
+        $nmgp_parms = str_replace("*scin", "?#?", $nmgp_parms);
+        $todox = str_replace("?#?@?@?", "?#?@ ?@?", $nmgp_parms);
+        $todo  = explode("?@?", $todox);
+        $ix = 0;
+        while (!empty($todo[$ix]))
+        {
+           $cadapar = explode("?#?", $todo[$ix]);
+           if (1 < sizeof($cadapar))
+           {
+               if (substr($cadapar[0], 0, 11) == "SC_glo_par_")
+               {
+                   $cadapar[0] = substr($cadapar[0], 11);
+                   $cadapar[1] = $_SESSION[$cadapar[1]];
+               }
+               nm_limpa_str_form_clients_steps_renew($cadapar[1]);
+               if (isset($sc_conv_var[$cadapar[0]]))
+               {
+                   $cadapar[0] = $sc_conv_var[$cadapar[0]];
+               }
+               elseif (isset($sc_conv_var[strtolower($cadapar[0])]))
+               {
+                   $cadapar[0] = $sc_conv_var[strtolower($cadapar[0])];
+               }
+               if ($cadapar[1] == "@ ") {$cadapar[1] = trim($cadapar[1]); }
+               $Tmp_par   = $cadapar[0];
+               $$Tmp_par = $cadapar[1];
+           }
+           $ix++;
+        }
+        if (isset($gv_contact_pfm)) 
+        {
+            $_SESSION['gv_contact_pfm'] = $gv_contact_pfm;
+        }
+        if (isset($gv_bus_cat)) 
+        {
+            $_SESSION['gv_bus_cat'] = $gv_bus_cat;
+        }
+        if (isset($gv_members_ct)) 
+        {
+            $_SESSION['gv_members_ct'] = $gv_members_ct;
+        }
+    } 
+    elseif (isset($script_case_init) && !empty($script_case_init) && !is_array($script_case_init) && isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['parms']))
+    {
+        if (!isset($nmgp_opcao) || ($nmgp_opcao != "incluir" && $nmgp_opcao != "novo" && $nmgp_opcao != "recarga" && $nmgp_opcao != "muda_form"))
+        {
+            $todox = str_replace("?#?@?@?", "?#?@ ?@?", $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['parms']);
+            $todo  = explode("?@?", $todox);
+            $ix = 0;
+            while (!empty($todo[$ix]))
+            {
+               $cadapar = explode("?#?", $todo[$ix]);
+               if (substr($cadapar[0], 0, 11) == "SC_glo_par_")
+               {
+                   $cadapar[0] = substr($cadapar[0], 11);
+                   $cadapar[1] = $_SESSION[$cadapar[1]];
+               }
+               if ($cadapar[1] == "@ ") {$cadapar[1] = trim($cadapar[1]); }
+               $Tmp_par   = $cadapar[0];
+               $$Tmp_par = $cadapar[1];
+               $ix++;
+            }
+        }
+    } 
+    if (isset($script_case_init) && $script_case_init != preg_replace('/[^0-9.-]/', '', $script_case_init))
+    {
+        unset($script_case_init);
+    }
+    if (!isset($script_case_init) || empty($script_case_init) || is_array($script_case_init))
+    {
+        $script_case_init = rand(2, 10000);
+    }
+    $salva_run = "N";
+    $salva_iframe = false;
+    if (isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['iframe_menu']))
+    {
+        $salva_iframe = $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['iframe_menu'];
+        unset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['iframe_menu']);
+    }
+    if (isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_iframe']))
+    {
+        $salva_run = $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_iframe'];
+        unset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_iframe']);
+    }
+    if (isset($nm_run_menu) && $nm_run_menu == 1)
+    {
+        if (isset($_SESSION['scriptcase']['sc_aba_iframe']) && isset($_SESSION['scriptcase']['sc_apl_menu_atual']))
+        {
+            foreach ($_SESSION['scriptcase']['sc_aba_iframe'] as $aba => $apls_aba)
+            {
+                if ($aba == $_SESSION['scriptcase']['sc_apl_menu_atual'])
+                {
+                    unset($_SESSION['scriptcase']['sc_aba_iframe'][$aba]);
+                    break;
+                }
+            }
+        }
+        $_SESSION['scriptcase']['sc_apl_menu_atual'] = "form_clients_steps_renew";
+        $achou = false;
+        if (isset($_SESSION['sc_session'][$script_case_init]))
+        {
+            foreach ($_SESSION['sc_session'][$script_case_init] as $nome_apl => $resto)
+            {
+                if ($nome_apl == 'form_clients_steps_renew' || $achou)
+                {
+                    unset($_SESSION['sc_session'][$script_case_init][$nome_apl]);
+                    if (!empty($_SESSION['sc_session'][$script_case_init][$nome_apl]))
+                    {
+                        $achou = true;
+                    }
+                }
+            }
+            if (!$achou && isset($nm_apl_menu))
+            {
+                foreach ($_SESSION['sc_session'][$script_case_init] as $nome_apl => $resto)
+                {
+                    if ($nome_apl == $nm_apl_menu || $achou)
+                    {
+                        $achou = true;
+                        if ($nome_apl != $nm_apl_menu)
+                        {
+                            unset($_SESSION['sc_session'][$script_case_init][$nome_apl]);
+                        }
+                    }
+                }
+            }
+        }
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['iframe_menu']  = true;
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['mostra_cab']   = "S";
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_iframe']   = "N";
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['retorno_edit'] = "";
+    }
+    else
+    {
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_iframe']  = $salva_run;
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['iframe_menu'] = $salva_iframe;
+    }
+
+    if (!isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['db_changed']))
+    {
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['db_changed'] = false;
+    }
+    if (isset($_GET['nmgp_outra_jan']) && 'true' == $_GET['nmgp_outra_jan'] && isset($_GET['nmgp_url_saida']) && 'modal' == $_GET['nmgp_url_saida'])
+    {
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['db_changed'] = false;
+    }
+
+    if (isset($_SESSION['scriptcase']['sc_outra_jan']) && $_SESSION['scriptcase']['sc_outra_jan'] == 'form_clients_steps_renew')
+    {
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['sc_outra_jan'] = true;
+         unset($_SESSION['scriptcase']['sc_outra_jan']);
+    }
+    if (isset($nmgp_outra_jan) && $nmgp_outra_jan == 'true')
+    {
+        if (isset($nmgp_url_saida) && $nmgp_url_saida == "modal")
+        {
+            $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['sc_modal'] = true;
+            $nm_url_saida = "form_clients_steps_renew_fim.php"; 
+        }
+        $nm_apl_dependente = 0;
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['sc_outra_jan'] = true;
+    }
+    if (!isset($nm_apl_dependente)) {
+        $nm_apl_dependente = 0;
+    }
+    $STR_lang    = (isset($_SESSION['scriptcase']['str_lang']) && !empty($_SESSION['scriptcase']['str_lang'])) ? $_SESSION['scriptcase']['str_lang'] : "en_us";
+    if (isset($_SESSION['scriptcase']['form_clients_steps_renew']['session_timeout']['lang'])) {
+        $STR_lang = $_SESSION['scriptcase']['form_clients_steps_renew']['session_timeout']['lang'];
+    }
+      $STR_schema_all = (isset($_SESSION['scriptcase']['str_schema_all']) && !empty($_SESSION['scriptcase']['str_schema_all'])) ? $_SESSION['scriptcase']['str_schema_all'] : "Sc9_SweetBlue/Sc9_SweetBlue";
+    $NM_arq_lang = "../_lib/lang/" . $STR_lang . ".lang.php";
+    $Nm_lang = array();
+    if (is_file($NM_arq_lang))
+    {
+        $Lixo = file($NM_arq_lang);
+        foreach ($Lixo as $Cada_lin) 
+        {
+            if (strpos($Cada_lin, "array()") === false && (trim($Cada_lin) != "<?php")  && (trim($Cada_lin) != "?" . ">"))
+            {
+                eval (str_replace("\$this->", "\$", $Cada_lin));
+            }
+        }
+    }
+    $_SESSION['scriptcase']['charset'] = "UTF-8";
+    ini_set('default_charset', $_SESSION['scriptcase']['charset']);
+    foreach ($Nm_lang as $ind => $dados)
+    {
+       if ($_SESSION['scriptcase']['charset'] != "UTF-8" && NM_is_utf8($dados))
+       {
+           $Nm_lang[$ind] = sc_convert_encoding($dados, $_SESSION['scriptcase']['charset'], "UTF-8");
+       }
+    }
+
+    if (!isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['initialize']))
+    {
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['initialize'] = true;
+    }
+    elseif (!isset($_SERVER['HTTP_REFERER']))
+    {
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['initialize'] = false;
+    }
+    elseif (false === strpos($_SERVER['HTTP_REFERER'], '/form_clients_steps_renew/'))
+    {
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['initialize'] = true;
+    }
+    else
+    {
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['initialize'] = false;
+    }
+
+    if (isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['first_time']))
+    {
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['first_time'] = false;
+    }
+    else
+    {
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['first_time'] = true;
+    }
+
+    $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['menu_desenv'] = false;   
+    if (!defined("SC_ERROR_HANDLER"))
+    {
+        define("SC_ERROR_HANDLER", 1);
+    }
+    include_once(dirname(__FILE__) . "/form_clients_steps_renew_erro.php");
+    $nm_browser = strpos($_SERVER['HTTP_USER_AGENT'], "Konqueror") ;
+    if (is_int($nm_browser))   
+    {
+        $nm_browser = "Konqueror"; 
+    } 
+    else  
+    {
+        $nm_browser = strpos($_SERVER['HTTP_USER_AGENT'], "Opera") ;
+        if (is_int($nm_browser))   
+        {
+            $nm_browser = "Opera"; 
+        }
+    } 
+    $_SESSION['scriptcase']['change_regional_old'] = '';
+    $_SESSION['scriptcase']['change_regional_new'] = '';
+    if (!empty($nmgp_opcao) && ($nmgp_opcao == "change_lang_t" || $nmgp_opcao == "change_lang_b" || $nmgp_opcao == "change_lang_f" || $nmgp_opcao == "force_lang"))  
+    {
+        $Temp_lang = $nmgp_opcao == "force_lang" ? explode(";" , $nmgp_idioma) : explode(";" , $nmgp_idioma_novo);  
+        if (isset($Temp_lang[0]) && !empty($Temp_lang[0]))  
+        { 
+            $_SESSION['scriptcase']['str_lang'] = $Temp_lang[0];
+        } 
+        if (isset($Temp_lang[1]) && !empty($Temp_lang[1])) 
+        { 
+            $_SESSION['scriptcase']['change_regional_old'] = (isset($_SESSION['scriptcase']['str_conf_reg']) && !empty($_SESSION['scriptcase']['str_conf_reg'])) ? $_SESSION['scriptcase']['str_conf_reg'] : "en_us";
+            $_SESSION['scriptcase']['str_conf_reg']        = $Temp_lang[1];
+            $_SESSION['scriptcase']['change_regional_new'] = $_SESSION['scriptcase']['str_conf_reg'];
+        } 
+        $nmgp_opcao = $nmgp_opcao == "force_lang" ? "inicio" : "igual";
+    } 
+    if (!empty($nmgp_opcao) && ($nmgp_opcao == "change_schema_t" || $nmgp_opcao == "change_schema_b" || $nmgp_opcao == "change_schema_f"))  
+    {
+        if ($nmgp_opcao == "change_schema_t")  
+        {
+            $nmgp_schema = $nmgp_schema_t . "/" . $nmgp_schema_t;  
+        } 
+        elseif ($nmgp_opcao == "change_schema_b")  
+        {
+            $nmgp_schema = $nmgp_schema_b . "/" . $nmgp_schema_b;  
+        } 
+        else 
+        {
+            $nmgp_schema = $nmgp_schema_f . "/" . $nmgp_schema_f;  
+        } 
+        $_SESSION['scriptcase']['str_schema_all'] = $nmgp_schema;
+        $nmgp_opcao = "recarga";  
+    } 
+    if (!empty($nmgp_opcao) && $nmgp_opcao == "lookup")  
+    {
+        $nm_opc_lookup = $nmgp_opcao;
+    }
+    elseif (!empty($nmgp_opcao) && $nmgp_opcao == "formphp")  
+    {
+        $nm_opc_form_php = $nmgp_opcao;
+    }
+    else
+    {
+        if (!empty($nmgp_opcao))  
+        {
+            $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['opcao'] = $nmgp_opcao ; 
+        }
+        if (isset($_POST["gv_contact_pfm"])) 
+        {
+            $_SESSION['gv_contact_pfm'] = $_POST["gv_contact_pfm"];
+            nm_limpa_str_form_clients_steps_renew($_SESSION['gv_contact_pfm']);
+        }
+        if (isset($_GET["gv_contact_pfm"])) 
+        {
+            $_SESSION['gv_contact_pfm'] = $_GET["gv_contact_pfm"];
+            nm_limpa_str_form_clients_steps_renew($_SESSION['gv_contact_pfm']);
+        }
+        if (isset($_POST["gv_bus_cat"])) 
+        {
+            $_SESSION['gv_bus_cat'] = $_POST["gv_bus_cat"];
+            nm_limpa_str_form_clients_steps_renew($_SESSION['gv_bus_cat']);
+        }
+        if (isset($_GET["gv_bus_cat"])) 
+        {
+            $_SESSION['gv_bus_cat'] = $_GET["gv_bus_cat"];
+            nm_limpa_str_form_clients_steps_renew($_SESSION['gv_bus_cat']);
+        }
+        if (isset($_POST["gv_members_ct"])) 
+        {
+            $_SESSION['gv_members_ct'] = $_POST["gv_members_ct"];
+            nm_limpa_str_form_clients_steps_renew($_SESSION['gv_members_ct']);
+        }
+        if (isset($_GET["gv_members_ct"])) 
+        {
+            $_SESSION['gv_members_ct'] = $_GET["gv_members_ct"];
+            nm_limpa_str_form_clients_steps_renew($_SESSION['gv_members_ct']);
+        }
+        if (!empty($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['volta_redirect_apl']))
+        {
+            $_SESSION['scriptcase']['sc_url_saida'][$script_case_init] = $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['volta_redirect_apl']; 
+            $nm_apl_dependente = $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['volta_redirect_tp']; 
+            $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['volta_redirect_apl'] = "";
+            $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['volta_redirect_tp'] = "";
+            $nm_url_saida = "form_clients_steps_renew_fim.php"; 
+        }
+        elseif (isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['sc_outra_jan']) && $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['sc_outra_jan'] == 'true')
+        {
+               $nm_url_saida = "form_clients_steps_renew_fim.php"; 
+        }
+        elseif ($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_iframe'] != "F" && $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_iframe'] != "R")
+        {
+           $nm_url_saida = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : ""; 
+           $nm_url_saida = str_replace("_fim.php", ".php", $nm_url_saida); 
+            $nm_saida_global = $nm_url_saida;
+            if (!empty($nmgp_url_saida) && empty($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['retorno_edit'])) 
+            {
+                $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['retorno_edit'] = $nmgp_url_saida ; 
+            } 
+            if (!empty($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['retorno_edit'])) 
+            {
+                $nm_url_saida = $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['retorno_edit'] . "?script_case_init=" . $script_case_init;  
+                $nm_apl_dependente = 1 ; 
+                $nm_saida_global = $nm_url_saida;
+            } 
+            if ($nm_apl_dependente != 1) 
+            { 
+                $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_iframe'] = "N"; 
+            } 
+            if ($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_iframe'] != "F" && $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_iframe'] != "R" && (!isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_call']) || !$_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['embutida_call']))
+            { 
+                $_SESSION['scriptcase']['sc_url_saida'][$script_case_init] = $nm_url_saida; 
+                $nm_url_saida = "form_clients_steps_renew_fim.php"; 
+                $_SESSION['scriptcase']['sc_tp_saida'] = "P"; 
+                if ($nm_apl_dependente == 1) 
+                { 
+                    $_SESSION['scriptcase']['sc_tp_saida'] = "D"; 
+                } 
+                if (isset($_SESSION['scriptcase']['nm_sc_retorno']) && !empty($_SESSION['scriptcase']['nm_sc_retorno']) && $nm_apl_dependente != 1) 
+                { 
+                    $_SESSION['scriptcase']['sc_url_saida'][$script_case_init] = $_SESSION['scriptcase']['nm_sc_retorno']; 
+                } 
+            } 
+        }
+        if (empty($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['volta_tp']) && $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_iframe'] != "F" && $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_iframe'] != "R")
+        {
+            if (!isset($nm_saida_global)) {
+                $nm_saida_global = $nm_url_saida;
+            }
+            $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['volta_php'] = $nm_url_saida;
+            $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['volta_apl'] = $nm_saida_global;
+            $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['volta_ss']  = (isset($_SESSION['scriptcase']['sc_url_saida'][$script_case_init])) ? $_SESSION['scriptcase']['sc_url_saida'][$script_case_init] : "";
+            $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['volta_dep'] = (isset($nm_apl_dependente)) ? $nm_apl_dependente : "";
+            $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['volta_tp']  = (isset($_SESSION['scriptcase']['sc_tp_saida'])) ? $_SESSION['scriptcase']['sc_tp_saida'] : "";
+        }
+        $nm_url_saida      = (isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['volta_php'])) ? $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['volta_php'] : "";
+        $nm_apl_dependente = (isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['volta_dep'])) ? $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['volta_dep'] : "";
+        $nm_saida_global   = $nm_url_saida;
+        if ($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_iframe'] != "F" && $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_iframe'] != "R" && !empty($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['volta_ss'])) 
+        { 
+            $_SESSION['scriptcase']['sc_url_saida'][$script_case_init] = $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['volta_ss'];
+            $_SESSION['scriptcase']['sc_tp_saida']  = $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['volta_tp'];
+        } 
+        if ($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_iframe'] == "F" || $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_iframe'] == "R") 
+        { 
+            if (!empty($nmgp_url_saida) && empty($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['retorno_edit'])) 
+            {
+                $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['retorno_edit'] = $nmgp_url_saida . "?script_case_init=" . $script_case_init; 
+            } 
+        } 
+        if (isset($_SESSION['scriptcase']['nm_sc_retorno']) && !empty($_SESSION['scriptcase']['nm_sc_retorno']) && $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_iframe'] != "F" && $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['run_iframe'] != "R") 
+        { 
+            $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['menu_desenv'] = true;   
+        } 
+    }
+    if (isset($nmgp_redir)) 
+    { 
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['redir'] = $nmgp_redir;   
+    } 
+    if (isset($nmgp_outra_jan) && $nmgp_outra_jan == 'true')
+    {
+        $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['sc_outra_jan'] = true;
+         if (isset($nmgp_url_saida) && $nmgp_url_saida == "modal")
+         {
+             $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['sc_modal'] = true;
+             $nm_url_saida = "form_clients_steps_renew_fim.php"; 
+         }
+    }
+    if (isset($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['sc_outra_jan']) && $_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['sc_outra_jan'])
+    {
+        $nm_apl_dependente = 0;
+    }
+    $GLOBALS["NM_ERRO_IBASE"] = 0;  
+    if (isset($_SESSION['nm_session']['user']['sec']['flag']) && $_SESSION['nm_session']['user']['sec']['flag'] == "N") 
+    { 
+        $_SESSION['scriptcase']['sc_apl_seg']['form_clients_steps_renew'] = "on";
+    } 
+    if (!isset($_SESSION['scriptcase']['form_clients_steps_renew']['session_timeout']['redir']) && (!isset($_SESSION['scriptcase']['sc_apl_seg']['form_clients_steps_renew']) || $_SESSION['scriptcase']['sc_apl_seg']['form_clients_steps_renew'] != "on"))
+    { 
+        $NM_Mens_Erro = $Nm_lang['lang_errm_unth_user'];
+        $nm_botao_ok = ($_SESSION['sc_session'][$script_case_init]['form_clients_steps_renew']['iframe_menu']) ? false : true;
+        if (isset($_SESSION['scriptcase']['sc_aba_iframe']))
+        {
+            foreach ($_SESSION['scriptcase']['sc_aba_iframe'] as $aba => $apls_aba)
+            {
+                if (in_array("form_clients_steps_renew", $apls_aba))
+                {
+                    $nm_botao_ok = false;
+                     break;
+                }
+            }
+        }
+      $str_schema_app = (isset($_SESSION['scriptcase']['str_schema_all']) && !empty($_SESSION['scriptcase']['str_schema_all'])) ? $_SESSION['scriptcase']['str_schema_all'] : "Sc9_SweetBlue/Sc9_SweetBlue";
+       $str_button_app = (isset($_SESSION['scriptcase']['str_button_all'])) ? $_SESSION['scriptcase']['str_button_all'] : "scriptcase9_SweetBlue";
+       $_SESSION['scriptcase']['str_button_all'] = $str_button_app;
+    header("X-XSS-Protection: 1; mode=block");
+    header("X-Frame-Options: SAMEORIGIN");
+?>
+<!DOCTYPE html>
+
+        <HTML>
+         <HEAD>
+          <TITLE></TITLE>
+          <META http-equiv="Content-Type" content="text/html; charset=<?php echo $_SESSION['scriptcase']['charset_html'] ?>" />
+<?php
+
+        if (isset($_SESSION['scriptcase']['device_mobile']) && $_SESSION['scriptcase']['device_mobile'] && $_SESSION['scriptcase']['display_mobile'])
+        {
+?>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+<?php
+        }
+
+?>
+          <META http-equiv="Expires" content="Fri, Jan 01 1900 00:00:00 GMT" />
+          <META http-equiv="Last-Modified" content="<?php echo gmdate('D, d M Y H:i:s') ?> GMT" />
+          <META http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+          <META http-equiv="Cache-Control" content="post-check=0, pre-check=0" />
+          <META http-equiv="Pragma" content="no-cache" />
+          <META http-equiv="Expires" content="Fri, Jan 01 1900 00:00:00 GMT"/>          <META http-equiv="Pragma" content="no-cache"/>
+          <link rel="shortcut icon" href="../_lib/img/grp__NM__bg__NM__pfm_img.png">
+          <link rel="stylesheet" type="text/css" href="../_lib/css/<?php echo $str_schema_app ?>_form.css" />
+          <link rel="stylesheet" type="text/css" href="../_lib/css/<?php echo $str_schema_app ?>_form<?php echo $_SESSION['scriptcase']['reg_conf']['css_dir'] ?>.css" />
+          <link rel="stylesheet" type="text/css" href="../_lib/buttons/<?php echo $str_button_app . '/' . $str_button_app ?>.css" />
+         </HEAD>
+         <body class="scFormPage">
+          <div class="scFormBorder">
+          <table align="center" style="width: 100%" class="scFormTable"><tr><td class="scFormDataOdd" style="padding: 15px 30px; text-align: center">
+           <?php echo $NM_Mens_Erro; ?>
+<?php
+        if ($nm_botao_ok)
+        {
+?>
+          <br />
+          <form name="Fseg" method="post" 
+                              action="<?php echo $nm_url_saida; ?>" 
+                              target="_self"> 
+           <input type="hidden" name="script_case_init" value="<?php echo $script_case_init; ?>"/> 
+           <input type="submit" name="sc_sai_seg" value="OK" class="" > 
+          </form> 
+          <script type="text/javascript">
+            function nm_move()
+            { }
+            function nm_atualiza()
+            { }
+          </script> 
+<?php
+        }
+?>
+          </td></tr></table>
+          </div>
+<?php
+       if (isset($_SESSION['scriptcase']['nm_sc_retorno']) && !empty($_SESSION['scriptcase']['nm_sc_retorno']))
+       {
+?>
+<br /><br /><br />
+<div class="scFormBorder">
+ <table align="center" style="width: 450px" class="scFormTable">
+  <tr>
+   <td class="scFormDataOdd" style="padding: 15px 30px">
+    <?php echo $Nm_lang['lang_errm_unth_hwto']; ?>
+   </td>
+  </tr>
+ </table>
+</div>
+<?php
+       }
+?>
+         </body>
+        </HTML>
+<?php
+        exit;
+    } 
+    $inicial_form_clients_steps_renew = new form_clients_steps_renew_edit();
+    $inicial_form_clients_steps_renew->inicializa();
+
+    $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['select_html'] = array();
+    $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['select_html']['bus_cat_id'] = "class=\"sc-js-input scFormObjectOdd css_bus_cat_id_obj{SC_100PERC_CLASS_INPUT}\" style=\"\" id=\"id_sc_field_bus_cat_id\" name=\"bus_cat_id\" size=\"1\" alt=\"{type: 'select', enterTab: false}\"";
+    $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['select_html']['bus_subcat_id'] = "class=\"sc-js-input scFormObjectOdd css_bus_subcat_id_obj{SC_100PERC_CLASS_INPUT}\" style=\"\" id=\"id_sc_field_bus_subcat_id\" name=\"bus_subcat_id\" size=\"1\" alt=\"{type: 'select', enterTab: false}\"";
+    $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['select_html']['doc_type'] = " onClick=\"\" ";
+
+    if (!defined('SC_SAJAX_LOADED'))
+    {
+        include_once(dirname(__FILE__) . '/form_clients_steps_renew_sajax.php');
+        define('SC_SAJAX_LOADED', 'YES');
+    }
+    if (!class_exists('Services_JSON'))
+    {
+        include_once(dirname(__FILE__) . '/form_clients_steps_renew_json.php');
+    }
+    $sajax_request_type = "POST";
+    sajax_init();
+    //$sajax_debug_mode = 1;
+    sajax_export("ajax_form_clients_steps_renew_validate_dummy02");
+    sajax_export("ajax_form_clients_steps_renew_validate_dummy03");
+    sajax_export("ajax_form_clients_steps_renew_validate_co_name");
+    sajax_export("ajax_form_clients_steps_renew_validate_client_id");
+    sajax_export("ajax_form_clients_steps_renew_validate_mailing_address");
+    sajax_export("ajax_form_clients_steps_renew_validate_appn_date");
+    sajax_export("ajax_form_clients_steps_renew_validate_city");
+    sajax_export("ajax_form_clients_steps_renew_validate_bus_cat_id");
+    sajax_export("ajax_form_clients_steps_renew_validate_state");
+    sajax_export("ajax_form_clients_steps_renew_validate_bus_subcat_id");
+    sajax_export("ajax_form_clients_steps_renew_validate_zip_code");
+    sajax_export("ajax_form_clients_steps_renew_validate_bus_subcat_other");
+    sajax_export("ajax_form_clients_steps_renew_validate_phone_number");
+    sajax_export("ajax_form_clients_steps_renew_validate_website_url");
+    sajax_export("ajax_form_clients_steps_renew_validate_email");
+    sajax_export("ajax_form_clients_steps_renew_validate_acct_instagram");
+    sajax_export("ajax_form_clients_steps_renew_validate_dummy01");
+    sajax_export("ajax_form_clients_steps_renew_validate_acct_facebook");
+    sajax_export("ajax_form_clients_steps_renew_validate_dummy04");
+    sajax_export("ajax_form_clients_steps_renew_validate_dummy07");
+    sajax_export("ajax_form_clients_steps_renew_validate_dummy08");
+    sajax_export("ajax_form_clients_steps_renew_validate_main_contact_name");
+    sajax_export("ajax_form_clients_steps_renew_validate_main_contact_phone");
+    sajax_export("ajax_form_clients_steps_renew_validate_main_contact_email");
+    sajax_export("ajax_form_clients_steps_renew_validate_main_contact_title");
+    sajax_export("ajax_form_clients_steps_renew_validate_main_contact_img_id");
+    sajax_export("ajax_form_clients_steps_renew_validate_doc_type");
+    sajax_export("ajax_form_clients_steps_renew_validate_doc_file");
+    sajax_export("ajax_form_clients_steps_renew_validate_appn_note");
+    sajax_export("ajax_form_clients_steps_renew_validate_memb_name");
+    sajax_export("ajax_form_clients_steps_renew_validate_memb_phone");
+    sajax_export("ajax_form_clients_steps_renew_validate_memb_email");
+    sajax_export("ajax_form_clients_steps_renew_validate_memb_note");
+    sajax_export("ajax_form_clients_steps_renew_validate_member1_name");
+    sajax_export("ajax_form_clients_steps_renew_validate_member1_phone");
+    sajax_export("ajax_form_clients_steps_renew_validate_member1_email");
+    sajax_export("ajax_form_clients_steps_renew_validate_member1_note");
+    sajax_export("ajax_form_clients_steps_renew_validate_member2_name");
+    sajax_export("ajax_form_clients_steps_renew_validate_member2_phone");
+    sajax_export("ajax_form_clients_steps_renew_validate_member2_email");
+    sajax_export("ajax_form_clients_steps_renew_validate_member2_note");
+    sajax_export("ajax_form_clients_steps_renew_validate_member3_name");
+    sajax_export("ajax_form_clients_steps_renew_validate_member3_phone");
+    sajax_export("ajax_form_clients_steps_renew_validate_member3_email");
+    sajax_export("ajax_form_clients_steps_renew_validate_member3_note");
+    sajax_export("ajax_form_clients_steps_renew_validate_dummy05");
+    sajax_export("ajax_form_clients_steps_renew_validate_adtl_memb_name");
+    sajax_export("ajax_form_clients_steps_renew_validate_adtl_memb_phone");
+    sajax_export("ajax_form_clients_steps_renew_validate_adtl_memb_note");
+    sajax_export("ajax_form_clients_steps_renew_validate_addtl_memb_mail");
+    sajax_export("ajax_form_clients_steps_renew_validate_member4_name");
+    sajax_export("ajax_form_clients_steps_renew_validate_member4_phone");
+    sajax_export("ajax_form_clients_steps_renew_validate_member4_email");
+    sajax_export("ajax_form_clients_steps_renew_validate_member4_note");
+    sajax_export("ajax_form_clients_steps_renew_validate_member5_name");
+    sajax_export("ajax_form_clients_steps_renew_validate_member5_phone");
+    sajax_export("ajax_form_clients_steps_renew_validate_member5_email");
+    sajax_export("ajax_form_clients_steps_renew_validate_member5_note");
+    sajax_export("ajax_form_clients_steps_renew_validate_member6_name");
+    sajax_export("ajax_form_clients_steps_renew_validate_member6_phone");
+    sajax_export("ajax_form_clients_steps_renew_validate_member6_email");
+    sajax_export("ajax_form_clients_steps_renew_validate_member6_note");
+    sajax_export("ajax_form_clients_steps_renew_validate_member7_name");
+    sajax_export("ajax_form_clients_steps_renew_validate_member7_phone");
+    sajax_export("ajax_form_clients_steps_renew_validate_member7_email");
+    sajax_export("ajax_form_clients_steps_renew_validate_member7_note");
+    sajax_export("ajax_form_clients_steps_renew_validate_member8_name");
+    sajax_export("ajax_form_clients_steps_renew_validate_member8_phone");
+    sajax_export("ajax_form_clients_steps_renew_validate_member8_email");
+    sajax_export("ajax_form_clients_steps_renew_validate_member8_note");
+    sajax_export("ajax_form_clients_steps_renew_validate_member9_name");
+    sajax_export("ajax_form_clients_steps_renew_validate_member9_phone");
+    sajax_export("ajax_form_clients_steps_renew_validate_member9_email");
+    sajax_export("ajax_form_clients_steps_renew_validate_member9_note");
+    sajax_export("ajax_form_clients_steps_renew_validate_member10_name");
+    sajax_export("ajax_form_clients_steps_renew_validate_member10_phone");
+    sajax_export("ajax_form_clients_steps_renew_validate_member10_email");
+    sajax_export("ajax_form_clients_steps_renew_validate_member10_note");
+    sajax_export("ajax_form_clients_steps_renew_validate_dummy06");
+    sajax_export("ajax_form_clients_steps_renew_validate_xlsx_sample");
+    sajax_export("ajax_form_clients_steps_renew_validate_more_buyers_xlsx");
+    sajax_export("ajax_form_clients_steps_renew_validate_buyers_excel_qty");
+    sajax_export("ajax_form_clients_steps_renew_validate_dummy09");
+    sajax_export("ajax_form_clients_steps_renew_validate_dummy11");
+    sajax_export("ajax_form_clients_steps_renew_validate_rules");
+    sajax_export("ajax_form_clients_steps_renew_validate_rules_warn");
+    sajax_export("ajax_form_clients_steps_renew_validate_memb_levels");
+    sajax_export("ajax_form_clients_steps_renew_validate_est_memb_cost");
+    sajax_export("ajax_form_clients_steps_renew_validate_pay");
+    sajax_export("ajax_form_clients_steps_renew_validate_read_at_sign");
+    sajax_export("ajax_form_clients_steps_renew_validate_applicant_name");
+    sajax_export("ajax_form_clients_steps_renew_validate_applicant_title");
+    sajax_export("ajax_form_clients_steps_renew_validate_dummy10");
+    sajax_export("ajax_form_clients_steps_renew_validate_applicant_signature");
+    sajax_export("ajax_form_clients_steps_renew_refresh_bus_cat_id");
+    sajax_export("ajax_form_clients_steps_renew_event_bus_cat_id_onchange");
+    sajax_export("ajax_form_clients_steps_renew_event_bus_subcat_id_onchange");
+    sajax_export("ajax_form_clients_steps_renew_event_buyers_excel_qty_onchange");
+    sajax_export("ajax_form_clients_steps_renew_event_main_contact_email_onchange");
+    sajax_export("ajax_form_clients_steps_renew_event_main_contact_name_onchange");
+    sajax_export("ajax_form_clients_steps_renew_event_main_contact_phone_onchange");
+    sajax_export("ajax_form_clients_steps_renew_event_main_contact_title_onchange");
+    sajax_export("ajax_form_clients_steps_renew_event_member10_name_onchange");
+    sajax_export("ajax_form_clients_steps_renew_event_member1_name_onchange");
+    sajax_export("ajax_form_clients_steps_renew_event_member2_name_onchange");
+    sajax_export("ajax_form_clients_steps_renew_event_member3_name_onchange");
+    sajax_export("ajax_form_clients_steps_renew_event_member4_name_onchange");
+    sajax_export("ajax_form_clients_steps_renew_event_member5_name_onchange");
+    sajax_export("ajax_form_clients_steps_renew_event_member6_name_onchange");
+    sajax_export("ajax_form_clients_steps_renew_event_member7_name_onchange");
+    sajax_export("ajax_form_clients_steps_renew_event_member8_name_onchange");
+    sajax_export("ajax_form_clients_steps_renew_event_member9_name_onchange");
+    sajax_export("ajax_form_clients_steps_renew_submit_form");
+    sajax_export("ajax_form_clients_steps_renew_navigate_form");
+    sajax_handle_client_request();
+
+    if (isset($_POST['wizard_action']) && 'change_step' == $_POST['wizard_action']) {
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'] = true;
+        ob_start();
+    }
+
+    $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+//
+    function nm_limpa_str_form_clients_steps_renew(&$str)
+    {
+    }
+
+    function ajax_form_clients_steps_renew_validate_dummy02($dummy02, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_dummy02';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'dummy02' => NM_utf8_urldecode($dummy02),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_dummy02
+
+    function ajax_form_clients_steps_renew_validate_dummy03($dummy03, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_dummy03';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'dummy03' => NM_utf8_urldecode($dummy03),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_dummy03
+
+    function ajax_form_clients_steps_renew_validate_co_name($co_name, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_co_name';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'co_name' => NM_utf8_urldecode($co_name),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_co_name
+
+    function ajax_form_clients_steps_renew_validate_client_id($client_id, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_client_id';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'client_id' => NM_utf8_urldecode($client_id),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_client_id
+
+    function ajax_form_clients_steps_renew_validate_mailing_address($mailing_address, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_mailing_address';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'mailing_address' => NM_utf8_urldecode($mailing_address),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_mailing_address
+
+    function ajax_form_clients_steps_renew_validate_appn_date($appn_date, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_appn_date';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'appn_date' => NM_utf8_urldecode($appn_date),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_appn_date
+
+    function ajax_form_clients_steps_renew_validate_city($city, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_city';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'city' => NM_utf8_urldecode($city),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_city
+
+    function ajax_form_clients_steps_renew_validate_bus_cat_id($bus_cat_id, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_bus_cat_id';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'bus_cat_id' => NM_utf8_urldecode($bus_cat_id),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_bus_cat_id
+
+    function ajax_form_clients_steps_renew_validate_state($state, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_state';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'state' => NM_utf8_urldecode($state),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_state
+
+    function ajax_form_clients_steps_renew_validate_bus_subcat_id($bus_subcat_id, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_bus_subcat_id';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'bus_subcat_id' => NM_utf8_urldecode($bus_subcat_id),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_bus_subcat_id
+
+    function ajax_form_clients_steps_renew_validate_zip_code($zip_code, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_zip_code';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'zip_code' => NM_utf8_urldecode($zip_code),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_zip_code
+
+    function ajax_form_clients_steps_renew_validate_bus_subcat_other($bus_subcat_other, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_bus_subcat_other';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'bus_subcat_other' => NM_utf8_urldecode($bus_subcat_other),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_bus_subcat_other
+
+    function ajax_form_clients_steps_renew_validate_phone_number($phone_number, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_phone_number';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'phone_number' => NM_utf8_urldecode($phone_number),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_phone_number
+
+    function ajax_form_clients_steps_renew_validate_website_url($website_url, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_website_url';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'website_url' => NM_utf8_urldecode($website_url),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_website_url
+
+    function ajax_form_clients_steps_renew_validate_email($email, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_email';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'email' => NM_utf8_urldecode($email),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_email
+
+    function ajax_form_clients_steps_renew_validate_acct_instagram($acct_instagram, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_acct_instagram';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'acct_instagram' => NM_utf8_urldecode($acct_instagram),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_acct_instagram
+
+    function ajax_form_clients_steps_renew_validate_dummy01($dummy01, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_dummy01';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'dummy01' => NM_utf8_urldecode($dummy01),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_dummy01
+
+    function ajax_form_clients_steps_renew_validate_acct_facebook($acct_facebook, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_acct_facebook';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'acct_facebook' => NM_utf8_urldecode($acct_facebook),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_acct_facebook
+
+    function ajax_form_clients_steps_renew_validate_dummy04($dummy04, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_dummy04';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'dummy04' => NM_utf8_urldecode($dummy04),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_dummy04
+
+    function ajax_form_clients_steps_renew_validate_dummy07($dummy07, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_dummy07';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'dummy07' => NM_utf8_urldecode($dummy07),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_dummy07
+
+    function ajax_form_clients_steps_renew_validate_dummy08($dummy08, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_dummy08';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'dummy08' => NM_utf8_urldecode($dummy08),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_dummy08
+
+    function ajax_form_clients_steps_renew_validate_main_contact_name($main_contact_name, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_main_contact_name';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'main_contact_name' => NM_utf8_urldecode($main_contact_name),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_main_contact_name
+
+    function ajax_form_clients_steps_renew_validate_main_contact_phone($main_contact_phone, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_main_contact_phone';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'main_contact_phone' => NM_utf8_urldecode($main_contact_phone),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_main_contact_phone
+
+    function ajax_form_clients_steps_renew_validate_main_contact_email($main_contact_email, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_main_contact_email';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'main_contact_email' => NM_utf8_urldecode($main_contact_email),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_main_contact_email
+
+    function ajax_form_clients_steps_renew_validate_main_contact_title($main_contact_title, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_main_contact_title';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'main_contact_title' => NM_utf8_urldecode($main_contact_title),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_main_contact_title
+
+    function ajax_form_clients_steps_renew_validate_main_contact_img_id($main_contact_img_id, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_main_contact_img_id';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'main_contact_img_id' => NM_utf8_urldecode($main_contact_img_id),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_main_contact_img_id
+
+    function ajax_form_clients_steps_renew_validate_doc_type($doc_type, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_doc_type';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'doc_type' => NM_utf8_urldecode($doc_type),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_doc_type
+
+    function ajax_form_clients_steps_renew_validate_doc_file($doc_file, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_doc_file';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'doc_file' => NM_utf8_urldecode($doc_file),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_doc_file
+
+    function ajax_form_clients_steps_renew_validate_appn_note($appn_note, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_appn_note';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'appn_note' => NM_utf8_urldecode($appn_note),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_appn_note
+
+    function ajax_form_clients_steps_renew_validate_memb_name($memb_name, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_memb_name';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'memb_name' => NM_utf8_urldecode($memb_name),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_memb_name
+
+    function ajax_form_clients_steps_renew_validate_memb_phone($memb_phone, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_memb_phone';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'memb_phone' => NM_utf8_urldecode($memb_phone),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_memb_phone
+
+    function ajax_form_clients_steps_renew_validate_memb_email($memb_email, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_memb_email';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'memb_email' => NM_utf8_urldecode($memb_email),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_memb_email
+
+    function ajax_form_clients_steps_renew_validate_memb_note($memb_note, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_memb_note';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'memb_note' => NM_utf8_urldecode($memb_note),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_memb_note
+
+    function ajax_form_clients_steps_renew_validate_member1_name($member1_name, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member1_name';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member1_name' => NM_utf8_urldecode($member1_name),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member1_name
+
+    function ajax_form_clients_steps_renew_validate_member1_phone($member1_phone, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member1_phone';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member1_phone' => NM_utf8_urldecode($member1_phone),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member1_phone
+
+    function ajax_form_clients_steps_renew_validate_member1_email($member1_email, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member1_email';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member1_email' => NM_utf8_urldecode($member1_email),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member1_email
+
+    function ajax_form_clients_steps_renew_validate_member1_note($member1_note, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member1_note';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member1_note' => NM_utf8_urldecode($member1_note),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member1_note
+
+    function ajax_form_clients_steps_renew_validate_member2_name($member2_name, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member2_name';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member2_name' => NM_utf8_urldecode($member2_name),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member2_name
+
+    function ajax_form_clients_steps_renew_validate_member2_phone($member2_phone, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member2_phone';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member2_phone' => NM_utf8_urldecode($member2_phone),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member2_phone
+
+    function ajax_form_clients_steps_renew_validate_member2_email($member2_email, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member2_email';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member2_email' => NM_utf8_urldecode($member2_email),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member2_email
+
+    function ajax_form_clients_steps_renew_validate_member2_note($member2_note, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member2_note';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member2_note' => NM_utf8_urldecode($member2_note),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member2_note
+
+    function ajax_form_clients_steps_renew_validate_member3_name($member3_name, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member3_name';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member3_name' => NM_utf8_urldecode($member3_name),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member3_name
+
+    function ajax_form_clients_steps_renew_validate_member3_phone($member3_phone, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member3_phone';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member3_phone' => NM_utf8_urldecode($member3_phone),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member3_phone
+
+    function ajax_form_clients_steps_renew_validate_member3_email($member3_email, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member3_email';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member3_email' => NM_utf8_urldecode($member3_email),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member3_email
+
+    function ajax_form_clients_steps_renew_validate_member3_note($member3_note, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member3_note';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member3_note' => NM_utf8_urldecode($member3_note),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member3_note
+
+    function ajax_form_clients_steps_renew_validate_dummy05($dummy05, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_dummy05';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'dummy05' => NM_utf8_urldecode($dummy05),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_dummy05
+
+    function ajax_form_clients_steps_renew_validate_adtl_memb_name($adtl_memb_name, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_adtl_memb_name';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'adtl_memb_name' => NM_utf8_urldecode($adtl_memb_name),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_adtl_memb_name
+
+    function ajax_form_clients_steps_renew_validate_adtl_memb_phone($adtl_memb_phone, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_adtl_memb_phone';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'adtl_memb_phone' => NM_utf8_urldecode($adtl_memb_phone),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_adtl_memb_phone
+
+    function ajax_form_clients_steps_renew_validate_adtl_memb_note($adtl_memb_note, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_adtl_memb_note';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'adtl_memb_note' => NM_utf8_urldecode($adtl_memb_note),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_adtl_memb_note
+
+    function ajax_form_clients_steps_renew_validate_addtl_memb_mail($addtl_memb_mail, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_addtl_memb_mail';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'addtl_memb_mail' => NM_utf8_urldecode($addtl_memb_mail),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_addtl_memb_mail
+
+    function ajax_form_clients_steps_renew_validate_member4_name($member4_name, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member4_name';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member4_name' => NM_utf8_urldecode($member4_name),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member4_name
+
+    function ajax_form_clients_steps_renew_validate_member4_phone($member4_phone, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member4_phone';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member4_phone' => NM_utf8_urldecode($member4_phone),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member4_phone
+
+    function ajax_form_clients_steps_renew_validate_member4_email($member4_email, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member4_email';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member4_email' => NM_utf8_urldecode($member4_email),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member4_email
+
+    function ajax_form_clients_steps_renew_validate_member4_note($member4_note, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member4_note';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member4_note' => NM_utf8_urldecode($member4_note),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member4_note
+
+    function ajax_form_clients_steps_renew_validate_member5_name($member5_name, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member5_name';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member5_name' => NM_utf8_urldecode($member5_name),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member5_name
+
+    function ajax_form_clients_steps_renew_validate_member5_phone($member5_phone, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member5_phone';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member5_phone' => NM_utf8_urldecode($member5_phone),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member5_phone
+
+    function ajax_form_clients_steps_renew_validate_member5_email($member5_email, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member5_email';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member5_email' => NM_utf8_urldecode($member5_email),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member5_email
+
+    function ajax_form_clients_steps_renew_validate_member5_note($member5_note, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member5_note';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member5_note' => NM_utf8_urldecode($member5_note),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member5_note
+
+    function ajax_form_clients_steps_renew_validate_member6_name($member6_name, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member6_name';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member6_name' => NM_utf8_urldecode($member6_name),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member6_name
+
+    function ajax_form_clients_steps_renew_validate_member6_phone($member6_phone, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member6_phone';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member6_phone' => NM_utf8_urldecode($member6_phone),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member6_phone
+
+    function ajax_form_clients_steps_renew_validate_member6_email($member6_email, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member6_email';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member6_email' => NM_utf8_urldecode($member6_email),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member6_email
+
+    function ajax_form_clients_steps_renew_validate_member6_note($member6_note, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member6_note';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member6_note' => NM_utf8_urldecode($member6_note),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member6_note
+
+    function ajax_form_clients_steps_renew_validate_member7_name($member7_name, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member7_name';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member7_name' => NM_utf8_urldecode($member7_name),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member7_name
+
+    function ajax_form_clients_steps_renew_validate_member7_phone($member7_phone, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member7_phone';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member7_phone' => NM_utf8_urldecode($member7_phone),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member7_phone
+
+    function ajax_form_clients_steps_renew_validate_member7_email($member7_email, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member7_email';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member7_email' => NM_utf8_urldecode($member7_email),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member7_email
+
+    function ajax_form_clients_steps_renew_validate_member7_note($member7_note, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member7_note';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member7_note' => NM_utf8_urldecode($member7_note),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member7_note
+
+    function ajax_form_clients_steps_renew_validate_member8_name($member8_name, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member8_name';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member8_name' => NM_utf8_urldecode($member8_name),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member8_name
+
+    function ajax_form_clients_steps_renew_validate_member8_phone($member8_phone, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member8_phone';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member8_phone' => NM_utf8_urldecode($member8_phone),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member8_phone
+
+    function ajax_form_clients_steps_renew_validate_member8_email($member8_email, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member8_email';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member8_email' => NM_utf8_urldecode($member8_email),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member8_email
+
+    function ajax_form_clients_steps_renew_validate_member8_note($member8_note, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member8_note';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member8_note' => NM_utf8_urldecode($member8_note),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member8_note
+
+    function ajax_form_clients_steps_renew_validate_member9_name($member9_name, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member9_name';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member9_name' => NM_utf8_urldecode($member9_name),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member9_name
+
+    function ajax_form_clients_steps_renew_validate_member9_phone($member9_phone, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member9_phone';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member9_phone' => NM_utf8_urldecode($member9_phone),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member9_phone
+
+    function ajax_form_clients_steps_renew_validate_member9_email($member9_email, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member9_email';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member9_email' => NM_utf8_urldecode($member9_email),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member9_email
+
+    function ajax_form_clients_steps_renew_validate_member9_note($member9_note, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member9_note';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member9_note' => NM_utf8_urldecode($member9_note),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member9_note
+
+    function ajax_form_clients_steps_renew_validate_member10_name($member10_name, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member10_name';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member10_name' => NM_utf8_urldecode($member10_name),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member10_name
+
+    function ajax_form_clients_steps_renew_validate_member10_phone($member10_phone, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member10_phone';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member10_phone' => NM_utf8_urldecode($member10_phone),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member10_phone
+
+    function ajax_form_clients_steps_renew_validate_member10_email($member10_email, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member10_email';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member10_email' => NM_utf8_urldecode($member10_email),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member10_email
+
+    function ajax_form_clients_steps_renew_validate_member10_note($member10_note, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_member10_note';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member10_note' => NM_utf8_urldecode($member10_note),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_member10_note
+
+    function ajax_form_clients_steps_renew_validate_dummy06($dummy06, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_dummy06';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'dummy06' => NM_utf8_urldecode($dummy06),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_dummy06
+
+    function ajax_form_clients_steps_renew_validate_xlsx_sample($xlsx_sample, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_xlsx_sample';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'xlsx_sample' => NM_utf8_urldecode($xlsx_sample),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_xlsx_sample
+
+    function ajax_form_clients_steps_renew_validate_more_buyers_xlsx($more_buyers_xlsx, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_more_buyers_xlsx';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'more_buyers_xlsx' => NM_utf8_urldecode($more_buyers_xlsx),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_more_buyers_xlsx
+
+    function ajax_form_clients_steps_renew_validate_buyers_excel_qty($buyers_excel_qty, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_buyers_excel_qty';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'buyers_excel_qty' => NM_utf8_urldecode($buyers_excel_qty),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_buyers_excel_qty
+
+    function ajax_form_clients_steps_renew_validate_dummy09($dummy09, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_dummy09';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'dummy09' => NM_utf8_urldecode($dummy09),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_dummy09
+
+    function ajax_form_clients_steps_renew_validate_dummy11($dummy11, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_dummy11';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'dummy11' => NM_utf8_urldecode($dummy11),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_dummy11
+
+    function ajax_form_clients_steps_renew_validate_rules($rules, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_rules';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'rules' => NM_utf8_urldecode($rules),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_rules
+
+    function ajax_form_clients_steps_renew_validate_rules_warn($rules_warn, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_rules_warn';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'rules_warn' => NM_utf8_urldecode($rules_warn),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_rules_warn
+
+    function ajax_form_clients_steps_renew_validate_memb_levels($memb_levels, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_memb_levels';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'memb_levels' => NM_utf8_urldecode($memb_levels),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_memb_levels
+
+    function ajax_form_clients_steps_renew_validate_est_memb_cost($est_memb_cost, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_est_memb_cost';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'est_memb_cost' => NM_utf8_urldecode($est_memb_cost),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_est_memb_cost
+
+    function ajax_form_clients_steps_renew_validate_pay($pay, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_pay';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'pay' => NM_utf8_urldecode($pay),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_pay
+
+    function ajax_form_clients_steps_renew_validate_read_at_sign($read_at_sign, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_read_at_sign';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'read_at_sign' => NM_utf8_urldecode($read_at_sign),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_read_at_sign
+
+    function ajax_form_clients_steps_renew_validate_applicant_name($applicant_name, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_applicant_name';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'applicant_name' => NM_utf8_urldecode($applicant_name),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_applicant_name
+
+    function ajax_form_clients_steps_renew_validate_applicant_title($applicant_title, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_applicant_title';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'applicant_title' => NM_utf8_urldecode($applicant_title),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_applicant_title
+
+    function ajax_form_clients_steps_renew_validate_dummy10($dummy10, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_dummy10';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'dummy10' => NM_utf8_urldecode($dummy10),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_dummy10
+
+    function ajax_form_clients_steps_renew_validate_applicant_signature($applicant_signature, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'validate_applicant_signature';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'applicant_signature' => NM_utf8_urldecode($applicant_signature),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_validate_applicant_signature
+
+    function ajax_form_clients_steps_renew_refresh_bus_cat_id($bus_cat_id, $nmgp_refresh_fields, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'refresh_bus_cat_id';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'bus_cat_id' => NM_utf8_urldecode($bus_cat_id),
+                  'nmgp_refresh_fields' => NM_utf8_urldecode($nmgp_refresh_fields),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_refresh_bus_cat_id
+
+    function ajax_form_clients_steps_renew_event_bus_cat_id_onchange($bus_cat_id, $member1_name, $member2_name, $member3_name, $member4_name, $member5_name, $member6_name, $member7_name, $member8_name, $member9_name, $member10_name, $buyers_excel_qty, $bus_subcat_id, $est_memb_cost, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'event_bus_cat_id_onchange';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'bus_cat_id' => NM_utf8_urldecode($bus_cat_id),
+                  'member1_name' => NM_utf8_urldecode($member1_name),
+                  'member2_name' => NM_utf8_urldecode($member2_name),
+                  'member3_name' => NM_utf8_urldecode($member3_name),
+                  'member4_name' => NM_utf8_urldecode($member4_name),
+                  'member5_name' => NM_utf8_urldecode($member5_name),
+                  'member6_name' => NM_utf8_urldecode($member6_name),
+                  'member7_name' => NM_utf8_urldecode($member7_name),
+                  'member8_name' => NM_utf8_urldecode($member8_name),
+                  'member9_name' => NM_utf8_urldecode($member9_name),
+                  'member10_name' => NM_utf8_urldecode($member10_name),
+                  'buyers_excel_qty' => NM_utf8_urldecode($buyers_excel_qty),
+                  'bus_subcat_id' => NM_utf8_urldecode($bus_subcat_id),
+                  'est_memb_cost' => NM_utf8_urldecode($est_memb_cost),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_event_bus_cat_id_onchange
+
+    function ajax_form_clients_steps_renew_event_bus_subcat_id_onchange($member1_name, $member2_name, $member3_name, $member4_name, $member5_name, $member6_name, $member7_name, $member8_name, $member9_name, $member10_name, $buyers_excel_qty, $bus_cat_id, $bus_subcat_id, $est_memb_cost, $bus_subcat_other, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'event_bus_subcat_id_onchange';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member1_name' => NM_utf8_urldecode($member1_name),
+                  'member2_name' => NM_utf8_urldecode($member2_name),
+                  'member3_name' => NM_utf8_urldecode($member3_name),
+                  'member4_name' => NM_utf8_urldecode($member4_name),
+                  'member5_name' => NM_utf8_urldecode($member5_name),
+                  'member6_name' => NM_utf8_urldecode($member6_name),
+                  'member7_name' => NM_utf8_urldecode($member7_name),
+                  'member8_name' => NM_utf8_urldecode($member8_name),
+                  'member9_name' => NM_utf8_urldecode($member9_name),
+                  'member10_name' => NM_utf8_urldecode($member10_name),
+                  'buyers_excel_qty' => NM_utf8_urldecode($buyers_excel_qty),
+                  'bus_cat_id' => NM_utf8_urldecode($bus_cat_id),
+                  'bus_subcat_id' => NM_utf8_urldecode($bus_subcat_id),
+                  'est_memb_cost' => NM_utf8_urldecode($est_memb_cost),
+                  'bus_subcat_other' => NM_utf8_urldecode($bus_subcat_other),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_event_bus_subcat_id_onchange
+
+    function ajax_form_clients_steps_renew_event_buyers_excel_qty_onchange($member1_name, $member2_name, $member3_name, $member4_name, $member5_name, $member6_name, $member7_name, $member8_name, $member9_name, $member10_name, $buyers_excel_qty, $bus_cat_id, $bus_subcat_id, $est_memb_cost, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'event_buyers_excel_qty_onchange';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member1_name' => NM_utf8_urldecode($member1_name),
+                  'member2_name' => NM_utf8_urldecode($member2_name),
+                  'member3_name' => NM_utf8_urldecode($member3_name),
+                  'member4_name' => NM_utf8_urldecode($member4_name),
+                  'member5_name' => NM_utf8_urldecode($member5_name),
+                  'member6_name' => NM_utf8_urldecode($member6_name),
+                  'member7_name' => NM_utf8_urldecode($member7_name),
+                  'member8_name' => NM_utf8_urldecode($member8_name),
+                  'member9_name' => NM_utf8_urldecode($member9_name),
+                  'member10_name' => NM_utf8_urldecode($member10_name),
+                  'buyers_excel_qty' => NM_utf8_urldecode($buyers_excel_qty),
+                  'bus_cat_id' => NM_utf8_urldecode($bus_cat_id),
+                  'bus_subcat_id' => NM_utf8_urldecode($bus_subcat_id),
+                  'est_memb_cost' => NM_utf8_urldecode($est_memb_cost),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_event_buyers_excel_qty_onchange
+
+    function ajax_form_clients_steps_renew_event_main_contact_email_onchange($member1_email, $main_contact_email, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'event_main_contact_email_onchange';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member1_email' => NM_utf8_urldecode($member1_email),
+                  'main_contact_email' => NM_utf8_urldecode($main_contact_email),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_event_main_contact_email_onchange
+
+    function ajax_form_clients_steps_renew_event_main_contact_name_onchange($member1_name, $main_contact_name, $applicant_name, $member2_name, $member3_name, $member4_name, $member5_name, $member6_name, $member7_name, $member8_name, $member9_name, $member10_name, $buyers_excel_qty, $bus_cat_id, $bus_subcat_id, $est_memb_cost, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'event_main_contact_name_onchange';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member1_name' => NM_utf8_urldecode($member1_name),
+                  'main_contact_name' => NM_utf8_urldecode($main_contact_name),
+                  'applicant_name' => NM_utf8_urldecode($applicant_name),
+                  'member2_name' => NM_utf8_urldecode($member2_name),
+                  'member3_name' => NM_utf8_urldecode($member3_name),
+                  'member4_name' => NM_utf8_urldecode($member4_name),
+                  'member5_name' => NM_utf8_urldecode($member5_name),
+                  'member6_name' => NM_utf8_urldecode($member6_name),
+                  'member7_name' => NM_utf8_urldecode($member7_name),
+                  'member8_name' => NM_utf8_urldecode($member8_name),
+                  'member9_name' => NM_utf8_urldecode($member9_name),
+                  'member10_name' => NM_utf8_urldecode($member10_name),
+                  'buyers_excel_qty' => NM_utf8_urldecode($buyers_excel_qty),
+                  'bus_cat_id' => NM_utf8_urldecode($bus_cat_id),
+                  'bus_subcat_id' => NM_utf8_urldecode($bus_subcat_id),
+                  'est_memb_cost' => NM_utf8_urldecode($est_memb_cost),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_event_main_contact_name_onchange
+
+    function ajax_form_clients_steps_renew_event_main_contact_phone_onchange($member1_phone, $main_contact_phone, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'event_main_contact_phone_onchange';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member1_phone' => NM_utf8_urldecode($member1_phone),
+                  'main_contact_phone' => NM_utf8_urldecode($main_contact_phone),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_event_main_contact_phone_onchange
+
+    function ajax_form_clients_steps_renew_event_main_contact_title_onchange($applicant_title, $main_contact_title, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'event_main_contact_title_onchange';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'applicant_title' => NM_utf8_urldecode($applicant_title),
+                  'main_contact_title' => NM_utf8_urldecode($main_contact_title),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_event_main_contact_title_onchange
+
+    function ajax_form_clients_steps_renew_event_member10_name_onchange($member1_name, $member2_name, $member3_name, $member4_name, $member5_name, $member6_name, $member7_name, $member8_name, $member9_name, $member10_name, $buyers_excel_qty, $bus_cat_id, $bus_subcat_id, $est_memb_cost, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'event_member10_name_onchange';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member1_name' => NM_utf8_urldecode($member1_name),
+                  'member2_name' => NM_utf8_urldecode($member2_name),
+                  'member3_name' => NM_utf8_urldecode($member3_name),
+                  'member4_name' => NM_utf8_urldecode($member4_name),
+                  'member5_name' => NM_utf8_urldecode($member5_name),
+                  'member6_name' => NM_utf8_urldecode($member6_name),
+                  'member7_name' => NM_utf8_urldecode($member7_name),
+                  'member8_name' => NM_utf8_urldecode($member8_name),
+                  'member9_name' => NM_utf8_urldecode($member9_name),
+                  'member10_name' => NM_utf8_urldecode($member10_name),
+                  'buyers_excel_qty' => NM_utf8_urldecode($buyers_excel_qty),
+                  'bus_cat_id' => NM_utf8_urldecode($bus_cat_id),
+                  'bus_subcat_id' => NM_utf8_urldecode($bus_subcat_id),
+                  'est_memb_cost' => NM_utf8_urldecode($est_memb_cost),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_event_member10_name_onchange
+
+    function ajax_form_clients_steps_renew_event_member1_name_onchange($est_memb_cost, $member1_name, $member2_name, $member3_name, $member4_name, $member5_name, $member6_name, $member7_name, $member8_name, $member9_name, $member10_name, $buyers_excel_qty, $bus_cat_id, $bus_subcat_id, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'event_member1_name_onchange';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'est_memb_cost' => NM_utf8_urldecode($est_memb_cost),
+                  'member1_name' => NM_utf8_urldecode($member1_name),
+                  'member2_name' => NM_utf8_urldecode($member2_name),
+                  'member3_name' => NM_utf8_urldecode($member3_name),
+                  'member4_name' => NM_utf8_urldecode($member4_name),
+                  'member5_name' => NM_utf8_urldecode($member5_name),
+                  'member6_name' => NM_utf8_urldecode($member6_name),
+                  'member7_name' => NM_utf8_urldecode($member7_name),
+                  'member8_name' => NM_utf8_urldecode($member8_name),
+                  'member9_name' => NM_utf8_urldecode($member9_name),
+                  'member10_name' => NM_utf8_urldecode($member10_name),
+                  'buyers_excel_qty' => NM_utf8_urldecode($buyers_excel_qty),
+                  'bus_cat_id' => NM_utf8_urldecode($bus_cat_id),
+                  'bus_subcat_id' => NM_utf8_urldecode($bus_subcat_id),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_event_member1_name_onchange
+
+    function ajax_form_clients_steps_renew_event_member2_name_onchange($est_memb_cost, $member1_name, $member2_name, $member3_name, $member4_name, $member5_name, $member6_name, $member7_name, $member8_name, $member9_name, $member10_name, $buyers_excel_qty, $bus_cat_id, $bus_subcat_id, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'event_member2_name_onchange';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'est_memb_cost' => NM_utf8_urldecode($est_memb_cost),
+                  'member1_name' => NM_utf8_urldecode($member1_name),
+                  'member2_name' => NM_utf8_urldecode($member2_name),
+                  'member3_name' => NM_utf8_urldecode($member3_name),
+                  'member4_name' => NM_utf8_urldecode($member4_name),
+                  'member5_name' => NM_utf8_urldecode($member5_name),
+                  'member6_name' => NM_utf8_urldecode($member6_name),
+                  'member7_name' => NM_utf8_urldecode($member7_name),
+                  'member8_name' => NM_utf8_urldecode($member8_name),
+                  'member9_name' => NM_utf8_urldecode($member9_name),
+                  'member10_name' => NM_utf8_urldecode($member10_name),
+                  'buyers_excel_qty' => NM_utf8_urldecode($buyers_excel_qty),
+                  'bus_cat_id' => NM_utf8_urldecode($bus_cat_id),
+                  'bus_subcat_id' => NM_utf8_urldecode($bus_subcat_id),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_event_member2_name_onchange
+
+    function ajax_form_clients_steps_renew_event_member3_name_onchange($member1_name, $member2_name, $member3_name, $member4_name, $member5_name, $member6_name, $member7_name, $member8_name, $member9_name, $member10_name, $buyers_excel_qty, $bus_cat_id, $bus_subcat_id, $est_memb_cost, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'event_member3_name_onchange';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member1_name' => NM_utf8_urldecode($member1_name),
+                  'member2_name' => NM_utf8_urldecode($member2_name),
+                  'member3_name' => NM_utf8_urldecode($member3_name),
+                  'member4_name' => NM_utf8_urldecode($member4_name),
+                  'member5_name' => NM_utf8_urldecode($member5_name),
+                  'member6_name' => NM_utf8_urldecode($member6_name),
+                  'member7_name' => NM_utf8_urldecode($member7_name),
+                  'member8_name' => NM_utf8_urldecode($member8_name),
+                  'member9_name' => NM_utf8_urldecode($member9_name),
+                  'member10_name' => NM_utf8_urldecode($member10_name),
+                  'buyers_excel_qty' => NM_utf8_urldecode($buyers_excel_qty),
+                  'bus_cat_id' => NM_utf8_urldecode($bus_cat_id),
+                  'bus_subcat_id' => NM_utf8_urldecode($bus_subcat_id),
+                  'est_memb_cost' => NM_utf8_urldecode($est_memb_cost),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_event_member3_name_onchange
+
+    function ajax_form_clients_steps_renew_event_member4_name_onchange($member1_name, $member2_name, $member3_name, $member4_name, $member5_name, $member6_name, $member7_name, $member8_name, $member9_name, $member10_name, $buyers_excel_qty, $bus_cat_id, $bus_subcat_id, $est_memb_cost, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'event_member4_name_onchange';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member1_name' => NM_utf8_urldecode($member1_name),
+                  'member2_name' => NM_utf8_urldecode($member2_name),
+                  'member3_name' => NM_utf8_urldecode($member3_name),
+                  'member4_name' => NM_utf8_urldecode($member4_name),
+                  'member5_name' => NM_utf8_urldecode($member5_name),
+                  'member6_name' => NM_utf8_urldecode($member6_name),
+                  'member7_name' => NM_utf8_urldecode($member7_name),
+                  'member8_name' => NM_utf8_urldecode($member8_name),
+                  'member9_name' => NM_utf8_urldecode($member9_name),
+                  'member10_name' => NM_utf8_urldecode($member10_name),
+                  'buyers_excel_qty' => NM_utf8_urldecode($buyers_excel_qty),
+                  'bus_cat_id' => NM_utf8_urldecode($bus_cat_id),
+                  'bus_subcat_id' => NM_utf8_urldecode($bus_subcat_id),
+                  'est_memb_cost' => NM_utf8_urldecode($est_memb_cost),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_event_member4_name_onchange
+
+    function ajax_form_clients_steps_renew_event_member5_name_onchange($member1_name, $member2_name, $member3_name, $member4_name, $member5_name, $member6_name, $member7_name, $member8_name, $member9_name, $member10_name, $buyers_excel_qty, $bus_cat_id, $bus_subcat_id, $est_memb_cost, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'event_member5_name_onchange';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member1_name' => NM_utf8_urldecode($member1_name),
+                  'member2_name' => NM_utf8_urldecode($member2_name),
+                  'member3_name' => NM_utf8_urldecode($member3_name),
+                  'member4_name' => NM_utf8_urldecode($member4_name),
+                  'member5_name' => NM_utf8_urldecode($member5_name),
+                  'member6_name' => NM_utf8_urldecode($member6_name),
+                  'member7_name' => NM_utf8_urldecode($member7_name),
+                  'member8_name' => NM_utf8_urldecode($member8_name),
+                  'member9_name' => NM_utf8_urldecode($member9_name),
+                  'member10_name' => NM_utf8_urldecode($member10_name),
+                  'buyers_excel_qty' => NM_utf8_urldecode($buyers_excel_qty),
+                  'bus_cat_id' => NM_utf8_urldecode($bus_cat_id),
+                  'bus_subcat_id' => NM_utf8_urldecode($bus_subcat_id),
+                  'est_memb_cost' => NM_utf8_urldecode($est_memb_cost),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_event_member5_name_onchange
+
+    function ajax_form_clients_steps_renew_event_member6_name_onchange($member1_name, $member2_name, $member3_name, $member4_name, $member5_name, $member6_name, $member7_name, $member8_name, $member9_name, $member10_name, $buyers_excel_qty, $bus_cat_id, $bus_subcat_id, $est_memb_cost, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'event_member6_name_onchange';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member1_name' => NM_utf8_urldecode($member1_name),
+                  'member2_name' => NM_utf8_urldecode($member2_name),
+                  'member3_name' => NM_utf8_urldecode($member3_name),
+                  'member4_name' => NM_utf8_urldecode($member4_name),
+                  'member5_name' => NM_utf8_urldecode($member5_name),
+                  'member6_name' => NM_utf8_urldecode($member6_name),
+                  'member7_name' => NM_utf8_urldecode($member7_name),
+                  'member8_name' => NM_utf8_urldecode($member8_name),
+                  'member9_name' => NM_utf8_urldecode($member9_name),
+                  'member10_name' => NM_utf8_urldecode($member10_name),
+                  'buyers_excel_qty' => NM_utf8_urldecode($buyers_excel_qty),
+                  'bus_cat_id' => NM_utf8_urldecode($bus_cat_id),
+                  'bus_subcat_id' => NM_utf8_urldecode($bus_subcat_id),
+                  'est_memb_cost' => NM_utf8_urldecode($est_memb_cost),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_event_member6_name_onchange
+
+    function ajax_form_clients_steps_renew_event_member7_name_onchange($member1_name, $member2_name, $member3_name, $member4_name, $member5_name, $member6_name, $member7_name, $member8_name, $member9_name, $member10_name, $buyers_excel_qty, $bus_cat_id, $bus_subcat_id, $est_memb_cost, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'event_member7_name_onchange';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member1_name' => NM_utf8_urldecode($member1_name),
+                  'member2_name' => NM_utf8_urldecode($member2_name),
+                  'member3_name' => NM_utf8_urldecode($member3_name),
+                  'member4_name' => NM_utf8_urldecode($member4_name),
+                  'member5_name' => NM_utf8_urldecode($member5_name),
+                  'member6_name' => NM_utf8_urldecode($member6_name),
+                  'member7_name' => NM_utf8_urldecode($member7_name),
+                  'member8_name' => NM_utf8_urldecode($member8_name),
+                  'member9_name' => NM_utf8_urldecode($member9_name),
+                  'member10_name' => NM_utf8_urldecode($member10_name),
+                  'buyers_excel_qty' => NM_utf8_urldecode($buyers_excel_qty),
+                  'bus_cat_id' => NM_utf8_urldecode($bus_cat_id),
+                  'bus_subcat_id' => NM_utf8_urldecode($bus_subcat_id),
+                  'est_memb_cost' => NM_utf8_urldecode($est_memb_cost),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_event_member7_name_onchange
+
+    function ajax_form_clients_steps_renew_event_member8_name_onchange($member1_name, $member2_name, $member3_name, $member4_name, $member5_name, $member6_name, $member7_name, $member8_name, $member9_name, $member10_name, $buyers_excel_qty, $bus_cat_id, $bus_subcat_id, $est_memb_cost, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'event_member8_name_onchange';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member1_name' => NM_utf8_urldecode($member1_name),
+                  'member2_name' => NM_utf8_urldecode($member2_name),
+                  'member3_name' => NM_utf8_urldecode($member3_name),
+                  'member4_name' => NM_utf8_urldecode($member4_name),
+                  'member5_name' => NM_utf8_urldecode($member5_name),
+                  'member6_name' => NM_utf8_urldecode($member6_name),
+                  'member7_name' => NM_utf8_urldecode($member7_name),
+                  'member8_name' => NM_utf8_urldecode($member8_name),
+                  'member9_name' => NM_utf8_urldecode($member9_name),
+                  'member10_name' => NM_utf8_urldecode($member10_name),
+                  'buyers_excel_qty' => NM_utf8_urldecode($buyers_excel_qty),
+                  'bus_cat_id' => NM_utf8_urldecode($bus_cat_id),
+                  'bus_subcat_id' => NM_utf8_urldecode($bus_subcat_id),
+                  'est_memb_cost' => NM_utf8_urldecode($est_memb_cost),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_event_member8_name_onchange
+
+    function ajax_form_clients_steps_renew_event_member9_name_onchange($member1_name, $member2_name, $member3_name, $member4_name, $member5_name, $member6_name, $member7_name, $member8_name, $member9_name, $member10_name, $buyers_excel_qty, $bus_cat_id, $bus_subcat_id, $est_memb_cost, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'event_member9_name_onchange';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'member1_name' => NM_utf8_urldecode($member1_name),
+                  'member2_name' => NM_utf8_urldecode($member2_name),
+                  'member3_name' => NM_utf8_urldecode($member3_name),
+                  'member4_name' => NM_utf8_urldecode($member4_name),
+                  'member5_name' => NM_utf8_urldecode($member5_name),
+                  'member6_name' => NM_utf8_urldecode($member6_name),
+                  'member7_name' => NM_utf8_urldecode($member7_name),
+                  'member8_name' => NM_utf8_urldecode($member8_name),
+                  'member9_name' => NM_utf8_urldecode($member9_name),
+                  'member10_name' => NM_utf8_urldecode($member10_name),
+                  'buyers_excel_qty' => NM_utf8_urldecode($buyers_excel_qty),
+                  'bus_cat_id' => NM_utf8_urldecode($bus_cat_id),
+                  'bus_subcat_id' => NM_utf8_urldecode($bus_subcat_id),
+                  'est_memb_cost' => NM_utf8_urldecode($est_memb_cost),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_event_member9_name_onchange
+
+    function ajax_form_clients_steps_renew_submit_form($dummy02, $dummy03, $co_name, $client_id, $mailing_address, $appn_date, $city, $bus_cat_id, $state, $bus_subcat_id, $zip_code, $bus_subcat_other, $phone_number, $website_url, $email, $acct_instagram, $dummy01, $acct_facebook, $dummy04, $dummy07, $dummy08, $main_contact_name, $main_contact_phone, $main_contact_email, $main_contact_title, $main_contact_img_id, $doc_type, $doc_file, $appn_note, $memb_name, $memb_phone, $memb_email, $memb_note, $member1_name, $member1_phone, $member1_email, $member1_note, $member2_name, $member2_phone, $member2_email, $member2_note, $member3_name, $member3_phone, $member3_email, $member3_note, $dummy05, $adtl_memb_name, $adtl_memb_phone, $adtl_memb_note, $addtl_memb_mail, $member4_name, $member4_phone, $member4_email, $member4_note, $member5_name, $member5_phone, $member5_email, $member5_note, $member6_name, $member6_phone, $member6_email, $member6_note, $member7_name, $member7_phone, $member7_email, $member7_note, $member8_name, $member8_phone, $member8_email, $member8_note, $member9_name, $member9_phone, $member9_email, $member9_note, $member10_name, $member10_phone, $member10_email, $member10_note, $dummy06, $xlsx_sample, $more_buyers_xlsx, $buyers_excel_qty, $dummy09, $dummy11, $rules, $rules_warn, $memb_levels, $est_memb_cost, $pay, $read_at_sign, $applicant_name, $applicant_title, $dummy10, $applicant_signature, $doc_file_ul_name, $doc_file_ul_type, $main_contact_img_id_ul_name, $main_contact_img_id_ul_type, $more_buyers_xlsx_ul_name, $more_buyers_xlsx_ul_type, $main_contact_img_id_limpa, $doc_file_salva, $doc_file_limpa, $more_buyers_xlsx_salva, $more_buyers_xlsx_limpa, $nm_form_submit, $nmgp_url_saida, $nmgp_opcao, $nmgp_ancora, $nmgp_num_form, $nmgp_parms, $script_case_init, $csrf_token)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'submit_form';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'dummy02' => NM_utf8_urldecode($dummy02),
+                  'dummy03' => NM_utf8_urldecode($dummy03),
+                  'co_name' => NM_utf8_urldecode($co_name),
+                  'client_id' => NM_utf8_urldecode($client_id),
+                  'mailing_address' => NM_utf8_urldecode($mailing_address),
+                  'appn_date' => NM_utf8_urldecode($appn_date),
+                  'city' => NM_utf8_urldecode($city),
+                  'bus_cat_id' => NM_utf8_urldecode($bus_cat_id),
+                  'state' => NM_utf8_urldecode($state),
+                  'bus_subcat_id' => NM_utf8_urldecode($bus_subcat_id),
+                  'zip_code' => NM_utf8_urldecode($zip_code),
+                  'bus_subcat_other' => NM_utf8_urldecode($bus_subcat_other),
+                  'phone_number' => NM_utf8_urldecode($phone_number),
+                  'website_url' => NM_utf8_urldecode($website_url),
+                  'email' => NM_utf8_urldecode($email),
+                  'acct_instagram' => NM_utf8_urldecode($acct_instagram),
+                  'dummy01' => NM_utf8_urldecode($dummy01),
+                  'acct_facebook' => NM_utf8_urldecode($acct_facebook),
+                  'dummy04' => NM_utf8_urldecode($dummy04),
+                  'dummy07' => NM_utf8_urldecode($dummy07),
+                  'dummy08' => NM_utf8_urldecode($dummy08),
+                  'main_contact_name' => NM_utf8_urldecode($main_contact_name),
+                  'main_contact_phone' => NM_utf8_urldecode($main_contact_phone),
+                  'main_contact_email' => NM_utf8_urldecode($main_contact_email),
+                  'main_contact_title' => NM_utf8_urldecode($main_contact_title),
+                  'main_contact_img_id' => NM_utf8_urldecode($main_contact_img_id),
+                  'doc_type' => NM_utf8_urldecode($doc_type),
+                  'doc_file' => NM_utf8_urldecode($doc_file),
+                  'appn_note' => NM_utf8_urldecode($appn_note),
+                  'memb_name' => NM_utf8_urldecode($memb_name),
+                  'memb_phone' => NM_utf8_urldecode($memb_phone),
+                  'memb_email' => NM_utf8_urldecode($memb_email),
+                  'memb_note' => NM_utf8_urldecode($memb_note),
+                  'member1_name' => NM_utf8_urldecode($member1_name),
+                  'member1_phone' => NM_utf8_urldecode($member1_phone),
+                  'member1_email' => NM_utf8_urldecode($member1_email),
+                  'member1_note' => NM_utf8_urldecode($member1_note),
+                  'member2_name' => NM_utf8_urldecode($member2_name),
+                  'member2_phone' => NM_utf8_urldecode($member2_phone),
+                  'member2_email' => NM_utf8_urldecode($member2_email),
+                  'member2_note' => NM_utf8_urldecode($member2_note),
+                  'member3_name' => NM_utf8_urldecode($member3_name),
+                  'member3_phone' => NM_utf8_urldecode($member3_phone),
+                  'member3_email' => NM_utf8_urldecode($member3_email),
+                  'member3_note' => NM_utf8_urldecode($member3_note),
+                  'dummy05' => NM_utf8_urldecode($dummy05),
+                  'adtl_memb_name' => NM_utf8_urldecode($adtl_memb_name),
+                  'adtl_memb_phone' => NM_utf8_urldecode($adtl_memb_phone),
+                  'adtl_memb_note' => NM_utf8_urldecode($adtl_memb_note),
+                  'addtl_memb_mail' => NM_utf8_urldecode($addtl_memb_mail),
+                  'member4_name' => NM_utf8_urldecode($member4_name),
+                  'member4_phone' => NM_utf8_urldecode($member4_phone),
+                  'member4_email' => NM_utf8_urldecode($member4_email),
+                  'member4_note' => NM_utf8_urldecode($member4_note),
+                  'member5_name' => NM_utf8_urldecode($member5_name),
+                  'member5_phone' => NM_utf8_urldecode($member5_phone),
+                  'member5_email' => NM_utf8_urldecode($member5_email),
+                  'member5_note' => NM_utf8_urldecode($member5_note),
+                  'member6_name' => NM_utf8_urldecode($member6_name),
+                  'member6_phone' => NM_utf8_urldecode($member6_phone),
+                  'member6_email' => NM_utf8_urldecode($member6_email),
+                  'member6_note' => NM_utf8_urldecode($member6_note),
+                  'member7_name' => NM_utf8_urldecode($member7_name),
+                  'member7_phone' => NM_utf8_urldecode($member7_phone),
+                  'member7_email' => NM_utf8_urldecode($member7_email),
+                  'member7_note' => NM_utf8_urldecode($member7_note),
+                  'member8_name' => NM_utf8_urldecode($member8_name),
+                  'member8_phone' => NM_utf8_urldecode($member8_phone),
+                  'member8_email' => NM_utf8_urldecode($member8_email),
+                  'member8_note' => NM_utf8_urldecode($member8_note),
+                  'member9_name' => NM_utf8_urldecode($member9_name),
+                  'member9_phone' => NM_utf8_urldecode($member9_phone),
+                  'member9_email' => NM_utf8_urldecode($member9_email),
+                  'member9_note' => NM_utf8_urldecode($member9_note),
+                  'member10_name' => NM_utf8_urldecode($member10_name),
+                  'member10_phone' => NM_utf8_urldecode($member10_phone),
+                  'member10_email' => NM_utf8_urldecode($member10_email),
+                  'member10_note' => NM_utf8_urldecode($member10_note),
+                  'dummy06' => NM_utf8_urldecode($dummy06),
+                  'xlsx_sample' => NM_utf8_urldecode($xlsx_sample),
+                  'more_buyers_xlsx' => NM_utf8_urldecode($more_buyers_xlsx),
+                  'buyers_excel_qty' => NM_utf8_urldecode($buyers_excel_qty),
+                  'dummy09' => NM_utf8_urldecode($dummy09),
+                  'dummy11' => NM_utf8_urldecode($dummy11),
+                  'rules' => NM_utf8_urldecode($rules),
+                  'rules_warn' => NM_utf8_urldecode($rules_warn),
+                  'memb_levels' => NM_utf8_urldecode($memb_levels),
+                  'est_memb_cost' => NM_utf8_urldecode($est_memb_cost),
+                  'pay' => NM_utf8_urldecode($pay),
+                  'read_at_sign' => NM_utf8_urldecode($read_at_sign),
+                  'applicant_name' => NM_utf8_urldecode($applicant_name),
+                  'applicant_title' => NM_utf8_urldecode($applicant_title),
+                  'dummy10' => NM_utf8_urldecode($dummy10),
+                  'applicant_signature' => NM_utf8_urldecode($applicant_signature),
+                  'doc_file_ul_name' => NM_utf8_urldecode($doc_file_ul_name),
+                  'doc_file_ul_type' => NM_utf8_urldecode($doc_file_ul_type),
+                  'main_contact_img_id_ul_name' => NM_utf8_urldecode($main_contact_img_id_ul_name),
+                  'main_contact_img_id_ul_type' => NM_utf8_urldecode($main_contact_img_id_ul_type),
+                  'more_buyers_xlsx_ul_name' => NM_utf8_urldecode($more_buyers_xlsx_ul_name),
+                  'more_buyers_xlsx_ul_type' => NM_utf8_urldecode($more_buyers_xlsx_ul_type),
+                  'main_contact_img_id_limpa' => NM_utf8_urldecode($main_contact_img_id_limpa),
+                  'doc_file_salva' => NM_utf8_urldecode($doc_file_salva),
+                  'doc_file_limpa' => NM_utf8_urldecode($doc_file_limpa),
+                  'more_buyers_xlsx_salva' => NM_utf8_urldecode($more_buyers_xlsx_salva),
+                  'more_buyers_xlsx_limpa' => NM_utf8_urldecode($more_buyers_xlsx_limpa),
+                  'nm_form_submit' => NM_utf8_urldecode($nm_form_submit),
+                  'nmgp_url_saida' => NM_utf8_urldecode($nmgp_url_saida),
+                  'nmgp_opcao' => NM_utf8_urldecode($nmgp_opcao),
+                  'nmgp_ancora' => NM_utf8_urldecode($nmgp_ancora),
+                  'nmgp_num_form' => NM_utf8_urldecode($nmgp_num_form),
+                  'nmgp_parms' => NM_utf8_urldecode($nmgp_parms),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'csrf_token' => NM_utf8_urldecode($csrf_token),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_submit_form
+
+    function ajax_form_clients_steps_renew_navigate_form($client_id, $nm_form_submit, $nmgp_opcao, $nmgp_ordem, $nmgp_arg_dyn_search, $script_case_init)
+    {
+        global $inicial_form_clients_steps_renew;
+        //register_shutdown_function("form_clients_steps_renew_pack_ajax_response");
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_flag          = true;
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao         = 'navigate_form';
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param'] = array(
+                  'client_id' => NM_utf8_urldecode($client_id),
+                  'nm_form_submit' => NM_utf8_urldecode($nm_form_submit),
+                  'nmgp_opcao' => NM_utf8_urldecode($nmgp_opcao),
+                  'nmgp_ordem' => NM_utf8_urldecode($nmgp_ordem),
+                  'nmgp_arg_dyn_search' => NM_utf8_urldecode($nmgp_arg_dyn_search),
+                  'script_case_init' => NM_utf8_urldecode($script_case_init),
+                  'buffer_output' => true,
+                 );
+        if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+        {
+            ob_start();
+        }
+        $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->controle();
+        exit;
+    } // ajax_navigate_form
+
+
+   function form_clients_steps_renew_pack_ajax_response()
+   {
+      global $inicial_form_clients_steps_renew;
+      $aResp = array();
+
+      if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['wizard']))
+      {
+          $aResp['wizard'] = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['wizard'];
+      }
+      if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['empty_filter']))
+      {
+          $aResp['empty_filter'] = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['empty_filter'];
+      }
+      if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['dyn_search']['NM_Dynamic_Search']))
+      {
+          $aResp['dyn_search']['NM_Dynamic_Search'] = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['dyn_search']['NM_Dynamic_Search'];
+      }
+      if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['dyn_search']['id_dyn_search_cmd_str']))
+      {
+          $aResp['dyn_search']['id_dyn_search_cmd_str'] = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['dyn_search']['id_dyn_search_cmd_str'];
+      }
+      if ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['calendarReload'])
+      {
+         $aResp['result'] = 'CALENDARRELOAD';
+      }
+      elseif ('' != $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['autoComp'])
+      {
+         $aResp['result'] = 'AUTOCOMP';
+      }
+//mestre_detalhe
+      elseif (!empty($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['newline']))
+      {
+         $aResp['result'] = 'NEWLINE';
+         ob_end_clean();
+      }
+      elseif (!empty($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['tableRefresh']))
+      {
+         $aResp['result'] = 'TABLEREFRESH';
+      }
+//-----
+      elseif (!empty($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['errList']))
+      {
+         $aResp['result'] = 'ERROR';
+      }
+      elseif (!empty($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['fldList']))
+      {
+         $aResp['result'] = 'SET';
+      }
+      else
+      {
+         $aResp['result'] = 'OK';
+      }
+      if ('AUTOCOMP' == $aResp['result'])
+      {
+         $aResp = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['autoComp'];
+      }
+//mestre_detalhe
+      elseif ('NEWLINE' == $aResp['result'])
+      {
+         $aResp = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['newline'];
+      }
+      else
+//-----
+      {
+         $aResp['ajaxRequest'] = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_opcao;
+         if ('CALENDARRELOAD' == $aResp['result'])
+         {
+            form_clients_steps_renew_pack_calendar_reload($aResp);
+         }
+         elseif ('ERROR' == $aResp['result'])
+         {
+            form_clients_steps_renew_pack_ajax_errors($aResp);
+         }
+         elseif ('SET' == $aResp['result'])
+         {
+            form_clients_steps_renew_pack_ajax_set_fields($aResp);
+         }
+         elseif ('TABLEREFRESH' == $aResp['result'])
+         {
+            form_clients_steps_renew_pack_ajax_set_fields($aResp);
+            $aResp['tableRefresh'] = form_clients_steps_renew_pack_protect_string($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['tableRefresh']);
+         }
+         if ('OK' == $aResp['result'] || 'SET' == $aResp['result'])
+         {
+            form_clients_steps_renew_pack_ajax_ok($aResp);
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['focus']) && '' != $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['focus'])
+         {
+            $aResp['setFocus'] = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['focus'];
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['closeLine']) && '' != $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['closeLine'])
+         {
+            $aResp['closeLine'] = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['closeLine'];
+         }
+         else
+         {
+            $aResp['closeLine'] = 'N';
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['clearUpload']) && '' != $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['clearUpload'])
+         {
+            $aResp['clearUpload'] = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['clearUpload'];
+         }
+         else
+         {
+            $aResp['clearUpload'] = 'N';
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['btnDisabled']) && '' != $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['btnDisabled'])
+         {
+            form_clients_steps_renew_pack_btn_disabled($aResp);
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['btnLabel']) && '' != $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['btnLabel'])
+         {
+            form_clients_steps_renew_pack_btn_label($aResp);
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['varList']) && !empty($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['varList']))
+         {
+            form_clients_steps_renew_pack_var_list($aResp);
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['masterValue']) && '' != $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['masterValue'])
+         {
+            form_clients_steps_renew_pack_master_value($aResp);
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxAlert']) && '' != $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxAlert'])
+         {
+            form_clients_steps_renew_pack_ajax_alert($aResp);
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']) && '' != $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage'])
+         {
+            form_clients_steps_renew_pack_ajax_message($aResp);
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxJavascript']) && '' != $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxJavascript'])
+         {
+            form_clients_steps_renew_pack_ajax_javascript($aResp);
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['redir']) && !empty($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['redir']))
+         {
+            form_clients_steps_renew_pack_ajax_redir($aResp);
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['redirExit']) && !empty($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['redirExit']))
+         {
+            form_clients_steps_renew_pack_ajax_redir_exit($aResp);
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['blockDisplay']) && !empty($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['blockDisplay']))
+         {
+            form_clients_steps_renew_pack_ajax_block_display($aResp);
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['fieldDisplay']) && !empty($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['fieldDisplay']))
+         {
+            form_clients_steps_renew_pack_ajax_field_display($aResp);
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['buttonDisplay']) && !empty($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['buttonDisplay']))
+         {
+/* mantis 0021191 */            $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['buttonDisplay'] = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->nmgp_botoes;
+            form_clients_steps_renew_pack_ajax_button_display($aResp);
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['buttonDisplayVert']) && !empty($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['buttonDisplayVert']))
+         {
+            form_clients_steps_renew_pack_ajax_button_display_vert($aResp);
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['fieldLabel']) && !empty($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['fieldLabel']))
+         {
+            form_clients_steps_renew_pack_ajax_field_label($aResp);
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['readOnly']) && !empty($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['readOnly']))
+         {
+            form_clients_steps_renew_pack_ajax_readonly($aResp);
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['navStatus']) && !empty($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['navStatus']))
+         {
+            form_clients_steps_renew_pack_ajax_nav_status($aResp);
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['navSummary']) && !empty($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['navSummary']))
+         {
+            form_clients_steps_renew_pack_ajax_nav_Summary($aResp);
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['navPage']))
+         {
+            form_clients_steps_renew_pack_ajax_navPage($aResp);
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['btnVars']) && !empty($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['btnVars']))
+         {
+            form_clients_steps_renew_pack_ajax_btn_vars($aResp);
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['quickSearchRes']) && $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['quickSearchRes'])
+         {
+            $aResp['quickSearchRes'] = 'Y';
+         }
+         else
+         {
+            $aResp['quickSearchRes'] = 'N';
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['dyn_search']) && !empty($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['dyn_search']))
+         {
+            $aResp['dyn_search'] = array();
+            foreach ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['dyn_search'] as $Tag => $Val) {
+                $aResp['dyn_search'][$Tag] = $Val;
+            }
+         }
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['event_field']) && '' != $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['event_field'])
+         {
+            $aResp['eventField'] = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['event_field'];
+         }
+         else
+         {
+            $aResp['eventField'] = '__SC_NO_FIELD';
+         }
+         $aResp['htmOutput'] = '';
+    
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output']) && $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['buffer_output'])
+         {
+            $aResp['htmOutput'] = ob_get_contents();
+            if (false === $aResp['htmOutput'])
+            {
+               $aResp['htmOutput'] = '';
+            }
+            else
+            {
+               $aResp['htmOutput'] = form_clients_steps_renew_pack_protect_string(NM_charset_to_utf8($aResp['htmOutput']));
+               ob_end_clean();
+            }
+         }
+      }
+      if (is_array($aResp))
+      {
+          if (isset($aResp['wizard'])) {
+              echo json_encode($aResp);
+          }
+          else {
+              $oJson = new Services_JSON();
+              echo "var res = " . trim(sajax_get_js_repr($oJson->encode($aResp))) . "; res;";
+          }
+      }
+      else
+      {
+          echo "var res = " . trim(sajax_get_js_repr($aResp)) . "; res;";
+      }
+      exit;
+   } // form_clients_steps_renew_pack_ajax_response
+
+   function form_clients_steps_renew_pack_calendar_reload(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+      $aResp['calendarReload'] = 'OK';
+   } // form_clients_steps_renew_pack_calendar_reload
+
+   function form_clients_steps_renew_pack_ajax_errors(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+      $aResp['errList'] = array();
+      foreach ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['errList'] as $sField => $aMsg)
+      {
+         if ('geral_form_clients_steps_renew' == $sField)
+         {
+             $aMsg = form_clients_steps_renew_pack_ajax_remove_erros($aMsg);
+         }
+         foreach ($aMsg as $sMsg)
+         {
+            $iNumLinha = (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['nmgp_refresh_row']) && 'geral_form_clients_steps_renew' != $sField)
+                       ? $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['nmgp_refresh_row'] : "";
+            $aResp['errList'][] = array('fldName'  => $sField,
+                                        'msgText'  => form_clients_steps_renew_pack_protect_string(NM_charset_to_utf8($sMsg)),
+                                        'numLinha' => $iNumLinha);
+         }
+      }
+   } // form_clients_steps_renew_pack_ajax_errors
+
+   function form_clients_steps_renew_pack_ajax_remove_erros($aErrors)
+   {
+       $aNewErrors = array();
+       if (!empty($aErrors))
+       {
+           $sErrorMsgs = str_replace(array('<br />', '<br>', '<BR />'), array('<BR>', '<BR>', '<BR>'), implode('<br />', $aErrors));
+           $aErrorMsgs = explode('<BR>', $sErrorMsgs);
+           foreach ($aErrorMsgs as $sErrorMsg)
+           {
+               $sErrorMsg = trim($sErrorMsg);
+               if ('' != $sErrorMsg && !in_array($sErrorMsg, $aNewErrors))
+               {
+                   $aNewErrors[] = $sErrorMsg;
+               }
+           }
+       }
+       return $aNewErrors;
+   } // form_clients_steps_renew_pack_ajax_remove_erros
+
+   function form_clients_steps_renew_pack_ajax_ok(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+      $iNumLinha = (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['nmgp_refresh_row']))
+                 ? $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['nmgp_refresh_row'] : "";
+      $aResp['msgDisplay'] = array('msgText'  => form_clients_steps_renew_pack_protect_string($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['msgDisplay']),
+                                   'numLinha' => $iNumLinha);
+   } // form_clients_steps_renew_pack_ajax_ok
+
+   function form_clients_steps_renew_pack_ajax_set_fields(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+      $iNumLinha = (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['nmgp_refresh_row']))
+                 ? $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['param']['nmgp_refresh_row'] : "";
+      if ('' != $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['rsSize'])
+      {
+         $aResp['rsSize'] = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['rsSize'];
+      }
+      $aResp['fldList'] = array();
+      foreach ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['fldList'] as $sField => $aData)
+      {
+         $aField = array();
+         if (isset($aData['colNum']))
+         {
+            $aField['colNum'] = $aData['colNum'];
+         }
+         if (isset($aData['row']))
+         {
+            $aField['row'] = $aData['row'];
+         }
+         if (isset($aData['imgFile']))
+         {
+            $aField['imgFile'] = form_clients_steps_renew_pack_protect_string($aData['imgFile']);
+         }
+         if (isset($aData['imgOrig']))
+         {
+            $aField['imgOrig'] = form_clients_steps_renew_pack_protect_string($aData['imgOrig']);
+         }
+         if (isset($aData['imgLink']))
+         {
+            $aField['imgLink'] = form_clients_steps_renew_pack_protect_string($aData['imgLink']);
+         }
+         if (isset($aData['keepImg']))
+         {
+            $aField['keepImg'] = $aData['keepImg'];
+         }
+         if (isset($aData['hideName']))
+         {
+            $aField['hideName'] = $aData['hideName'];
+         }
+         if (isset($aData['docLink']))
+         {
+            $aField['docLink'] = form_clients_steps_renew_pack_protect_string($aData['docLink']);
+         }
+         if (isset($aData['docIcon']))
+         {
+            $aField['docIcon'] = form_clients_steps_renew_pack_protect_string($aData['docIcon']);
+         }
+         if (isset($aData['docReadonly']))
+         {
+            $aField['docReadonly'] = form_clients_steps_renew_pack_protect_string($aData['docReadonly']);
+         }
+         if (isset($aData['keyVal']))
+         {
+            $aField['keyVal'] = $aData['keyVal'];
+         }
+         if (isset($aData['optComp']))
+         {
+            $aField['optComp'] = $aData['optComp'];
+         }
+         if (isset($aData['optClass']))
+         {
+            $aField['optClass'] = $aData['optClass'];
+         }
+         if (isset($aData['optMulti']))
+         {
+            $aField['optMulti'] = $aData['optMulti'];
+         }
+         if (isset($aData['switch']))
+         {
+            $aField['switch'] = $aData['switch'];
+         }
+         if (isset($aData['lookupCons']))
+         {
+            $aField['lookupCons'] = $aData['lookupCons'];
+         }
+         if (isset($aData['imgHtml']))
+         {
+            $aField['imgHtml'] = form_clients_steps_renew_pack_protect_string($aData['imgHtml']);
+         }
+         if (isset($aData['mulHtml']))
+         {
+            $aField['mulHtml'] = form_clients_steps_renew_pack_protect_string($aData['mulHtml']);
+         }
+         if (isset($aData['updInnerHtml']))
+         {
+            $aField['updInnerHtml'] = $aData['updInnerHtml'];
+         }
+         if (isset($aData['htmComp']))
+         {
+            $aField['htmComp'] = str_replace("'", '__AS__', str_replace('"', '__AD__', $aData['htmComp']));
+         }
+         $aField['fldName']  = $sField;
+         $aField['fldType']  = $aData['type'];
+         $aField['numLinha'] = $iNumLinha;
+         $aField['valList']  = array();
+         foreach ($aData['valList'] as $iIndex => $sValue)
+         {
+            $aValue = array();
+            if (isset($aData['labList'][$iIndex]))
+            {
+               $aValue['label'] = form_clients_steps_renew_pack_protect_string($aData['labList'][$iIndex]);
+            }
+            $aValue['value']     = ('_autocomp' != substr($sField, -9)) ? form_clients_steps_renew_pack_protect_string($sValue) : $sValue;
+            $aField['valList'][] = $aValue;
+         }
+         foreach ($aField['valList'] as $iIndex => $aFieldData)
+         {
+             if ("null" == $aFieldData['value'])
+             {
+                 $aField['valList'][$iIndex]['value'] = '';
+             }
+         }
+         if (isset($aData['optList']) && false !== $aData['optList'])
+         {
+            if (is_array($aData['optList']))
+            {
+               $aField['optList'] = array();
+               foreach ($aData['optList'] as $aOptList)
+               {
+                  foreach ($aOptList as $sValue => $sLabel)
+                  {
+                     $sOpt = ($sValue !== $sLabel) ? $sValue : $sLabel;
+                     $aField['optList'][] = array('value' => form_clients_steps_renew_pack_protect_string($sOpt),
+                                                  'label' => form_clients_steps_renew_pack_protect_string($sLabel));
+                  }
+               }
+            }
+            else
+            {
+               $aField['optList'] = $aData['optList'];
+            }
+         }
+         $aResp['fldList'][] = $aField;
+      }
+   } // form_clients_steps_renew_pack_ajax_set_fields
+
+   function form_clients_steps_renew_pack_ajax_redir(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+      $aInfo              = array('metodo', 'action', 'target', 'nmgp_parms', 'nmgp_outra_jan', 'nmgp_url_saida', 'script_case_init', 'script_case_session', 'h_modal', 'w_modal');
+      $aResp['redirInfo'] = array();
+      foreach ($aInfo as $sTag)
+      {
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['redir'][$sTag]))
+         {
+            $aResp['redirInfo'][$sTag] = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['redir'][$sTag];
+         }
+      }
+   } // form_clients_steps_renew_pack_ajax_redir
+
+   function form_clients_steps_renew_pack_ajax_redir_exit(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+      $aInfo                  = array('metodo', 'action', 'target', 'nmgp_parms', 'nmgp_outra_jan', 'nmgp_url_saida', 'script_case_init', 'script_case_session');
+      $aResp['redirExitInfo'] = array();
+      foreach ($aInfo as $sTag)
+      {
+         if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['redirExit'][$sTag]))
+         {
+            $aResp['redirExitInfo'][$sTag] = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['redirExit'][$sTag];
+         }
+      }
+   } // form_clients_steps_renew_pack_ajax_redir_exit
+
+   function form_clients_steps_renew_pack_var_list(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+      foreach ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['varList'] as $varData)
+      {
+         $aResp['varList'][] = array('index' => key($varData),
+                                      'value' => current($varData));
+      }
+   } // form_clients_steps_renew_pack_var_list
+
+   function form_clients_steps_renew_pack_master_value(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+      foreach ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['masterValue'] as $sIndex => $sValue)
+      {
+         $aResp['masterValue'][] = array('index' => $sIndex,
+                                         'value' => $sValue);
+      }
+   } // form_clients_steps_renew_pack_master_value
+
+   function form_clients_steps_renew_pack_btn_disabled(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+      $aResp['btnDisabled'] = array();
+      foreach ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['btnDisabled'] as $btnName => $btnStatus) {
+        $aResp['btnDisabled'][$btnName] = $btnStatus;
+      }
+   } // form_clients_steps_renew_pack_ajax_alert
+
+   function form_clients_steps_renew_pack_btn_label(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+      $aResp['btnLabel'] = array();
+      foreach ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['btnLabel'] as $btnName => $btnLabel) {
+        $aResp['btnLabel'][$btnName] = $btnLabel;
+      }
+   } // form_clients_steps_renew_pack_ajax_alert
+
+   function form_clients_steps_renew_pack_ajax_alert(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+// PHP 8.0
+      if (!isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxAlert']['message'])) {
+          $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxAlert']['message'] = '';
+      }
+      if (!isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxAlert']['params'])) {
+          $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxAlert']['params'] = '';
+      }
+//---
+      $aResp['ajaxAlert'] = array('message' => $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxAlert']['message'], 'params' =>  $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxAlert']['params']);
+   } // form_clients_steps_renew_pack_ajax_alert
+
+   function form_clients_steps_renew_pack_ajax_message(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+// PHP 8.0
+      if (!isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['message'])) {
+          $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['message'] = '';
+      }
+      if (!isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['title'])) {
+          $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['title'] = '';
+      }
+//---
+      $aResp['ajaxMessage'] = array('message'      => form_clients_steps_renew_pack_protect_string($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['message']),
+                                    'title'        => form_clients_steps_renew_pack_protect_string($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['title']),
+                                    'modal'        => isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['modal'])        ? $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['modal']        : 'N',
+                                    'timeout'      => isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['timeout'])      ? $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['timeout']      : '',
+                                    'button'       => isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['button'])       ? $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['button']       : '',
+                                    'button_label' => isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['button_label']) ? $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['button_label'] : 'Ok',
+                                    'top'          => isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['top'])          ? $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['top']          : '',
+                                    'left'         => isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['left'])         ? $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['left']         : '',
+                                    'width'        => isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['width'])        ? $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['width']        : '',
+                                    'height'       => isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['height'])       ? $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['height']       : '',
+                                    'redir'        => isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['redir'])        ? $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['redir']        : '',
+                                    'show_close'   => isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['show_close'])   ? $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['show_close']   : 'Y',
+                                    'body_icon'    => isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['body_icon'])    ? $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['body_icon']    : 'Y',
+                                    'toast'        => isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['toast'])        ? $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['toast']        : 'N',
+                                    'toast_pos'    => isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['toast_pos'])    ? $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['toast_pos']    : '',
+                                    'type'         => isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['type'])         ? $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['type']         : '',
+                                    'redir_target' => isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['redir_target']) ? $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['redir_target'] : '',
+                                    'redir_par'    => isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['redir_par'])    ? $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxMessage']['redir_par']    : '');
+   } // form_clients_steps_renew_pack_ajax_message
+
+   function form_clients_steps_renew_pack_ajax_javascript(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+      foreach ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['ajaxJavascript'] as $aJsFunc)
+      {
+         $aResp['ajaxJavascript'][] = $aJsFunc;
+      }
+   } // form_clients_steps_renew_pack_ajax_javascript
+
+   function form_clients_steps_renew_pack_ajax_block_display(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+      $aResp['blockDisplay'] = array();
+      foreach ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['blockDisplay'] as $sBlockName => $sBlockStatus)
+      {
+        $aResp['blockDisplay'][] = array($sBlockName, $sBlockStatus);
+      }
+   } // form_clients_steps_renew_pack_ajax_block_display
+
+   function form_clients_steps_renew_pack_ajax_field_display(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+      $aResp['fieldDisplay'] = array();
+      foreach ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['fieldDisplay'] as $sFieldName => $sFieldStatus)
+      {
+        $aResp['fieldDisplay'][] = array($sFieldName, $sFieldStatus);
+      }
+   } // form_clients_steps_renew_pack_ajax_field_display
+
+   function form_clients_steps_renew_pack_ajax_button_display(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+      $aResp['buttonDisplay'] = array();
+      foreach ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['buttonDisplay'] as $sButtonName => $sButtonStatus)
+      {
+        $aResp['buttonDisplay'][] = array($sButtonName, $sButtonStatus);
+      }
+   } // form_clients_steps_renew_pack_ajax_button_display
+
+   function form_clients_steps_renew_pack_ajax_button_display_vert(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+      $aResp['buttonDisplayVert'] = array();
+      foreach ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['buttonDisplayVert'] as $aButtonData)
+      {
+        $aResp['buttonDisplayVert'][] = $aButtonData;
+      }
+   } // form_clients_steps_renew_pack_ajax_button_display
+
+   function form_clients_steps_renew_pack_ajax_field_label(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+      $aResp['fieldLabel'] = array();
+      foreach ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['fieldLabel'] as $sFieldName => $sFieldLabel)
+      {
+        $aResp['fieldLabel'][] = array($sFieldName, form_clients_steps_renew_pack_protect_string($sFieldLabel));
+      }
+   } // form_clients_steps_renew_pack_ajax_field_label
+
+   function form_clients_steps_renew_pack_ajax_readonly(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+      $aResp['readOnly'] = array();
+      foreach ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['readOnly'] as $sFieldName => $sFieldStatus)
+      {
+        $aResp['readOnly'][] = array($sFieldName, $sFieldStatus);
+      }
+   } // form_clients_steps_renew_pack_ajax_readonly
+
+   function form_clients_steps_renew_pack_ajax_nav_status(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+      $aResp['navStatus'] = array();
+      if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['navStatus']['ret']) && '' != $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['navStatus']['ret'])
+      {
+         $aResp['navStatus']['ret'] = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['navStatus']['ret'];
+      }
+      if (isset($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['navStatus']['ava']) && '' != $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['navStatus']['ava'])
+      {
+         $aResp['navStatus']['ava'] = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['navStatus']['ava'];
+      }
+   } // form_clients_steps_renew_pack_ajax_nav_status
+
+   function form_clients_steps_renew_pack_ajax_nav_Summary(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+      $aResp['navSummary'] = array();
+      $aResp['navSummary']['reg_ini'] = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['navSummary']['reg_ini'];
+      $aResp['navSummary']['reg_qtd'] = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['navSummary']['reg_qtd'];
+      $aResp['navSummary']['reg_tot'] = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['navSummary']['reg_tot'];
+      $aResp['navSummary']['summary_line'] = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['summary_line'];
+   } // form_clients_steps_renew_pack_ajax_nav_Summary
+
+   function form_clients_steps_renew_pack_ajax_navPage(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+      $aResp['navPage'] = $inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['navPage'];
+   } // form_clients_steps_renew_pack_ajax_navPage
+
+
+   function form_clients_steps_renew_pack_ajax_btn_vars(&$aResp)
+   {
+      global $inicial_form_clients_steps_renew;
+      $aResp['btnVars'] = array();
+      foreach ($inicial_form_clients_steps_renew->contr_form_clients_steps_renew->NM_ajax_info['btnVars'] as $sBtnName => $sBtnValue)
+      {
+        $aResp['btnVars'][] = array($sBtnName, form_clients_steps_renew_pack_protect_string($sBtnValue));
+      }
+   } // form_clients_steps_renew_pack_ajax_btn_vars
+
+   function form_clients_steps_renew_pack_protect_string($sString)
+   {
+      $sString = (string) $sString;
+
+      if (!empty($sString))
+      {
+         if (function_exists('NM_is_utf8') && NM_is_utf8($sString))
+         {
+             return $sString;
+         }
+         else
+         {
+/*             return htmlentities($sString, ENT_COMPAT, $_SESSION['scriptcase']['charset']); */
+             return sc_htmlentities($sString);
+         }
+      }
+      elseif ('0' === $sString || 0 === $sString)
+      {
+         return '0';
+      }
+      else
+      {
+         return '';
+      }
+   } // form_clients_steps_renew_pack_protect_string
+?>

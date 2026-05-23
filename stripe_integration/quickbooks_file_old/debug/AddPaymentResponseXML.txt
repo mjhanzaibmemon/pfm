@@ -1,0 +1,370 @@
+
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<ReceivePaymentAddRs requestID="2" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<ReceivePaymentRet>
+<TxnID>6711A-1706537885</TxnID>
+<TimeCreated>2024-01-29T19:48:05+05:30</TimeCreated>
+<TimeModified>2024-01-29T19:48:05+05:30</TimeModified>
+<EditSequence>1706537885</EditSequence>
+<TxnNumber>62403</TxnNumber>
+<CustomerRef>
+<ListID>80000790-1706534582</ListID>
+<FullName>Arun Tiwari</FullName>
+</CustomerRef>
+<ARAccountRef>
+<ListID>3A0000-1143919270</ListID>
+<FullName>Accounts Receivable</FullName>
+</ARAccountRef>
+<TxnDate>2024-01-29</TxnDate>
+<RefNumber>pi_3ObNj9JJ</RefNumber>
+<TotalAmount>125.00</TotalAmount>
+<DepositToAccountRef>
+<ListID>3B0000-1143948653</ListID>
+<FullName>Undeposited Funds</FullName>
+</DepositToAccountRef>
+<UnusedPayment>0.00</UnusedPayment>
+<UnusedCredits>0.00</UnusedCredits>
+<AppliedToTxnRet>
+<TxnID>67117-1706537746</TxnID>
+<TxnType>Invoice</TxnType>
+<TxnDate>2024-01-29</TxnDate>
+<RefNumber>pi_3ObNj9JJ</RefNumber>
+<BalanceRemaining>0.00</BalanceRemaining>
+<Amount>125.00</Amount>
+</AppliedToTxnRet>
+</ReceivePaymentRet>
+</ReceivePaymentAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE transactions SET payment_id ='6711A-1706537885' WHERE id = '1'
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<ReceivePaymentAddRs requestID="3" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<ReceivePaymentRet>
+<TxnID>2B189-1734273591</TxnID>
+<TimeCreated>2024-12-15T20:09:51+05:30</TimeCreated>
+<TimeModified>2024-12-15T20:09:52+05:30</TimeModified>
+<EditSequence>1734273591</EditSequence>
+<TxnNumber>1778</TxnNumber>
+<CustomerRef>
+<ListID>800000DF-1734273509</ListID>
+<FullName>Arun Tiwari</FullName>
+</CustomerRef>
+<ARAccountRef>
+<ListID>40000-933270541</ListID>
+<FullName>Accounts Receivable</FullName>
+</ARAccountRef>
+<TxnDate>2024-01-29</TxnDate>
+<RefNumber>pi_3ObNj9JJ</RefNumber>
+<TotalAmount>125.00</TotalAmount>
+<DepositToAccountRef>
+<ListID>80000-933270541</ListID>
+<FullName>Undeposited Funds</FullName>
+</DepositToAccountRef>
+<UnusedPayment>0.00</UnusedPayment>
+<UnusedCredits>0.00</UnusedCredits>
+<AppliedToTxnRet>
+<TxnID>2B184-1734273510</TxnID>
+<TxnType>Invoice</TxnType>
+<TxnDate>2024-01-29</TxnDate>
+<RefNumber>pi_3ObNj9JJ</RefNumber>
+<BalanceRemaining>0.00</BalanceRemaining>
+<Amount>125.00</Amount>
+</AppliedToTxnRet>
+</ReceivePaymentRet>
+</ReceivePaymentAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE transactions SET payment_id ='2B189-1734273591' WHERE id = '1'
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<ReceivePaymentAddRs requestID="2" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<ReceivePaymentRet>
+<TxnID>67122-1706703258</TxnID>
+<TimeCreated>2024-01-31T17:44:18+05:30</TimeCreated>
+<TimeModified>2024-01-31T17:44:18+05:30</TimeModified>
+<EditSequence>1706703258</EditSequence>
+<TxnNumber>62405</TxnNumber>
+<CustomerRef>
+<ListID>80000790-1706534582</ListID>
+<FullName>Arun Tiwari</FullName>
+</CustomerRef>
+<ARAccountRef>
+<ListID>3A0000-1143919270</ListID>
+<FullName>Accounts Receivable</FullName>
+</ARAccountRef>
+<TxnDate>2024-01-31</TxnDate>
+<RefNumber>pi_3ObOOyJJ</RefNumber>
+<TotalAmount>125.00</TotalAmount>
+<DepositToAccountRef>
+<ListID>3B0000-1143948653</ListID>
+<FullName>Undeposited Funds</FullName>
+</DepositToAccountRef>
+<UnusedPayment>0.00</UnusedPayment>
+<UnusedCredits>0.00</UnusedCredits>
+<AppliedToTxnRet>
+<TxnID>6711F-1706703222</TxnID>
+<TxnType>Invoice</TxnType>
+<TxnDate>2024-01-31</TxnDate>
+<RefNumber>pi_3ObOOyJJ</RefNumber>
+<BalanceRemaining>0.00</BalanceRemaining>
+<Amount>125.00</Amount>
+</AppliedToTxnRet>
+</ReceivePaymentRet>
+</ReceivePaymentAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE transactions SET payment_id ='67122-1706703258' WHERE id = '2'
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<ReceivePaymentAddRs requestID="3" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<ReceivePaymentRet>
+<TxnID>5-1706865312</TxnID>
+<TimeCreated>2024-02-02T01:15:12-08:00</TimeCreated>
+<TimeModified>2024-02-02T01:15:12-08:00</TimeModified>
+<EditSequence>1706865312</EditSequence>
+<TxnNumber>2</TxnNumber>
+<CustomerRef>
+<ListID>80000003-1706864086</ListID>
+<FullName>Arun Tiwari</FullName>
+</CustomerRef>
+<ARAccountRef>
+<ListID>80000004-933270541</ListID>
+<FullName>Accounts Receivable</FullName>
+</ARAccountRef>
+<TxnDate>2024-02-02</TxnDate>
+<RefNumber>pi_3ObNj9JJ</RefNumber>
+<TotalAmount>125.00</TotalAmount>
+<DepositToAccountRef>
+<ListID>80000008-933270541</ListID>
+<FullName>Undeposited Funds</FullName>
+</DepositToAccountRef>
+<UnusedPayment>0.00</UnusedPayment>
+<UnusedCredits>0.00</UnusedCredits>
+<AppliedToTxnRet>
+<TxnID>1-1706864729</TxnID>
+<TxnType>Invoice</TxnType>
+<TxnDate>2024-02-02</TxnDate>
+<RefNumber>pi_3ObNj9JJ</RefNumber>
+<BalanceRemaining>9.69</BalanceRemaining>
+<Amount>125.00</Amount>
+</AppliedToTxnRet>
+</ReceivePaymentRet>
+</ReceivePaymentAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE transactions SET payment_id ='5-1706865312' WHERE id = '1'
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<ReceivePaymentAddRs requestID="1" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<ReceivePaymentRet>
+<TxnID>18-1706865813</TxnID>
+<TimeCreated>2024-02-02T01:23:33-08:00</TimeCreated>
+<TimeModified>2024-02-02T01:23:33-08:00</TimeModified>
+<EditSequence>1706865813</EditSequence>
+<TxnNumber>6</TxnNumber>
+<CustomerRef>
+<ListID>80000003-1706864086</ListID>
+<FullName>Arun Tiwari</FullName>
+</CustomerRef>
+<ARAccountRef>
+<ListID>80000004-933270541</ListID>
+<FullName>Accounts Receivable</FullName>
+</ARAccountRef>
+<TxnDate>2024-02-02</TxnDate>
+<RefNumber>pi_3ObNj9JJ</RefNumber>
+<TotalAmount>125.00</TotalAmount>
+<DepositToAccountRef>
+<ListID>80000008-933270541</ListID>
+<FullName>Undeposited Funds</FullName>
+</DepositToAccountRef>
+<UnusedPayment>0.00</UnusedPayment>
+<UnusedCredits>0.00</UnusedCredits>
+<AppliedToTxnRet>
+<TxnID>C-1706865762</TxnID>
+<TxnType>Invoice</TxnType>
+<TxnDate>2024-02-02</TxnDate>
+<RefNumber>pi_3ObNj9JJ</RefNumber>
+<BalanceRemaining>9.69</BalanceRemaining>
+<Amount>125.00</Amount>
+</AppliedToTxnRet>
+</ReceivePaymentRet>
+</ReceivePaymentAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE transactions SET payment_id ='18-1706865813' WHERE id = '1'
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<ReceivePaymentAddRs requestID="2" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<ReceivePaymentRet>
+<TxnID>1F-1706865814</TxnID>
+<TimeCreated>2024-02-02T01:23:34-08:00</TimeCreated>
+<TimeModified>2024-02-02T01:23:34-08:00</TimeModified>
+<EditSequence>1706865814</EditSequence>
+<TxnNumber>7</TxnNumber>
+<CustomerRef>
+<ListID>80000004-1706865488</ListID>
+<FullName>Octavio</FullName>
+</CustomerRef>
+<ARAccountRef>
+<ListID>80000004-933270541</ListID>
+<FullName>Accounts Receivable</FullName>
+</ARAccountRef>
+<TxnDate>2024-02-02</TxnDate>
+<RefNumber>pi_3ObOOyJJ</RefNumber>
+<TotalAmount>125.00</TotalAmount>
+<DepositToAccountRef>
+<ListID>80000008-933270541</ListID>
+<FullName>Undeposited Funds</FullName>
+</DepositToAccountRef>
+<UnusedPayment>0.00</UnusedPayment>
+<UnusedCredits>0.00</UnusedCredits>
+<AppliedToTxnRet>
+<TxnID>10-1706865762</TxnID>
+<TxnType>Invoice</TxnType>
+<TxnDate>2024-02-02</TxnDate>
+<RefNumber>pi_3ObOOyJJ</RefNumber>
+<BalanceRemaining>9.69</BalanceRemaining>
+<Amount>125.00</Amount>
+</AppliedToTxnRet>
+</ReceivePaymentRet>
+</ReceivePaymentAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE transactions SET payment_id ='1F-1706865814' WHERE id = '2'
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<ReceivePaymentAddRs requestID="3" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<ReceivePaymentRet>
+<TxnID>26-1706865814</TxnID>
+<TimeCreated>2024-02-02T01:23:34-08:00</TimeCreated>
+<TimeModified>2024-02-02T01:23:34-08:00</TimeModified>
+<EditSequence>1706865814</EditSequence>
+<TxnNumber>8</TxnNumber>
+<CustomerRef>
+<ListID>80000005-1706865761</ListID>
+<FullName>Arun</FullName>
+</CustomerRef>
+<ARAccountRef>
+<ListID>80000004-933270541</ListID>
+<FullName>Accounts Receivable</FullName>
+</ARAccountRef>
+<TxnDate>2024-02-02</TxnDate>
+<RefNumber>pi_3OcSIMJJ</RefNumber>
+<TotalAmount>125.00</TotalAmount>
+<DepositToAccountRef>
+<ListID>80000008-933270541</ListID>
+<FullName>Undeposited Funds</FullName>
+</DepositToAccountRef>
+<UnusedPayment>0.00</UnusedPayment>
+<UnusedCredits>0.00</UnusedCredits>
+<AppliedToTxnRet>
+<TxnID>14-1706865763</TxnID>
+<TxnType>Invoice</TxnType>
+<TxnDate>2024-02-02</TxnDate>
+<RefNumber>pi_3OcSIMJJ</RefNumber>
+<BalanceRemaining>9.69</BalanceRemaining>
+<Amount>125.00</Amount>
+</AppliedToTxnRet>
+</ReceivePaymentRet>
+</ReceivePaymentAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE transactions SET payment_id ='26-1706865814' WHERE id = '3'
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<ReceivePaymentAddRs requestID="1" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<ReceivePaymentRet>
+<TxnID>35-1706866163</TxnID>
+<TimeCreated>2024-02-02T01:29:23-08:00</TimeCreated>
+<TimeModified>2024-02-02T01:29:23-08:00</TimeModified>
+<EditSequence>1706866163</EditSequence>
+<TxnNumber>11</TxnNumber>
+<CustomerRef>
+<ListID>80000004-1706865488</ListID>
+<FullName>Octavio</FullName>
+</CustomerRef>
+<ARAccountRef>
+<ListID>80000004-933270541</ListID>
+<FullName>Accounts Receivable</FullName>
+</ARAccountRef>
+<TxnDate>2024-02-02</TxnDate>
+<RefNumber>pi_3ObOOyJJ</RefNumber>
+<TotalAmount>125.00</TotalAmount>
+<DepositToAccountRef>
+<ListID>80000008-933270541</ListID>
+<FullName>Undeposited Funds</FullName>
+</DepositToAccountRef>
+<UnusedPayment>0.00</UnusedPayment>
+<UnusedCredits>0.00</UnusedCredits>
+<AppliedToTxnRet>
+<TxnID>2D-1706866061</TxnID>
+<TxnType>Invoice</TxnType>
+<TxnDate>2024-02-02</TxnDate>
+<RefNumber>pi_3ObOOyJJ</RefNumber>
+<BalanceRemaining>9.69</BalanceRemaining>
+<Amount>125.00</Amount>
+</AppliedToTxnRet>
+</ReceivePaymentRet>
+</ReceivePaymentAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE transactions SET payment_id ='35-1706866163' WHERE id = '2'
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<ReceivePaymentAddRs requestID="2" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<ReceivePaymentRet>
+<TxnID>3C-1706866164</TxnID>
+<TimeCreated>2024-02-02T01:29:24-08:00</TimeCreated>
+<TimeModified>2024-02-02T01:29:24-08:00</TimeModified>
+<EditSequence>1706866164</EditSequence>
+<TxnNumber>12</TxnNumber>
+<CustomerRef>
+<ListID>80000005-1706865761</ListID>
+<FullName>Arun</FullName>
+</CustomerRef>
+<ARAccountRef>
+<ListID>80000004-933270541</ListID>
+<FullName>Accounts Receivable</FullName>
+</ARAccountRef>
+<TxnDate>2024-02-02</TxnDate>
+<RefNumber>pi_3OcSIMJJ</RefNumber>
+<TotalAmount>125.00</TotalAmount>
+<DepositToAccountRef>
+<ListID>80000008-933270541</ListID>
+<FullName>Undeposited Funds</FullName>
+</DepositToAccountRef>
+<UnusedPayment>0.00</UnusedPayment>
+<UnusedCredits>0.00</UnusedCredits>
+<AppliedToTxnRet>
+<TxnID>31-1706866061</TxnID>
+<TxnType>Invoice</TxnType>
+<TxnDate>2024-02-02</TxnDate>
+<RefNumber>pi_3OcSIMJJ</RefNumber>
+<BalanceRemaining>9.69</BalanceRemaining>
+<Amount>125.00</Amount>
+</AppliedToTxnRet>
+</ReceivePaymentRet>
+</ReceivePaymentAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE transactions SET payment_id ='3C-1706866164' WHERE id = '3'

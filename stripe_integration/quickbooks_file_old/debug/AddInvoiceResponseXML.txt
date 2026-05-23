@@ -1,0 +1,631 @@
+
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<InvoiceAddRs requestID="1" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<InvoiceRet>
+<TxnID>67117-1706537746</TxnID>
+<TimeCreated>2024-01-29T19:45:46+05:30</TimeCreated>
+<TimeModified>2024-01-29T19:45:46+05:30</TimeModified>
+<EditSequence>1706537746</EditSequence>
+<TxnNumber>62402</TxnNumber>
+<CustomerRef>
+<ListID>80000790-1706534582</ListID>
+<FullName>Arun Tiwari</FullName>
+</CustomerRef>
+<ARAccountRef>
+<ListID>3A0000-1143919270</ListID>
+<FullName>Accounts Receivable</FullName>
+</ARAccountRef>
+<TemplateRef>
+<ListID>90000-1143920307</ListID>
+<FullName>Customer Invoice ddr</FullName>
+</TemplateRef>
+<TxnDate>2024-01-29</TxnDate>
+<RefNumber>pi_3ObNj9JJ</RefNumber>
+<IsPending>false</IsPending>
+<IsFinanceCharge>false</IsFinanceCharge>
+<DueDate>2024-01-29</DueDate>
+<ShipDate>2024-01-29</ShipDate>
+<Subtotal>125.00</Subtotal>
+<SalesTaxPercentage>0.00</SalesTaxPercentage>
+<SalesTaxTotal>0.00</SalesTaxTotal>
+<AppliedAmount>0.00</AppliedAmount>
+<BalanceRemaining>125.00</BalanceRemaining>
+<IsPaid>false</IsPaid>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<InvoiceLineRet>
+<TxnLineID>67119-1706537746</TxnLineID>
+<ItemRef>
+<ListID>800000C0-1706534584</ListID>
+<FullName>Business to Business membership</FullName>
+</ItemRef>
+<Desc>DP12345</Desc>
+<Quantity>1</Quantity>
+<Rate>125.00</Rate>
+<Amount>125.00</Amount>
+<SalesTaxCodeRef>
+<ListID>20000-1143835595</ListID>
+<FullName>Non</FullName>
+</SalesTaxCodeRef>
+</InvoiceLineRet>
+</InvoiceRet>
+</InvoiceAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE transactions SET invoice_id ='67117-1706537746' WHERE id = '1'
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<InvoiceAddRs requestID="2" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<InvoiceRet>
+<TxnID>2B184-1734273510</TxnID>
+<TimeCreated>2024-12-15T20:08:30+05:30</TimeCreated>
+<TimeModified>2024-12-15T20:08:30+05:30</TimeModified>
+<EditSequence>1734273510</EditSequence>
+<TxnNumber>1777</TxnNumber>
+<CustomerRef>
+<ListID>800000DF-1734273509</ListID>
+<FullName>Arun Tiwari</FullName>
+</CustomerRef>
+<ARAccountRef>
+<ListID>40000-933270541</ListID>
+<FullName>Accounts Receivable</FullName>
+</ARAccountRef>
+<TemplateRef>
+<ListID>E0000-1071499861</ListID>
+<FullName>Rock Castle Invoice</FullName>
+</TemplateRef>
+<TxnDate>2024-01-29</TxnDate>
+<RefNumber>pi_3ObNj9JJ</RefNumber>
+<IsPending>false</IsPending>
+<IsFinanceCharge>false</IsFinanceCharge>
+<DueDate>2024-01-29</DueDate>
+<ShipDate>2024-01-29</ShipDate>
+<ShipMethodRef>
+<ListID>40000-933272660</ListID>
+<FullName>UPS</FullName>
+</ShipMethodRef>
+<Subtotal>125.00</Subtotal>
+<ItemSalesTaxRef>
+<ListID>2E0000-933272656</ListID>
+<FullName>San Tomas</FullName>
+</ItemSalesTaxRef>
+<SalesTaxPercentage>7.75</SalesTaxPercentage>
+<SalesTaxTotal>9.69</SalesTaxTotal>
+<AppliedAmount>0.00</AppliedAmount>
+<BalanceRemaining>134.69</BalanceRemaining>
+<IsPaid>false</IsPaid>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<CustomerSalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</CustomerSalesTaxCodeRef>
+<InvoiceLineRet>
+<TxnLineID>2B186-1734273510</TxnLineID>
+<ItemRef>
+<ListID>80000062-1734273289</ListID>
+<FullName>Business to Business membership</FullName>
+</ItemRef>
+<Desc>DP12345</Desc>
+<Quantity>1</Quantity>
+<Rate>125.00</Rate>
+<Amount>125.00</Amount>
+<SalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+</InvoiceLineRet>
+</InvoiceRet>
+</InvoiceAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE transactions SET invoice_id ='2B184-1734273510' WHERE id = '1'
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<InvoiceAddRs requestID="1" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<InvoiceRet>
+<TxnID>6711F-1706703222</TxnID>
+<TimeCreated>2024-01-31T17:43:42+05:30</TimeCreated>
+<TimeModified>2024-01-31T17:43:42+05:30</TimeModified>
+<EditSequence>1706703222</EditSequence>
+<TxnNumber>62404</TxnNumber>
+<CustomerRef>
+<ListID>80000790-1706534582</ListID>
+<FullName>Arun Tiwari</FullName>
+</CustomerRef>
+<ARAccountRef>
+<ListID>3A0000-1143919270</ListID>
+<FullName>Accounts Receivable</FullName>
+</ARAccountRef>
+<TemplateRef>
+<ListID>90000-1143920307</ListID>
+<FullName>Customer Invoice ddr</FullName>
+</TemplateRef>
+<TxnDate>2024-01-31</TxnDate>
+<RefNumber>pi_3ObOOyJJ</RefNumber>
+<IsPending>false</IsPending>
+<IsFinanceCharge>false</IsFinanceCharge>
+<DueDate>2024-01-31</DueDate>
+<ShipDate>2024-01-31</ShipDate>
+<Subtotal>125.00</Subtotal>
+<SalesTaxPercentage>0.00</SalesTaxPercentage>
+<SalesTaxTotal>0.00</SalesTaxTotal>
+<AppliedAmount>0.00</AppliedAmount>
+<BalanceRemaining>125.00</BalanceRemaining>
+<IsPaid>false</IsPaid>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<InvoiceLineRet>
+<TxnLineID>67121-1706703222</TxnLineID>
+<ItemRef>
+<ListID>800000C1-1706703153</ListID>
+<FullName>Business to Business membershi</FullName>
+</ItemRef>
+<Desc>DP12345</Desc>
+<Quantity>1</Quantity>
+<Rate>125.00</Rate>
+<Amount>125.00</Amount>
+<SalesTaxCodeRef>
+<ListID>20000-1143835595</ListID>
+<FullName>Non</FullName>
+</SalesTaxCodeRef>
+</InvoiceLineRet>
+</InvoiceRet>
+</InvoiceAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE transactions SET invoice_id ='6711F-1706703222' WHERE id = '2'
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<InvoiceAddRs requestID="1" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<InvoiceRet>
+<TxnID>67127-1706703259</TxnID>
+<TimeCreated>2024-01-31T17:44:19+05:30</TimeCreated>
+<TimeModified>2024-01-31T17:44:19+05:30</TimeModified>
+<EditSequence>1706703259</EditSequence>
+<TxnNumber>62406</TxnNumber>
+<CustomerRef>
+<ListID>80000790-1706534582</ListID>
+<FullName>Arun Tiwari</FullName>
+</CustomerRef>
+<ARAccountRef>
+<ListID>3A0000-1143919270</ListID>
+<FullName>Accounts Receivable</FullName>
+</ARAccountRef>
+<TemplateRef>
+<ListID>90000-1143920307</ListID>
+<FullName>Customer Invoice ddr</FullName>
+</TemplateRef>
+<TxnDate>2024-01-31</TxnDate>
+<RefNumber>pi_3OcSIMJJ</RefNumber>
+<IsPending>false</IsPending>
+<IsFinanceCharge>false</IsFinanceCharge>
+<DueDate>2024-01-31</DueDate>
+<ShipDate>2024-01-31</ShipDate>
+<Subtotal>125.00</Subtotal>
+<SalesTaxPercentage>0.00</SalesTaxPercentage>
+<SalesTaxTotal>0.00</SalesTaxTotal>
+<AppliedAmount>0.00</AppliedAmount>
+<BalanceRemaining>125.00</BalanceRemaining>
+<IsPaid>false</IsPaid>
+<IsToBePrinted>false</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<InvoiceLineRet>
+<TxnLineID>67129-1706703259</TxnLineID>
+<ItemRef>
+<ListID>800000C1-1706703153</ListID>
+<FullName>Business to Business membershi</FullName>
+</ItemRef>
+<Desc>DP12345</Desc>
+<Quantity>1</Quantity>
+<Rate>125.00</Rate>
+<Amount>125.00</Amount>
+<SalesTaxCodeRef>
+<ListID>20000-1143835595</ListID>
+<FullName>Non</FullName>
+</SalesTaxCodeRef>
+</InvoiceLineRet>
+</InvoiceRet>
+</InvoiceAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE transactions SET invoice_id ='67127-1706703259' WHERE id = '3'
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<InvoiceAddRs requestID="1" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<InvoiceRet>
+<TxnID>1-1706864729</TxnID>
+<TimeCreated>2024-02-02T01:05:29-08:00</TimeCreated>
+<TimeModified>2024-02-02T01:05:29-08:00</TimeModified>
+<EditSequence>1706864729</EditSequence>
+<TxnNumber>1</TxnNumber>
+<CustomerRef>
+<ListID>80000003-1706864086</ListID>
+<FullName>Arun Tiwari</FullName>
+</CustomerRef>
+<ARAccountRef>
+<ListID>80000004-933270541</ListID>
+<FullName>Accounts Receivable</FullName>
+</ARAccountRef>
+<TemplateRef>
+<ListID>80000003-1706763518</ListID>
+<FullName>Intuit Service Invoice</FullName>
+</TemplateRef>
+<TxnDate>2024-02-02</TxnDate>
+<RefNumber>pi_3ObNj9JJ</RefNumber>
+<IsPending>false</IsPending>
+<IsFinanceCharge>false</IsFinanceCharge>
+<DueDate>2024-02-02</DueDate>
+<ShipDate>2024-02-02</ShipDate>
+<Subtotal>125.00</Subtotal>
+<ItemSalesTaxRef>
+<ListID>8000002E-933272656</ListID>
+<FullName>San Tomas</FullName>
+</ItemSalesTaxRef>
+<SalesTaxPercentage>7.75</SalesTaxPercentage>
+<SalesTaxTotal>9.69</SalesTaxTotal>
+<AppliedAmount>0.00</AppliedAmount>
+<BalanceRemaining>134.69</BalanceRemaining>
+<IsPaid>false</IsPaid>
+<IsToBePrinted>true</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<CustomerSalesTaxCodeRef>
+<ListID>80000001-999022286</ListID>
+<FullName>Tax</FullName>
+</CustomerSalesTaxCodeRef>
+<InvoiceLineRet>
+<TxnLineID>3-1706864729</TxnLineID>
+<ItemRef>
+<ListID>80000062-1706864088</ListID>
+<FullName>Business to Business membershi</FullName>
+</ItemRef>
+<Desc>DP12345</Desc>
+<Quantity>1</Quantity>
+<Rate>125.00</Rate>
+<Amount>125.00</Amount>
+<SalesTaxCodeRef>
+<ListID>80000001-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+</InvoiceLineRet>
+</InvoiceRet>
+</InvoiceAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE transactions SET invoice_id ='1-1706864729' WHERE id = '1'
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<InvoiceAddRs requestID="7" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<InvoiceRet>
+<TxnID>C-1706865762</TxnID>
+<TimeCreated>2024-02-02T01:22:42-08:00</TimeCreated>
+<TimeModified>2024-02-02T01:22:42-08:00</TimeModified>
+<EditSequence>1706865762</EditSequence>
+<TxnNumber>3</TxnNumber>
+<CustomerRef>
+<ListID>80000003-1706864086</ListID>
+<FullName>Arun Tiwari</FullName>
+</CustomerRef>
+<ARAccountRef>
+<ListID>80000004-933270541</ListID>
+<FullName>Accounts Receivable</FullName>
+</ARAccountRef>
+<TemplateRef>
+<ListID>80000003-1706763518</ListID>
+<FullName>Intuit Service Invoice</FullName>
+</TemplateRef>
+<TxnDate>2024-02-02</TxnDate>
+<RefNumber>pi_3ObNj9JJ</RefNumber>
+<IsPending>false</IsPending>
+<IsFinanceCharge>false</IsFinanceCharge>
+<DueDate>2024-02-02</DueDate>
+<ShipDate>2024-02-02</ShipDate>
+<Subtotal>125.00</Subtotal>
+<ItemSalesTaxRef>
+<ListID>8000002E-933272656</ListID>
+<FullName>San Tomas</FullName>
+</ItemSalesTaxRef>
+<SalesTaxPercentage>7.75</SalesTaxPercentage>
+<SalesTaxTotal>9.69</SalesTaxTotal>
+<AppliedAmount>0.00</AppliedAmount>
+<BalanceRemaining>134.69</BalanceRemaining>
+<IsPaid>false</IsPaid>
+<IsToBePrinted>true</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<CustomerSalesTaxCodeRef>
+<ListID>80000001-999022286</ListID>
+<FullName>Tax</FullName>
+</CustomerSalesTaxCodeRef>
+<InvoiceLineRet>
+<TxnLineID>E-1706865762</TxnLineID>
+<ItemRef>
+<ListID>80000062-1706864088</ListID>
+<FullName>Business to Business membershi</FullName>
+</ItemRef>
+<Desc>DP12345</Desc>
+<Quantity>1</Quantity>
+<Rate>125.00</Rate>
+<Amount>125.00</Amount>
+<SalesTaxCodeRef>
+<ListID>80000001-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+</InvoiceLineRet>
+</InvoiceRet>
+</InvoiceAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE transactions SET invoice_id ='C-1706865762' WHERE id = '1'
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<InvoiceAddRs requestID="8" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<InvoiceRet>
+<TxnID>10-1706865762</TxnID>
+<TimeCreated>2024-02-02T01:22:42-08:00</TimeCreated>
+<TimeModified>2024-02-02T01:22:42-08:00</TimeModified>
+<EditSequence>1706865762</EditSequence>
+<TxnNumber>4</TxnNumber>
+<CustomerRef>
+<ListID>80000004-1706865488</ListID>
+<FullName>Octavio</FullName>
+</CustomerRef>
+<ARAccountRef>
+<ListID>80000004-933270541</ListID>
+<FullName>Accounts Receivable</FullName>
+</ARAccountRef>
+<TemplateRef>
+<ListID>80000003-1706763518</ListID>
+<FullName>Intuit Service Invoice</FullName>
+</TemplateRef>
+<TxnDate>2024-02-02</TxnDate>
+<RefNumber>pi_3ObOOyJJ</RefNumber>
+<IsPending>false</IsPending>
+<IsFinanceCharge>false</IsFinanceCharge>
+<DueDate>2024-02-02</DueDate>
+<ShipDate>2024-02-02</ShipDate>
+<Subtotal>125.00</Subtotal>
+<ItemSalesTaxRef>
+<ListID>8000002E-933272656</ListID>
+<FullName>San Tomas</FullName>
+</ItemSalesTaxRef>
+<SalesTaxPercentage>7.75</SalesTaxPercentage>
+<SalesTaxTotal>9.69</SalesTaxTotal>
+<AppliedAmount>0.00</AppliedAmount>
+<BalanceRemaining>134.69</BalanceRemaining>
+<IsPaid>false</IsPaid>
+<IsToBePrinted>true</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<CustomerSalesTaxCodeRef>
+<ListID>80000001-999022286</ListID>
+<FullName>Tax</FullName>
+</CustomerSalesTaxCodeRef>
+<InvoiceLineRet>
+<TxnLineID>12-1706865762</TxnLineID>
+<ItemRef>
+<ListID>80000062-1706864088</ListID>
+<FullName>Business to Business membershi</FullName>
+</ItemRef>
+<Desc>DP12345</Desc>
+<Quantity>1</Quantity>
+<Rate>125.00</Rate>
+<Amount>125.00</Amount>
+<SalesTaxCodeRef>
+<ListID>80000001-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+</InvoiceLineRet>
+</InvoiceRet>
+</InvoiceAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE transactions SET invoice_id ='10-1706865762' WHERE id = '2'
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<InvoiceAddRs requestID="9" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<InvoiceRet>
+<TxnID>14-1706865763</TxnID>
+<TimeCreated>2024-02-02T01:22:43-08:00</TimeCreated>
+<TimeModified>2024-02-02T01:22:43-08:00</TimeModified>
+<EditSequence>1706865763</EditSequence>
+<TxnNumber>5</TxnNumber>
+<CustomerRef>
+<ListID>80000005-1706865761</ListID>
+<FullName>Arun</FullName>
+</CustomerRef>
+<ARAccountRef>
+<ListID>80000004-933270541</ListID>
+<FullName>Accounts Receivable</FullName>
+</ARAccountRef>
+<TemplateRef>
+<ListID>80000003-1706763518</ListID>
+<FullName>Intuit Service Invoice</FullName>
+</TemplateRef>
+<TxnDate>2024-02-02</TxnDate>
+<RefNumber>pi_3OcSIMJJ</RefNumber>
+<IsPending>false</IsPending>
+<IsFinanceCharge>false</IsFinanceCharge>
+<DueDate>2024-02-02</DueDate>
+<ShipDate>2024-02-02</ShipDate>
+<Subtotal>125.00</Subtotal>
+<ItemSalesTaxRef>
+<ListID>8000002E-933272656</ListID>
+<FullName>San Tomas</FullName>
+</ItemSalesTaxRef>
+<SalesTaxPercentage>7.75</SalesTaxPercentage>
+<SalesTaxTotal>9.69</SalesTaxTotal>
+<AppliedAmount>0.00</AppliedAmount>
+<BalanceRemaining>134.69</BalanceRemaining>
+<IsPaid>false</IsPaid>
+<IsToBePrinted>true</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<CustomerSalesTaxCodeRef>
+<ListID>80000001-999022286</ListID>
+<FullName>Tax</FullName>
+</CustomerSalesTaxCodeRef>
+<InvoiceLineRet>
+<TxnLineID>16-1706865763</TxnLineID>
+<ItemRef>
+<ListID>80000062-1706864088</ListID>
+<FullName>Business to Business membershi</FullName>
+</ItemRef>
+<Desc>DP12345</Desc>
+<Quantity>1</Quantity>
+<Rate>125.00</Rate>
+<Amount>125.00</Amount>
+<SalesTaxCodeRef>
+<ListID>80000001-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+</InvoiceLineRet>
+</InvoiceRet>
+</InvoiceAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE transactions SET invoice_id ='14-1706865763' WHERE id = '3'
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<InvoiceAddRs requestID="1" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<InvoiceRet>
+<TxnID>2D-1706866061</TxnID>
+<TimeCreated>2024-02-02T01:27:41-08:00</TimeCreated>
+<TimeModified>2024-02-02T01:27:41-08:00</TimeModified>
+<EditSequence>1706866061</EditSequence>
+<TxnNumber>9</TxnNumber>
+<CustomerRef>
+<ListID>80000004-1706865488</ListID>
+<FullName>Octavio</FullName>
+</CustomerRef>
+<ARAccountRef>
+<ListID>80000004-933270541</ListID>
+<FullName>Accounts Receivable</FullName>
+</ARAccountRef>
+<TemplateRef>
+<ListID>80000003-1706763518</ListID>
+<FullName>Intuit Service Invoice</FullName>
+</TemplateRef>
+<TxnDate>2024-02-02</TxnDate>
+<RefNumber>pi_3ObOOyJJ</RefNumber>
+<IsPending>false</IsPending>
+<IsFinanceCharge>false</IsFinanceCharge>
+<DueDate>2024-02-02</DueDate>
+<ShipDate>2024-02-02</ShipDate>
+<Subtotal>125.00</Subtotal>
+<ItemSalesTaxRef>
+<ListID>8000002E-933272656</ListID>
+<FullName>San Tomas</FullName>
+</ItemSalesTaxRef>
+<SalesTaxPercentage>7.75</SalesTaxPercentage>
+<SalesTaxTotal>9.69</SalesTaxTotal>
+<AppliedAmount>0.00</AppliedAmount>
+<BalanceRemaining>134.69</BalanceRemaining>
+<IsPaid>false</IsPaid>
+<IsToBePrinted>true</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<CustomerSalesTaxCodeRef>
+<ListID>80000001-999022286</ListID>
+<FullName>Tax</FullName>
+</CustomerSalesTaxCodeRef>
+<InvoiceLineRet>
+<TxnLineID>2F-1706866061</TxnLineID>
+<ItemRef>
+<ListID>80000062-1706864088</ListID>
+<FullName>Business to Business membershi</FullName>
+</ItemRef>
+<Desc>DP12345</Desc>
+<Quantity>1</Quantity>
+<Rate>125.00</Rate>
+<Amount>125.00</Amount>
+<SalesTaxCodeRef>
+<ListID>80000001-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+</InvoiceLineRet>
+</InvoiceRet>
+</InvoiceAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE transactions SET invoice_id ='2D-1706866061' WHERE id = '2'
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<InvoiceAddRs requestID="2" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<InvoiceRet>
+<TxnID>31-1706866061</TxnID>
+<TimeCreated>2024-02-02T01:27:41-08:00</TimeCreated>
+<TimeModified>2024-02-02T01:27:41-08:00</TimeModified>
+<EditSequence>1706866061</EditSequence>
+<TxnNumber>10</TxnNumber>
+<CustomerRef>
+<ListID>80000005-1706865761</ListID>
+<FullName>Arun</FullName>
+</CustomerRef>
+<ARAccountRef>
+<ListID>80000004-933270541</ListID>
+<FullName>Accounts Receivable</FullName>
+</ARAccountRef>
+<TemplateRef>
+<ListID>80000003-1706763518</ListID>
+<FullName>Intuit Service Invoice</FullName>
+</TemplateRef>
+<TxnDate>2024-02-02</TxnDate>
+<RefNumber>pi_3OcSIMJJ</RefNumber>
+<IsPending>false</IsPending>
+<IsFinanceCharge>false</IsFinanceCharge>
+<DueDate>2024-02-02</DueDate>
+<ShipDate>2024-02-02</ShipDate>
+<Subtotal>125.00</Subtotal>
+<ItemSalesTaxRef>
+<ListID>8000002E-933272656</ListID>
+<FullName>San Tomas</FullName>
+</ItemSalesTaxRef>
+<SalesTaxPercentage>7.75</SalesTaxPercentage>
+<SalesTaxTotal>9.69</SalesTaxTotal>
+<AppliedAmount>0.00</AppliedAmount>
+<BalanceRemaining>134.69</BalanceRemaining>
+<IsPaid>false</IsPaid>
+<IsToBePrinted>true</IsToBePrinted>
+<IsToBeEmailed>false</IsToBeEmailed>
+<CustomerSalesTaxCodeRef>
+<ListID>80000001-999022286</ListID>
+<FullName>Tax</FullName>
+</CustomerSalesTaxCodeRef>
+<InvoiceLineRet>
+<TxnLineID>33-1706866061</TxnLineID>
+<ItemRef>
+<ListID>80000062-1706864088</ListID>
+<FullName>Business to Business membershi</FullName>
+</ItemRef>
+<Desc>DP12345</Desc>
+<Quantity>1</Quantity>
+<Rate>125.00</Rate>
+<Amount>125.00</Amount>
+<SalesTaxCodeRef>
+<ListID>80000001-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+</InvoiceLineRet>
+</InvoiceRet>
+</InvoiceAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE transactions SET invoice_id ='31-1706866061' WHERE id = '3'

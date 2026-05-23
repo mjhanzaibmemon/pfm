@@ -1,0 +1,10 @@
+.css_note_date_label, .css_note_date_label:hover {text-align:center;vertical-align:middle;justify-content:center;font-weight:bold;}
+.css_note_date_grid_line, .css_note_date_grid_line:hover {color:#CC5608;vertical-align: top;text-align: center;}
+.css_note_label, .css_note_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_note_grid_line, .css_note_grid_line:hover {vertical-align: top;text-align: center;}
+.css_user_label, .css_user_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_user_grid_line, .css_user_grid_line:hover {vertical-align: top;text-align: center;}
+.css_notes_id_label, .css_notes_id_label:hover {text-align:right;vertical-align:middle;justify-content:right;font-weight:bold;}
+.css_notes_id_grid_line, .css_notes_id_grid_line:hover {vertical-align: top;text-align: right;}
+.css_client_id_label, .css_client_id_label:hover {text-align:right;vertical-align:middle;justify-content:right;font-weight:bold;}
+.css_client_id_grid_line, .css_client_id_grid_line:hover {vertical-align: top;text-align: right;}

@@ -1,0 +1,181 @@
+
+<?xml version="1.0" encoding="utf-8"?>
+				     <?qbxml version="13.0"?>
+					 <QBXML>
+						<QBXMLMsgsRq onError="continueOnError">
+						<ReceivePaymentAddRq>
+							<ReceivePaymentAdd > 
+								<CustomerRef>
+								   <ListID>80000790-1706534582</ListID>
+								</CustomerRef>
+							    <TxnDate>2024-01-29</TxnDate>
+							    <RefNumber>pi_3ObNj9JJ</RefNumber>
+							    <TotalAmount>125.00</TotalAmount>
+							    <AppliedToTxnAdd>
+									<TxnID>67117-1706537746</TxnID>
+									<PaymentAmount>125.00</PaymentAmount>
+								</AppliedToTxnAdd>
+						    </ReceivePaymentAdd >
+						</ReceivePaymentAddRq>
+					</QBXMLMsgsRq>
+			    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+				     <?qbxml version="13.0"?>
+					 <QBXML>
+						<QBXMLMsgsRq onError="continueOnError">
+						<ReceivePaymentAddRq>
+							<ReceivePaymentAdd > 
+								<CustomerRef>
+								   <ListID>800000DF-1734273509</ListID>
+								</CustomerRef>
+							    <TxnDate>2024-01-29</TxnDate>
+							    <RefNumber>pi_3ObNj9JJ</RefNumber>
+							    <TotalAmount>125.00</TotalAmount>
+							    <AppliedToTxnAdd>
+									<TxnID>2B184-1734273510</TxnID>
+									<PaymentAmount>125.00</PaymentAmount>
+								</AppliedToTxnAdd>
+						    </ReceivePaymentAdd >
+						</ReceivePaymentAddRq>
+					</QBXMLMsgsRq>
+			    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+				     <?qbxml version="13.0"?>
+					 <QBXML>
+						<QBXMLMsgsRq onError="continueOnError">
+						<ReceivePaymentAddRq>
+							<ReceivePaymentAdd > 
+								<CustomerRef>
+								   <ListID>80000790-1706534582</ListID>
+								</CustomerRef>
+							    <TxnDate>2024-01-31</TxnDate>
+							    <RefNumber>pi_3ObOOyJJ</RefNumber>
+							    <TotalAmount>125.00</TotalAmount>
+							    <AppliedToTxnAdd>
+									<TxnID>6711F-1706703222</TxnID>
+									<PaymentAmount>125.00</PaymentAmount>
+								</AppliedToTxnAdd>
+						    </ReceivePaymentAdd >
+						</ReceivePaymentAddRq>
+					</QBXMLMsgsRq>
+			    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+				     <?qbxml version="13.0"?>
+					 <QBXML>
+						<QBXMLMsgsRq onError="continueOnError">
+						<ReceivePaymentAddRq>
+							<ReceivePaymentAdd > 
+								<CustomerRef>
+								   <ListID>80000003-1706864086</ListID>
+								</CustomerRef>
+							    <TxnDate>2024-02-02</TxnDate>
+							    <RefNumber>pi_3ObNj9JJ</RefNumber>
+							    <TotalAmount>125.00</TotalAmount>
+							    <AppliedToTxnAdd>
+									<TxnID>1-1706864729</TxnID>
+									<PaymentAmount>125.00</PaymentAmount>
+								</AppliedToTxnAdd>
+						    </ReceivePaymentAdd >
+						</ReceivePaymentAddRq>
+					</QBXMLMsgsRq>
+			    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+				     <?qbxml version="13.0"?>
+					 <QBXML>
+						<QBXMLMsgsRq onError="continueOnError">
+						<ReceivePaymentAddRq>
+							<ReceivePaymentAdd > 
+								<CustomerRef>
+								   <ListID>80000003-1706864086</ListID>
+								</CustomerRef>
+							    <TxnDate>2024-02-02</TxnDate>
+							    <RefNumber>pi_3ObNj9JJ</RefNumber>
+							    <TotalAmount>125.00</TotalAmount>
+							    <AppliedToTxnAdd>
+									<TxnID>C-1706865762</TxnID>
+									<PaymentAmount>125.00</PaymentAmount>
+								</AppliedToTxnAdd>
+						    </ReceivePaymentAdd >
+						</ReceivePaymentAddRq>
+					</QBXMLMsgsRq>
+			    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+				     <?qbxml version="13.0"?>
+					 <QBXML>
+						<QBXMLMsgsRq onError="continueOnError">
+						<ReceivePaymentAddRq>
+							<ReceivePaymentAdd > 
+								<CustomerRef>
+								   <ListID>80000004-1706865488</ListID>
+								</CustomerRef>
+							    <TxnDate>2024-02-02</TxnDate>
+							    <RefNumber>pi_3ObOOyJJ</RefNumber>
+							    <TotalAmount>125.00</TotalAmount>
+							    <AppliedToTxnAdd>
+									<TxnID>10-1706865762</TxnID>
+									<PaymentAmount>125.00</PaymentAmount>
+								</AppliedToTxnAdd>
+						    </ReceivePaymentAdd >
+						</ReceivePaymentAddRq>
+					</QBXMLMsgsRq>
+			    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+				     <?qbxml version="13.0"?>
+					 <QBXML>
+						<QBXMLMsgsRq onError="continueOnError">
+						<ReceivePaymentAddRq>
+							<ReceivePaymentAdd > 
+								<CustomerRef>
+								   <ListID>80000005-1706865761</ListID>
+								</CustomerRef>
+							    <TxnDate>2024-02-02</TxnDate>
+							    <RefNumber>pi_3OcSIMJJ</RefNumber>
+							    <TotalAmount>125.00</TotalAmount>
+							    <AppliedToTxnAdd>
+									<TxnID>14-1706865763</TxnID>
+									<PaymentAmount>125.00</PaymentAmount>
+								</AppliedToTxnAdd>
+						    </ReceivePaymentAdd >
+						</ReceivePaymentAddRq>
+					</QBXMLMsgsRq>
+			    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+				     <?qbxml version="13.0"?>
+					 <QBXML>
+						<QBXMLMsgsRq onError="continueOnError">
+						<ReceivePaymentAddRq>
+							<ReceivePaymentAdd > 
+								<CustomerRef>
+								   <ListID>80000004-1706865488</ListID>
+								</CustomerRef>
+							    <TxnDate>2024-02-02</TxnDate>
+							    <RefNumber>pi_3ObOOyJJ</RefNumber>
+							    <TotalAmount>125.00</TotalAmount>
+							    <AppliedToTxnAdd>
+									<TxnID>2D-1706866061</TxnID>
+									<PaymentAmount>125.00</PaymentAmount>
+								</AppliedToTxnAdd>
+						    </ReceivePaymentAdd >
+						</ReceivePaymentAddRq>
+					</QBXMLMsgsRq>
+			    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+				     <?qbxml version="13.0"?>
+					 <QBXML>
+						<QBXMLMsgsRq onError="continueOnError">
+						<ReceivePaymentAddRq>
+							<ReceivePaymentAdd > 
+								<CustomerRef>
+								   <ListID>80000005-1706865761</ListID>
+								</CustomerRef>
+							    <TxnDate>2024-02-02</TxnDate>
+							    <RefNumber>pi_3OcSIMJJ</RefNumber>
+							    <TotalAmount>125.00</TotalAmount>
+							    <AppliedToTxnAdd>
+									<TxnID>31-1706866061</TxnID>
+									<PaymentAmount>125.00</PaymentAmount>
+								</AppliedToTxnAdd>
+						    </ReceivePaymentAdd >
+						</ReceivePaymentAddRq>
+					</QBXMLMsgsRq>
+			    </QBXML>

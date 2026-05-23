@@ -1,0 +1,87 @@
+# ─────────────────────────────────────────────────────────────────────
+# PFM — Portland Flower Market — .gitignore
+# ─────────────────────────────────────────────────────────────────────
+
+# ─── ScriptCase vendor framework (NOT in git) ───
+# Re-installable from ScriptCase Software. Keep a tarball backup
+# separately. See docs/DEPLOYMENT.md for setup instructions.
+_lib/
+
+# ─── Real credential files (NEVER commit these) ───
+# Each server keeps its own real version; only *.example.php templates
+# live in git. Existing servers ALREADY have the real files in place —
+# `git pull` will not touch them.
+stripe_integration/config.php
+stripe_integration/dbConnect.php
+renewal_v2/config/config.php
+membership_exports.php
+membership_exports_staging.php
+**/config.local.php
+**/.env
+**/.env.local
+**/credentials.json
+
+# ─── Runtime / generated content ───
+# Renewal v2 session and upload data
+renewal_v2/storage/sessions/*
+renewal_v2/storage/uploads/*
+!renewal_v2/storage/sessions/.gitkeep
+!renewal_v2/storage/uploads/.gitkeep
+
+# ScriptCase per-app tmp/cache
+**/sc_tmp/
+**/sc_cache/
+**/tmp/
+**/cache/
+
+# Logs
+*.log
+*.log.*
+logs/
+log/
+
+# Database dumps / backups
+*.sql
+*.sql.gz
+*.dump
+*backup*.tar*
+*backup*.zip
+pfm_production_*.tar.gz
+
+# ─── OS junk ───
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+$RECYCLE.BIN/
+
+# ─── IDE / editor ───
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.buildpath
+.settings/
+
+# ─── Temp ───
+*.tmp
+*.temp
+*.bak
+*.bak_*
+*.orig
+
+# ─── Composer / npm (if ever introduced) ───
+vendor/
+node_modules/
+
+# ─── PHP session files (just in case) ───
+sess_*
+
+# ─── Large vendor binaries (defence in depth — already excluded by _lib/) ───
+*.phar
+*.exe
+*.dll
+wkhtmltopdf-*
+phantomjs

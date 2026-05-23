@@ -1,0 +1,12 @@
+.css_ts_label, .css_ts_label:hover {text-align:center;vertical-align:middle;justify-content:center;font-weight:bold;}
+.css_ts_grid_line, .css_ts_grid_line:hover {color:#E0431B;vertical-align: top;text-align: center;}
+.css_doc_type_label, .css_doc_type_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_doc_type_grid_line, .css_doc_type_grid_line:hover {vertical-align: top;text-align: left;}
+.css_doc_file_label, .css_doc_file_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_doc_file_grid_line, .css_doc_file_grid_line:hover {font-family:Arial, sans-serif;font-size:14px;font-weight:bold;vertical-align: top;text-align: left;}
+.css_user_label, .css_user_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_user_grid_line, .css_user_grid_line:hover {vertical-align: top;text-align: left;}
+.css_doc_id_label, .css_doc_id_label:hover {text-align:right;vertical-align:middle;justify-content:right;font-weight:bold;}
+.css_doc_id_grid_line, .css_doc_id_grid_line:hover {vertical-align: top;text-align: right;}
+.css_client_id_label, .css_client_id_label:hover {text-align:right;vertical-align:middle;justify-content:right;font-weight:bold;}
+.css_client_id_grid_line, .css_client_id_grid_line:hover {vertical-align: top;text-align: right;}

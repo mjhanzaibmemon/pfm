@@ -1,0 +1,435 @@
+
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Arun</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+Array
+(
+    [ListID] => 80000005-1706865761
+    [EditSequence] => 1706865761
+    [FullName] => Arun
+    [Name] => Arun
+    [requestID] => 1
+    [iteratorID] => {48740fbf-5a28-4b93-8b60-e4397220a576}
+    [iteratorRemainingCount] => 0
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>octavio 1</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>octavio 1</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+Array
+(
+    [ListID] => 80000006-1707373061
+    [EditSequence] => 1707373461
+    [FullName] => octavio 1
+    [Name] => octavio 1
+    [requestID] => 1
+    [iteratorID] => {d10b0553-a12b-4bca-ae4a-0e47f44ff50e}
+    [iteratorRemainingCount] => 0
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>waqas</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>test</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+Array
+(
+    [ListID] => 80000018-1712733126
+    [EditSequence] => 1712733126
+    [FullName] => test1
+    [Name] => test1
+    [requestID] => 1
+    [iteratorID] => {81dcfc44-d408-4960-874f-3fda3b5a29a9}
+    [iteratorRemainingCount] => 0
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="2">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>test</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+Array
+(
+    [ListID] => 80000018-1712733126
+    [EditSequence] => 1712733126
+    [FullName] => test1
+    [Name] => test1
+    [requestID] => 2
+    [iteratorID] => {3b15fc2b-b2fd-489b-8a9b-63efccb003b1}
+    [iteratorRemainingCount] => 0
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="3">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>customer 1</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="4">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>dn cust</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="5">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>My name</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Test 10220553</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Customer 1</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Customer 1</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+Array
+(
+    [ListID] => 80000034-1729644508
+    [EditSequence] => 1729644508
+    [FullName] => customer 1
+    [Name] => customer 1
+    [requestID] => 1
+    [iteratorID] => {153fdb24-e385-4dcc-8aec-41bb4cf7509b}
+    [iteratorRemainingCount] => 0
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>My name</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+Array
+(
+    [ListID] => 80000036-1729644509
+    [EditSequence] => 1729644509
+    [FullName] => My name
+    [Name] => My name
+    [requestID] => 1
+    [iteratorID] => {1c4eb179-4703-429e-8378-bebdb34d1f32}
+    [iteratorRemainingCount] => 0
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="2">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>My name</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+Array
+(
+    [ListID] => 80000036-1729644509
+    [EditSequence] => 1729644509
+    [FullName] => My name
+    [Name] => My name
+    [requestID] => 2
+    [iteratorID] => {e5266f15-9914-4bdd-bc2f-d6b9a211dbf1}
+    [iteratorRemainingCount] => 0
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Cust1.10.28.10.25</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Cust2.10.28.10.59</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Cust2.11.02</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Cust2.11.02-B</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>test</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+Array
+(
+    [ListID] => 80000037-1729644895
+    [EditSequence] => 1729644895
+    [FullName] => Test 10220553
+    [Name] => Test 10220553
+    [requestID] => 1
+    [iteratorID] => {ddd7c2bc-ab60-4c9e-b4b2-42b6f40958f4}
+    [iteratorRemainingCount] => 0
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="2">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>test</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+Array
+(
+    [ListID] => 80000037-1729644895
+    [EditSequence] => 1729644895
+    [FullName] => Test 10220553
+    [Name] => Test 10220553
+    [requestID] => 2
+    [iteratorID] => {e7477b80-c255-4221-a377-b497f1f41ff2}
+    [iteratorRemainingCount] => 0
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>test 1113</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>test 1113b</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>

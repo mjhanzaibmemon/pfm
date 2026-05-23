@@ -1,0 +1,21 @@
+.css_membs_num_label {font-family:Arial, sans-serif;font-size:13px;color:#000000;background-color:#f2c6f2;}
+.css_membs_num_line {font-family:Arial, sans-serif;font-size:14px;color:#1f1fd9;background-color:#f2c6f2;font-weight:bold;}
+.css_membs_num_obj {font-size:14px;font-weight:bold;text-align:center;}
+.css_total_label {color:#000000;background-color:#f2c6f2;}
+.css_total_line {font-family:Arial, sans-serif;font-size:16px;color:#9e0f38;background-color:#f2c6f2;font-weight:bold;}
+.css_total_obj {text-align:right;}
+.css_cat_label {color:#000000;}
+.css_cat_line {font-weight:bold;}
+.css_cat_obj { }
+.css_sub_cat_label { }
+.css_sub_cat_line {font-weight:bold;}
+.css_sub_cat_obj { }
+.css_bus_name_label {font-family:Arial, sans-serif;font-size:13px;color:#000000;background-color:#e3d1e3;}
+.css_bus_name_line {font-family:Arial, sans-serif;font-size:14px;color:#0e16f5;background-color:#e3d1e3;font-weight:bold;}
+.css_bus_name_obj {background-color:#f7f300;}
+.css_dummy01_label { }
+.css_dummy01_line {height:900px;}
+.css_dummy01_obj { }
+.css_dummy02_label { }
+.css_dummy02_line { }
+.css_dummy02_obj { }

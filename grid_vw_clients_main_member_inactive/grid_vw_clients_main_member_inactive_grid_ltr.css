@@ -1,0 +1,44 @@
+.css_client_id_label, .css_client_id_label:hover {text-align:right;vertical-align:middle;justify-content:right;font-weight:bold;}
+.css_client_id_grid_line, .css_client_id_grid_line:hover {color:#0000CC;font-weight:bold;vertical-align: top;text-align: right;}
+.css_status_label, .css_status_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_status_grid_line, .css_status_grid_line:hover {vertical-align: top;text-align: left;}
+.css_renewal_date_label, .css_renewal_date_label:hover {text-align:center;vertical-align:middle;justify-content:center;font-weight:bold;}
+.css_renewal_date_grid_line, .css_renewal_date_grid_line:hover {vertical-align: top;text-align: center;}
+.css_day_count_label, .css_day_count_label:hover {text-align:right;vertical-align:middle;justify-content:right;font-weight:bold;}
+.css_day_count_grid_line, .css_day_count_grid_line:hover {vertical-align: top;text-align: right;}
+.css_co_name_label, .css_co_name_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_co_name_grid_line, .css_co_name_grid_line:hover {vertical-align: top;text-align: left;}
+.css_main_contact_name_label, .css_main_contact_name_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_main_contact_name_grid_line, .css_main_contact_name_grid_line:hover {vertical-align: top;text-align: left;}
+.css_main_contact_phone_label, .css_main_contact_phone_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_main_contact_phone_grid_line, .css_main_contact_phone_grid_line:hover {vertical-align: top;text-align: left;}
+.css_email_sent_label, .css_email_sent_label:hover {text-align:;vertical-align:middle;justify-content:;font-weight:bold;}
+.css_email_sent_grid_line, .css_email_sent_grid_line:hover {font-size:11px;text-align: center;}
+.css_renewal_msg_label, .css_renewal_msg_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_renewal_msg_grid_line, .css_renewal_msg_grid_line:hover {vertical-align: top;text-align: left;}
+.css_main_phone_label, .css_main_phone_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_main_phone_grid_line, .css_main_phone_grid_line:hover {vertical-align: top;text-align: left;}
+.css_main_email_label, .css_main_email_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_main_email_grid_line, .css_main_email_grid_line:hover {vertical-align: top;text-align: left;}
+.css_bus_cat_label, .css_bus_cat_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_bus_cat_grid_line, .css_bus_cat_grid_line:hover {vertical-align: top;text-align: left;}
+.css_bus_subcategory_label, .css_bus_subcategory_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_bus_subcategory_grid_line, .css_bus_subcategory_grid_line:hover {vertical-align: top;text-align: left;}
+.css_street_address_label, .css_street_address_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_street_address_grid_line, .css_street_address_grid_line:hover {vertical-align: top;text-align: left;}
+.css_mailing_address_label, .css_mailing_address_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_mailing_address_grid_line, .css_mailing_address_grid_line:hover {vertical-align: top;text-align: left;}
+.css_city_label, .css_city_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_city_grid_line, .css_city_grid_line:hover {vertical-align: top;text-align: left;}
+.css_state_label, .css_state_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_state_grid_line, .css_state_grid_line:hover {vertical-align: top;text-align: left;}
+.css_zip_code_label, .css_zip_code_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_zip_code_grid_line, .css_zip_code_grid_line:hover {vertical-align: top;text-align: left;}
+.css_home_phone_label, .css_home_phone_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_home_phone_grid_line, .css_home_phone_grid_line:hover {vertical-align: top;text-align: left;}
+.css_main_contact_email_label, .css_main_contact_email_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_main_contact_email_grid_line, .css_main_contact_email_grid_line:hover {vertical-align: top;text-align: left;}
+.css_main_contact_title_label, .css_main_contact_title_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_main_contact_title_grid_line, .css_main_contact_title_grid_line:hover {vertical-align: top;text-align: left;}
+.css_permanent_member_date_label, .css_permanent_member_date_label:hover {text-align:center;vertical-align:middle;justify-content:center;font-weight:bold;}
+.css_permanent_member_date_grid_line, .css_permanent_member_date_grid_line:hover {vertical-align: top;text-align: center;}

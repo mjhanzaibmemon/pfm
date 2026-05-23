@@ -1,0 +1,256 @@
+
+<?xml version="1.0" encoding="utf-8"?>
+	                <?qbxml version="13.0"?>
+			        <QBXML>
+	                   <QBXMLMsgsRq onError="continueOnError">
+                          <ItemServiceAddRq>
+                             <ItemServiceAdd>
+        							<Name>Business to Business membership</Name> 						
+        							<IsActive >true</IsActive>
+									<SalesAndPurchase>
+        							<SalesDesc ></SalesDesc>
+        							<SalesPrice >125</SalesPrice>
+        							<IncomeAccountRef>
+        									<FullName>Services</FullName>
+        							</IncomeAccountRef>
+        							<ExpenseAccountRef>
+        									<FullName>Cost of Goods Sold</FullName>
+        							</ExpenseAccountRef>	                                    
+                                    </SalesAndPurchase>
+                              </ItemServiceAdd>
+                           </ItemServiceAddRq>
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+	                <?qbxml version="13.0"?>
+			        <QBXML>
+	                   <QBXMLMsgsRq onError="continueOnError">
+                          <ItemServiceAddRq>
+                             <ItemServiceAdd>
+        							<Name>Business to Business membership</Name> 						
+        							<IsActive >true</IsActive>
+									<SalesAndPurchase>
+        							<SalesDesc ></SalesDesc>
+        							<SalesPrice >125</SalesPrice>
+        							<IncomeAccountRef>
+        									<FullName>Income</FullName>
+        							</IncomeAccountRef>
+        							<ExpenseAccountRef>
+        									<FullName>Cost of Goods Sold</FullName>
+        							</ExpenseAccountRef>	                                    
+                                    </SalesAndPurchase>
+                              </ItemServiceAdd>
+                           </ItemServiceAddRq>
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+	                <?qbxml version="13.0"?>
+			        <QBXML>
+	                   <QBXMLMsgsRq onError="continueOnError">
+                          <ItemServiceAddRq>
+                             <ItemServiceAdd>
+        							<Name>Business to Business membership</Name> 						
+        							<IsActive >true</IsActive>
+									<SalesAndPurchase>
+        							<SalesDesc ></SalesDesc>
+        							<SalesPrice >125</SalesPrice>
+        							<IncomeAccountRef>
+        									<FullName>Cost of Goods Sold</FullName>
+        							</IncomeAccountRef>
+        							<ExpenseAccountRef>
+        									<FullName>Cost of Goods Sold</FullName>
+        							</ExpenseAccountRef>	                                    
+                                    </SalesAndPurchase>
+                              </ItemServiceAdd>
+                           </ItemServiceAddRq>
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<ItemServiceAddRs requestID="2" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<ItemServiceRet>
+<ListID>80000062-1734273289</ListID>
+<TimeCreated>2024-12-15T20:04:49+05:30</TimeCreated>
+<TimeModified>2024-12-15T20:04:49+05:30</TimeModified>
+<EditSequence>1734273289</EditSequence>
+<Name>Business to Business membership</Name>
+<FullName>Business to Business membership</FullName>
+<IsActive>true</IsActive>
+<Sublevel>0</Sublevel>
+<SalesTaxCodeRef>
+<ListID>10000-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+<SalesAndPurchase>
+<SalesPrice>125.00</SalesPrice>
+<IncomeAccountRef>
+<ListID>1E0000-933270542</ListID>
+<FullName>Cost of Goods Sold</FullName>
+</IncomeAccountRef>
+<PurchaseCost>0.00</PurchaseCost>
+<ExpenseAccountRef>
+<ListID>1E0000-933270542</ListID>
+<FullName>Cost of Goods Sold</FullName>
+</ExpenseAccountRef>
+</SalesAndPurchase>
+</ItemServiceRet>
+</ItemServiceAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE qbd_item SET item_id= '80000062-1734273289',edit_sequence = '1734273289',qbd_sync='1' WHERE id ='1'
+<?xml version="1.0" encoding="utf-8"?>
+	                <?qbxml version="13.0"?>
+			        <QBXML>
+	                   <QBXMLMsgsRq onError="continueOnError">
+                          <ItemServiceAddRq>
+                             <ItemServiceAdd>
+        							<Name>Business to Business membership</Name> 						
+        							<IsActive >true</IsActive>
+									<SalesAndPurchase>
+        							<SalesDesc ></SalesDesc>
+        							<SalesPrice >125</SalesPrice>
+        							<IncomeAccountRef>
+        									<FullName>Cost of Goods Sold</FullName>
+        							</IncomeAccountRef>
+        							<ExpenseAccountRef>
+        									<FullName>Cost of Goods Sold</FullName>
+        							</ExpenseAccountRef>	                                    
+                                    </SalesAndPurchase>
+                              </ItemServiceAdd>
+                           </ItemServiceAddRq>
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+	                <?qbxml version="13.0"?>
+			        <QBXML>
+	                   <QBXMLMsgsRq onError="continueOnError">
+                          <ItemServiceAddRq>
+                             <ItemServiceAdd>
+        							<Name>Business to Business membership</Name> 						
+        							<IsActive >true</IsActive>
+									<SalesAndPurchase>
+        							<SalesDesc ></SalesDesc>
+        							<SalesPrice >125</SalesPrice>
+        							<IncomeAccountRef>
+        									<FullName>Cost of Goods Sold</FullName>
+        							</IncomeAccountRef>
+        							<ExpenseAccountRef>
+        									<FullName>Cost of Goods Sold</FullName>
+        							</ExpenseAccountRef>	                                    
+                                    </SalesAndPurchase>
+                              </ItemServiceAdd>
+                           </ItemServiceAddRq>
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+	                <?qbxml version="13.0"?>
+			        <QBXML>
+	                   <QBXMLMsgsRq onError="continueOnError">
+                          <ItemServiceAddRq>
+                             <ItemServiceAdd>
+        							<Name>Business to Business membershi</Name> 						
+        							<IsActive >true</IsActive>
+									<SalesAndPurchase>
+        							<SalesDesc ></SalesDesc>
+        							<SalesPrice >125</SalesPrice>
+        							<IncomeAccountRef>
+        									<FullName>Cost of Goods Sold</FullName>
+        							</IncomeAccountRef>
+        							<ExpenseAccountRef>
+        									<FullName>Cost of Goods Sold</FullName>
+        							</ExpenseAccountRef>	                                    
+                                    </SalesAndPurchase>
+                              </ItemServiceAdd>
+                           </ItemServiceAddRq>
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<ItemServiceAddRs requestID="1" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<ItemServiceRet>
+<ListID>800000C1-1706703153</ListID>
+<TimeCreated>2024-01-31T17:42:33+05:30</TimeCreated>
+<TimeModified>2024-01-31T17:42:33+05:30</TimeModified>
+<EditSequence>1706703153</EditSequence>
+<Name>Business to Business membershi</Name>
+<FullName>Business to Business membershi</FullName>
+<IsActive>true</IsActive>
+<Sublevel>0</Sublevel>
+<SalesAndPurchase>
+<SalesPrice>125.00</SalesPrice>
+<IncomeAccountRef>
+<ListID>80000084-1334237773</ListID>
+<FullName>Cost of Goods Sold</FullName>
+</IncomeAccountRef>
+<PurchaseCost>0.00</PurchaseCost>
+<ExpenseAccountRef>
+<ListID>80000084-1334237773</ListID>
+<FullName>Cost of Goods Sold</FullName>
+</ExpenseAccountRef>
+</SalesAndPurchase>
+</ItemServiceRet>
+</ItemServiceAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE qbd_item SET item_id= '800000C1-1706703153',edit_sequence = '1706703153',qbd_sync='1' WHERE id ='1'
+<?xml version="1.0" encoding="utf-8"?>
+	                <?qbxml version="13.0"?>
+			        <QBXML>
+	                   <QBXMLMsgsRq onError="continueOnError">
+                          <ItemServiceAddRq>
+                             <ItemServiceAdd>
+        							<Name>Business to Business membershi</Name> 						
+        							<IsActive >true</IsActive>
+									<SalesAndPurchase>
+        							<SalesDesc ></SalesDesc>
+        							<SalesPrice >125</SalesPrice>
+        							<IncomeAccountRef>
+        									<FullName>Cost of Goods Sold</FullName>
+        							</IncomeAccountRef>
+        							<ExpenseAccountRef>
+        									<FullName>Cost of Goods Sold</FullName>
+        							</ExpenseAccountRef>	                                    
+                                    </SalesAndPurchase>
+                              </ItemServiceAdd>
+                           </ItemServiceAddRq>
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" ?>
+<QBXML>
+<QBXMLMsgsRs>
+<ItemServiceAddRs requestID="7" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+<ItemServiceRet>
+<ListID>80000062-1706864088</ListID>
+<TimeCreated>2024-02-02T00:54:48-08:00</TimeCreated>
+<TimeModified>2024-02-02T00:54:48-08:00</TimeModified>
+<EditSequence>1706864088</EditSequence>
+<Name>Business to Business membershi</Name>
+<FullName>Business to Business membershi</FullName>
+<IsActive>true</IsActive>
+<Sublevel>0</Sublevel>
+<SalesTaxCodeRef>
+<ListID>80000001-999022286</ListID>
+<FullName>Tax</FullName>
+</SalesTaxCodeRef>
+<SalesAndPurchase>
+<SalesPrice>125.00</SalesPrice>
+<IncomeAccountRef>
+<ListID>8000001E-933270542</ListID>
+<FullName>Cost of Goods Sold</FullName>
+</IncomeAccountRef>
+<PurchaseCost>0.00</PurchaseCost>
+<ExpenseAccountRef>
+<ListID>8000001E-933270542</ListID>
+<FullName>Cost of Goods Sold</FullName>
+</ExpenseAccountRef>
+</SalesAndPurchase>
+</ItemServiceRet>
+</ItemServiceAddRs>
+</QBXMLMsgsRs>
+</QBXML>
+
+UPDATE qbd_item SET item_id= '80000062-1706864088',edit_sequence = '1706864088',qbd_sync='1' WHERE id ='1'

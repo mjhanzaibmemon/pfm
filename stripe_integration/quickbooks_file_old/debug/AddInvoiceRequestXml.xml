@@ -1,0 +1,683 @@
+
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000790-1706534582</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-01-29</TxnDate>
+									    <RefNumber>pi_3ObNj9JJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID>800000C0-1706534584</ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID></ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-01-29</TxnDate>
+									    <RefNumber>pi_3ObOOyJJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID>800000C0-1706534584</ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID></ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-01-29</TxnDate>
+									    <RefNumber>pi_3ObNj9JJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID></ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID></ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-01-29</TxnDate>
+									    <RefNumber>pi_3ObNj9JJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID></ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>800000DC-1734272940</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-01-29</TxnDate>
+									    <RefNumber>pi_3ObNj9JJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID></ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>800000DC-1734272940</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-01-29</TxnDate>
+									    <RefNumber>pi_3ObNj9JJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID></ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>800000DD-1734273076</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-01-29</TxnDate>
+									    <RefNumber>pi_3ObNj9JJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID></ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>800000DD-1734273076</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-01-29</TxnDate>
+									    <RefNumber>pi_3ObNj9JJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID>80000062-1734273289</ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>800000DF-1734273509</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-01-29</TxnDate>
+									    <RefNumber>pi_3ObNj9JJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID>80000062-1734273289</ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID></ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-01-29</TxnDate>
+									    <RefNumber>pi_3ObOOyJJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID>80000062-1734273289</ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000790-1706534582</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-01-31</TxnDate>
+									    <RefNumber>pi_3ObOOyJJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID>80000062-1734273289</ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000790-1706534582</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-01-31</TxnDate>
+									    <RefNumber>pi_3ObOOyJJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID></ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000790-1706534582</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-01-31</TxnDate>
+									    <RefNumber>pi_3ObOOyJJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID></ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000790-1706534582</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-01-31</TxnDate>
+									    <RefNumber>pi_3ObOOyJJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID></ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000790-1706534582</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-01-31</TxnDate>
+									    <RefNumber>pi_3ObOOyJJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID>800000C1-1706703153</ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000790-1706534582</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-01-31</TxnDate>
+									    <RefNumber>pi_3OcSIMJJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID>800000C1-1706703153</ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000003-1706864086</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-02-02</TxnDate>
+									    <RefNumber>pi_3ObNj9JJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID></ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000003-1706864086</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-02-02</TxnDate>
+									    <RefNumber>pi_3ObNj9JJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID></ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000003-1706864086</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-02-02</TxnDate>
+									    <RefNumber>pi_3ObNj9JJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID>80000062-1706864088</ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000003-1706864086</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-02-02</TxnDate>
+									    <RefNumber>pi_3ObOOyJJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID></ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000003-1706864086</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-02-02</TxnDate>
+									    <RefNumber>pi_3ObOOyJJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID></ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000003-1706864086</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-02-02</TxnDate>
+									    <RefNumber>pi_3OcSIMJJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID></ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000004-1706865488</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-02-02</TxnDate>
+									    <RefNumber>pi_3ObOOyJJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID></ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000003-1706864086</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-02-02</TxnDate>
+									    <RefNumber>pi_3OcSIMJJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID></ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000004-1706865488</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-02-02</TxnDate>
+									    <RefNumber>pi_3ObOOyJJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID></ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000003-1706864086</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-02-02</TxnDate>
+									    <RefNumber>pi_3OcSIMJJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID></ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000003-1706864086</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-02-02</TxnDate>
+									    <RefNumber>pi_3ObNj9JJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID>80000062-1706864088</ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000004-1706865488</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-02-02</TxnDate>
+									    <RefNumber>pi_3ObOOyJJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID>80000062-1706864088</ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000005-1706865761</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-02-02</TxnDate>
+									    <RefNumber>pi_3OcSIMJJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID>80000062-1706864088</ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000004-1706865488</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-02-02</TxnDate>
+									    <RefNumber>pi_3ObOOyJJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID>80000062-1706864088</ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					     <?qbxml version="13.0"?>
+						 <QBXML>
+							<QBXMLMsgsRq onError="continueOnError">
+							<InvoiceAddRq>
+								<InvoiceAdd> 
+									<CustomerRef>
+									   <ListID>80000005-1706865761</ListID>
+									</CustomerRef>
+									
+									    <TxnDate>2024-02-02</TxnDate>
+									    <RefNumber>pi_3OcSIMJJ</RefNumber><InvoiceLineAdd>
+		       <ItemRef>
+				<ListID>80000062-1706864088</ListID>
+				</ItemRef>
+				<Desc>DP12345</Desc> 
+				<Quantity>1</Quantity>				
+				<Rate>125</Rate>			 							
+		     </InvoiceLineAdd></InvoiceAdd>
+											</InvoiceAddRq>
+										</QBXMLMsgsRq>
+									    </QBXML>

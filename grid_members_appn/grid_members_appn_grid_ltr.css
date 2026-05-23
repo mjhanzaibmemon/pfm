@@ -1,0 +1,14 @@
+.css_member_name_label, .css_member_name_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_member_name_grid_line, .css_member_name_grid_line:hover {vertical-align: top;text-align: left;}
+.css_phone1_label, .css_phone1_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_phone1_grid_line, .css_phone1_grid_line:hover {vertical-align: top;text-align: left;}
+.css_email_label, .css_email_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_email_grid_line, .css_email_grid_line:hover {vertical-align: top;text-align: left;}
+.css_main_contact_label, .css_main_contact_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_main_contact_grid_line, .css_main_contact_grid_line:hover {vertical-align: top;text-align: left;}
+.css_member_id_label, .css_member_id_label:hover {text-align:right;vertical-align:middle;justify-content:right;font-weight:bold;}
+.css_member_id_grid_line, .css_member_id_grid_line:hover {vertical-align: top;text-align: right;}
+.css_client_id_label, .css_client_id_label:hover {text-align:right;vertical-align:middle;justify-content:right;font-weight:bold;}
+.css_client_id_grid_line, .css_client_id_grid_line:hover {vertical-align: top;text-align: left;}
+.css_include_label, .css_include_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_include_grid_line, .css_include_grid_line:hover {vertical-align: top;text-align: left;}

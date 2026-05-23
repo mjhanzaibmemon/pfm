@@ -1,0 +1,12 @@
+.css_client_id_label, .css_client_id_label:hover {text-align:right;vertical-align:middle;justify-content:right;font-weight:bold;}
+.css_client_id_grid_line, .css_client_id_grid_line:hover {vertical-align: top;text-align: right;}
+.css_co_name_label, .css_co_name_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_co_name_grid_line, .css_co_name_grid_line:hover {vertical-align: top;text-align: right;}
+.css_street_address_label, .css_street_address_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_street_address_grid_line, .css_street_address_grid_line:hover {vertical-align: top;text-align: right;}
+.css_city_label, .css_city_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_city_grid_line, .css_city_grid_line:hover {vertical-align: top;text-align: right;}
+.css_renewal_date_label, .css_renewal_date_label:hover {text-align:center;vertical-align:middle;justify-content:center;font-weight:bold;}
+.css_renewal_date_grid_line, .css_renewal_date_grid_line:hover {vertical-align: top;text-align: center;}
+.css_status_label, .css_status_label:hover {text-align:left;vertical-align:middle;justify-content:left;font-weight:bold;}
+.css_status_grid_line, .css_status_grid_line:hover {vertical-align: top;text-align: right;}

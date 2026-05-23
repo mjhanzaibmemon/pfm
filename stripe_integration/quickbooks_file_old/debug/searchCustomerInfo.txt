@@ -1,0 +1,308 @@
+
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq  requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Arun Tiwari</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq  requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Arun Tiwari</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Arun Tiwari</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Arun Tiwari</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Arun Tiwari</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+Array
+(
+    [ListID] => 80000790-1706534582
+    [EditSequence] => 1706534582
+    [FullName] => Arun Tiwari
+    [Name] => Arun Tiwari
+    [requestID] => 1
+    [iteratorID] => {a27baca4-ec41-40f6-96fc-f0b2bf49bbd2}
+    [iteratorRemainingCount] => 0
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="2">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Arun Tiwari</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+Array
+(
+    [ListID] => 80000790-1706534582
+    [EditSequence] => 1706534582
+    [FullName] => Arun Tiwari
+    [Name] => Arun Tiwari
+    [requestID] => 2
+    [iteratorID] => {74c0ce2b-241d-4819-bdc4-6bf3acac3f22}
+    [iteratorRemainingCount] => 0
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Arun Tiwari</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="2">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Arun Tiwari</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="3">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Arun Tiwari</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Arun Tiwari</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+Array
+(
+    [ListID] => 80000003-1706864086
+    [EditSequence] => 1706864086
+    [FullName] => Arun Tiwari
+    [Name] => Arun Tiwari
+    [requestID] => 1
+    [iteratorID] => {d5f7381a-117a-4a30-95d3-c383d82bebc6}
+    [iteratorRemainingCount] => 0
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="2">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Arun Tiwari</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+Array
+(
+    [ListID] => 80000003-1706864086
+    [EditSequence] => 1706864086
+    [FullName] => Arun Tiwari
+    [Name] => Arun Tiwari
+    [requestID] => 2
+    [iteratorID] => {5e1d41a3-a27c-479c-a468-f9baf9509c78}
+    [iteratorRemainingCount] => 0
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Octavio</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="1">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Arun Tiwari</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+Array
+(
+    [ListID] => 80000003-1706864086
+    [EditSequence] => 1706864086
+    [FullName] => Arun Tiwari
+    [Name] => Arun Tiwari
+    [requestID] => 1
+    [iteratorID] => {f73a8355-980f-487f-b49c-13b4e9afba45}
+    [iteratorRemainingCount] => 0
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="2">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Octavio</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+Array
+(
+    [ListID] => 80000004-1706865488
+    [EditSequence] => 1706865488
+    [FullName] => Octavio
+    [Name] => Octavio
+    [requestID] => 2
+    [iteratorID] => {116cc3a4-5d94-4986-b9fc-df8f83ef4dc8}
+    [iteratorRemainingCount] => 0
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+<?xml version="1.0" encoding="utf-8"?>
+					<?qbxml version="13.0"?>
+					<QBXML>
+						<QBXMLMsgsRq onError="stopOnError">
+							<CustomerQueryRq iterator="Start"   requestID="3">
+								<MaxReturned>1000</MaxReturned>
+								<NameFilter>
+									<MatchCriterion>Contains</MatchCriterion> 
+									<Name>Arun</Name> 
+								</NameFilter>
+								<OwnerID>0</OwnerID>
+							</CustomerQueryRq>	
+						</QBXMLMsgsRq>
+					</QBXML>
+Array
+(
+    [ListID] => 80000003-1706864086
+    [EditSequence] => 1706864086
+    [FullName] => Arun Tiwari
+    [Name] => Arun Tiwari
+    [requestID] => 3
+    [iteratorID] => {cede3d38-8236-47f8-8a29-185f8e4331f9}
+    [iteratorRemainingCount] => 0
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)

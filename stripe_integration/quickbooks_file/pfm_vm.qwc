@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<QBWCXML>
+	<AppName>pfm_vm</AppName>
+	<AppID></AppID>
+	<AppURL>https://vmtests.com/stripe_integration/quickbooks_file/qb_web_connector_import.php</AppURL>
+	<AppDescription></AppDescription>
+	<AppSupport>https://vmtests.com/stripe_integration/quickbooks_file/qb_web_connector_import.php</AppSupport>
+	<UserName>quickbooks</UserName>
+		<OwnerID>{ec50304d-4b44-4e6c-8f17-aa62f7fdb7b0}</OwnerID>
+		<FileID>{4340d333-a8de-4d8a-9f6a-dcf29736218b}</FileID>
+	<QBType>QBFS</QBType>
+	<Scheduler>
+		<RunEveryNMinutes>1</RunEveryNMinutes>
+	</Scheduler>
+	<IsReadOnly>false</IsReadOnly>
+</QBWCXML>
+

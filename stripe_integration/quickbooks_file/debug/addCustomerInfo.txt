@@ -1,0 +1,556 @@
+
+UPDATE transactions SET customer_id ='80000005-1706865761' WHERE id = '3'
+<?xml version="1.0"?>
+			  <?qbxml version="13.0"?>
+			  <QBXML>
+				 <QBXMLMsgsRq onError="continueOnError">
+					<CustomerAddRq requestID="2">
+						<CustomerAdd>
+						<Name>octavio 1</Name>			
+                        <FirstName>octavio</FirstName>
+                        <LastName>1</LastName>
+						<BillAddress>
+							<Addr1> </Addr1>
+							<City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</BillAddress>
+						<ShipAddress>
+							<Addr1> </Addr1>
+							 <City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</ShipAddress>
+						<Phone></Phone>
+					    <Email>octort@live.com</Email>
+					</CustomerAdd>
+					</CustomerAddRq>
+				 </QBXMLMsgsRq>
+			  </QBXML>
+Array
+(
+    [ListID] => 80000006-1707373061
+    [EditSequence] => 1707373061
+    [FullName] => octavio 1
+    [Name] => octavio 1
+    [requestID] => 2
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+UPDATE transactions SET customer_id ='80000006-1707373061' WHERE id = '4'
+UPDATE transactions SET customer_id ='80000006-1707373061' WHERE id = '4'
+<?xml version="1.0"?>
+			  <?qbxml version="13.0"?>
+			  <QBXML>
+				 <QBXMLMsgsRq onError="continueOnError">
+					<CustomerAddRq requestID="2">
+						<CustomerAdd>
+						<Name>waqas</Name>			
+                        <FirstName>waqas</FirstName>
+                        <LastName></LastName>
+						<BillAddress>
+							<Addr1> </Addr1>
+							<City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</BillAddress>
+						<ShipAddress>
+							<Addr1> </Addr1>
+							 <City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</ShipAddress>
+						<Phone></Phone>
+					    <Email>waqs@live.com</Email>
+					</CustomerAdd>
+					</CustomerAddRq>
+				 </QBXMLMsgsRq>
+			  </QBXML>
+Array
+(
+    [ListID] => 80000007-1707589864
+    [EditSequence] => 1707589864
+    [FullName] => waqas
+    [Name] => waqas
+    [requestID] => 2
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+UPDATE transactions SET customer_id ='80000007-1707589864' WHERE id = '4'
+UPDATE transactions SET customer_id ='80000018-1712733126' WHERE id = '15'
+UPDATE transactions SET customer_id ='80000018-1712733126' WHERE id = '16'
+<?xml version="1.0"?>
+			  <?qbxml version="13.0"?>
+			  <QBXML>
+				 <QBXMLMsgsRq onError="continueOnError">
+					<CustomerAddRq requestID="8">
+						<CustomerAdd>
+						<Name>customer 1</Name>			
+                        <FirstName>customer</FirstName>
+                        <LastName>1</LastName>
+						<BillAddress>
+							<Addr1> </Addr1>
+							<City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</BillAddress>
+						<ShipAddress>
+							<Addr1> </Addr1>
+							 <City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</ShipAddress>
+						<Phone></Phone>
+					    <Email>octort@gmail.com</Email>
+					</CustomerAdd>
+					</CustomerAddRq>
+				 </QBXMLMsgsRq>
+			  </QBXML>
+Array
+(
+    [ListID] => 80000034-1729644508
+    [EditSequence] => 1729644508
+    [FullName] => customer 1
+    [Name] => customer 1
+    [requestID] => 8
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+UPDATE transactions SET customer_id ='80000034-1729644508' WHERE id = '17'
+<?xml version="1.0"?>
+			  <?qbxml version="13.0"?>
+			  <QBXML>
+				 <QBXMLMsgsRq onError="continueOnError">
+					<CustomerAddRq requestID="9">
+						<CustomerAdd>
+						<Name>dn cust</Name>			
+                        <FirstName>dn</FirstName>
+                        <LastName>cust</LastName>
+						<BillAddress>
+							<Addr1> </Addr1>
+							<City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</BillAddress>
+						<ShipAddress>
+							<Addr1> </Addr1>
+							 <City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</ShipAddress>
+						<Phone></Phone>
+					    <Email>octort@gmail.com</Email>
+					</CustomerAdd>
+					</CustomerAddRq>
+				 </QBXMLMsgsRq>
+			  </QBXML>
+Array
+(
+    [ListID] => 80000035-1729644509
+    [EditSequence] => 1729644509
+    [FullName] => dn cust
+    [Name] => dn cust
+    [requestID] => 9
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+UPDATE transactions SET customer_id ='80000035-1729644509' WHERE id = '18'
+<?xml version="1.0"?>
+			  <?qbxml version="13.0"?>
+			  <QBXML>
+				 <QBXMLMsgsRq onError="continueOnError">
+					<CustomerAddRq requestID="10">
+						<CustomerAdd>
+						<Name>My name</Name>			
+                        <FirstName>My</FirstName>
+                        <LastName>name</LastName>
+						<BillAddress>
+							<Addr1> </Addr1>
+							<City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</BillAddress>
+						<ShipAddress>
+							<Addr1> </Addr1>
+							 <City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</ShipAddress>
+						<Phone></Phone>
+					    <Email>ofga.fma.gm@gmail.com</Email>
+					</CustomerAdd>
+					</CustomerAddRq>
+				 </QBXMLMsgsRq>
+			  </QBXML>
+Array
+(
+    [ListID] => 80000036-1729644509
+    [EditSequence] => 1729644509
+    [FullName] => My name
+    [Name] => My name
+    [requestID] => 10
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+UPDATE transactions SET customer_id ='80000036-1729644509' WHERE id = '19'
+<?xml version="1.0"?>
+			  <?qbxml version="13.0"?>
+			  <QBXML>
+				 <QBXMLMsgsRq onError="continueOnError">
+					<CustomerAddRq requestID="2">
+						<CustomerAdd>
+						<Name>Test 10220553</Name>			
+                        <FirstName>Test</FirstName>
+                        <LastName>10220553</LastName>
+						<BillAddress>
+							<Addr1> </Addr1>
+							<City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</BillAddress>
+						<ShipAddress>
+							<Addr1> </Addr1>
+							 <City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</ShipAddress>
+						<Phone></Phone>
+					    <Email>octort@gmail.com</Email>
+					</CustomerAdd>
+					</CustomerAddRq>
+				 </QBXMLMsgsRq>
+			  </QBXML>
+Array
+(
+    [ListID] => 80000037-1729644895
+    [EditSequence] => 1729644895
+    [FullName] => Test 10220553
+    [Name] => Test 10220553
+    [requestID] => 2
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+UPDATE transactions SET customer_id ='80000037-1729644895' WHERE id = '20'
+<?xml version="1.0"?>
+			  <?qbxml version="13.0"?>
+			  <QBXML>
+				 <QBXMLMsgsRq onError="continueOnError">
+					<CustomerAddRq requestID="2">
+						<CustomerAdd>
+						<Name>Customer 1</Name>			
+                        <FirstName>Customer</FirstName>
+                        <LastName>1</LastName>
+						<BillAddress>
+							<Addr1> </Addr1>
+							<City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</BillAddress>
+						<ShipAddress>
+							<Addr1> </Addr1>
+							 <City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</ShipAddress>
+						<Phone></Phone>
+					    <Email>octort@gmail.com</Email>
+					</CustomerAdd>
+					</CustomerAddRq>
+				 </QBXMLMsgsRq>
+			  </QBXML>
+Array
+(
+    [ListID] => 80000163-1729717618
+    [EditSequence] => 1729717618
+    [FullName] => Customer 1
+    [Name] => Customer 1
+    [requestID] => 2
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+UPDATE transactions SET customer_id ='80000163-1729717618' WHERE id = '21'
+UPDATE transactions SET customer_id ='80000034-1729644508' WHERE id = '21'
+UPDATE transactions SET customer_id ='80000036-1729644509' WHERE id = '22'
+UPDATE transactions SET customer_id ='80000036-1729644509' WHERE id = '23'
+<?xml version="1.0"?>
+			  <?qbxml version="13.0"?>
+			  <QBXML>
+				 <QBXMLMsgsRq onError="continueOnError">
+					<CustomerAddRq requestID="2">
+						<CustomerAdd>
+						<Name>Cust1.10.28.10.25</Name>			
+                        <FirstName>Cust1 10 28 10 25</FirstName>
+                        <LastName></LastName>
+						<BillAddress>
+							<Addr1> </Addr1>
+							<City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</BillAddress>
+						<ShipAddress>
+							<Addr1> </Addr1>
+							 <City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</ShipAddress>
+						<Phone></Phone>
+					    <Email>octort@gmail.com</Email>
+					</CustomerAdd>
+					</CustomerAddRq>
+				 </QBXMLMsgsRq>
+			  </QBXML>
+Array
+(
+    [ListID] => 80000038-1730136498
+    [EditSequence] => 1730136498
+    [FullName] => Cust1.10.28.10.25
+    [Name] => Cust1.10.28.10.25
+    [requestID] => 2
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+UPDATE transactions SET customer_id ='80000038-1730136498' WHERE id = '24'
+<?xml version="1.0"?>
+			  <?qbxml version="13.0"?>
+			  <QBXML>
+				 <QBXMLMsgsRq onError="continueOnError">
+					<CustomerAddRq requestID="2">
+						<CustomerAdd>
+						<Name>Cust2.10.28.10.59</Name>			
+                        <FirstName>Cust2 10 28 10 59</FirstName>
+                        <LastName></LastName>
+						<BillAddress>
+							<Addr1> </Addr1>
+							<City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</BillAddress>
+						<ShipAddress>
+							<Addr1> </Addr1>
+							 <City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</ShipAddress>
+						<Phone></Phone>
+					    <Email>octort@gmail.com</Email>
+					</CustomerAdd>
+					</CustomerAddRq>
+				 </QBXMLMsgsRq>
+			  </QBXML>
+Array
+(
+    [ListID] => 80000039-1730138380
+    [EditSequence] => 1730138380
+    [FullName] => Cust2.10.28.10.59
+    [Name] => Cust2.10.28.10.59
+    [requestID] => 2
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+UPDATE transactions SET customer_id ='80000039-1730138380' WHERE id = '24'
+<?xml version="1.0"?>
+			  <?qbxml version="13.0"?>
+			  <QBXML>
+				 <QBXMLMsgsRq onError="continueOnError">
+					<CustomerAddRq requestID="2">
+						<CustomerAdd>
+						<Name>Cust2.11.02</Name>			
+                        <FirstName>Cust2 11 02</FirstName>
+                        <LastName></LastName>
+						<BillAddress>
+							<Addr1> </Addr1>
+							<City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</BillAddress>
+						<ShipAddress>
+							<Addr1> </Addr1>
+							 <City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</ShipAddress>
+						<Phone></Phone>
+					    <Email>octort@gmail.com</Email>
+					</CustomerAdd>
+					</CustomerAddRq>
+				 </QBXMLMsgsRq>
+			  </QBXML>
+Array
+(
+    [ListID] => 80000164-1730552979
+    [EditSequence] => 1730552979
+    [FullName] => Cust2.11.02
+    [Name] => Cust2.11.02
+    [requestID] => 2
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+UPDATE transactions SET customer_id ='80000164-1730552979' WHERE id = '24'
+<?xml version="1.0"?>
+			  <?qbxml version="13.0"?>
+			  <QBXML>
+				 <QBXMLMsgsRq onError="continueOnError">
+					<CustomerAddRq requestID="2">
+						<CustomerAdd>
+						<Name>Cust2.11.02-B</Name>			
+                        <FirstName>Cust2 11 02-B</FirstName>
+                        <LastName></LastName>
+						<BillAddress>
+							<Addr1> </Addr1>
+							<City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</BillAddress>
+						<ShipAddress>
+							<Addr1> </Addr1>
+							 <City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</ShipAddress>
+						<Phone></Phone>
+					    <Email>octort@gmail.com</Email>
+					</CustomerAdd>
+					</CustomerAddRq>
+				 </QBXMLMsgsRq>
+			  </QBXML>
+Array
+(
+    [ListID] => 80000165-1730556134
+    [EditSequence] => 1730556134
+    [FullName] => Cust2.11.02-B
+    [Name] => Cust2.11.02-B
+    [requestID] => 2
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+UPDATE transactions SET customer_id ='80000165-1730556134' WHERE id = '24'
+UPDATE transactions SET customer_id ='80000037-1729644895' WHERE id = '25'
+UPDATE transactions SET customer_id ='80000037-1729644895' WHERE id = '26'
+<?xml version="1.0"?>
+			  <?qbxml version="13.0"?>
+			  <QBXML>
+				 <QBXMLMsgsRq onError="continueOnError">
+					<CustomerAddRq requestID="2">
+						<CustomerAdd>
+						<Name>test 1113</Name>			
+                        <FirstName>test</FirstName>
+                        <LastName>1113</LastName>
+						<BillAddress>
+							<Addr1> </Addr1>
+							<City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</BillAddress>
+						<ShipAddress>
+							<Addr1> </Addr1>
+							 <City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</ShipAddress>
+						<Phone></Phone>
+					    <Email>octort@gmail.com</Email>
+					</CustomerAdd>
+					</CustomerAddRq>
+				 </QBXMLMsgsRq>
+			  </QBXML>
+Array
+(
+    [ListID] => 8000003A-1731516446
+    [EditSequence] => 1731516446
+    [FullName] => test 1113
+    [Name] => test 1113
+    [requestID] => 2
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+UPDATE transactions SET customer_id ='8000003A-1731516446' WHERE id = '25'
+<?xml version="1.0"?>
+			  <?qbxml version="13.0"?>
+			  <QBXML>
+				 <QBXMLMsgsRq onError="continueOnError">
+					<CustomerAddRq requestID="2">
+						<CustomerAdd>
+						<Name>test 1113b</Name>			
+                        <FirstName>test</FirstName>
+                        <LastName>1113b</LastName>
+						<BillAddress>
+							<Addr1> </Addr1>
+							<City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</BillAddress>
+						<ShipAddress>
+							<Addr1> </Addr1>
+							 <City></City>
+							<State></State>
+							<PostalCode></PostalCode>
+							<Country></Country>
+						</ShipAddress>
+						<Phone></Phone>
+					    <Email>octort@gmail.com</Email>
+					</CustomerAdd>
+					</CustomerAddRq>
+				 </QBXMLMsgsRq>
+			  </QBXML>
+Array
+(
+    [ListID] => 8000003B-1731516528
+    [EditSequence] => 1731516528
+    [FullName] => test 1113b
+    [Name] => test 1113b
+    [requestID] => 2
+    [statusCode] => 0
+    [statusSeverity] => Info
+    [statusMessage] => Status OK
+)
+
+UPDATE transactions SET customer_id ='8000003B-1731516528' WHERE id = '26'
