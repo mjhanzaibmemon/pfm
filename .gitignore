@@ -65,11 +65,15 @@ $RECYCLE.BIN/
 .buildpath
 .settings/
 
-# ─── Temp ───
+# ─── Temp + editor backups ───
+# Backup files like *.bak_20260513 accumulate on servers from manual edits.
+# They are timestamped artifacts, not deliberate code. Already-tracked
+# bak files stay tracked; new ones won't be added.
 *.tmp
 *.temp
 *.bak
 *.bak_*
+*.bak[0-9]*
 *.orig
 
 # ─── Composer / npm (if ever introduced) ───
