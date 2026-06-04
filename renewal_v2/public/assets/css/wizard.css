@@ -1,0 +1,745 @@
+/**
+ * PFM Renewal v2 — Wizard CSS
+ *
+ * Colour palette and visual language match the existing PFM site
+ * (ScriptCase "SweetBlue 9" theme) so the rebuild feels native to
+ * customers who already know the platform.
+ *
+ * Reference colours (extracted from existing PFM CSS):
+ *   #823040 — burgundy        (primary brand colour)
+ *   #FEDEE5 — soft pink       (accent backgrounds)
+ *   #E0E6ED — pale blue-grey  (section backgrounds)
+ *   #0074D4 — bright blue     (interactive borders, links)
+ *   #0000CC — strong blue     (company / contact emphasis)
+ *   #993300 — dark orange     (warnings)
+ *   #F8F9FA — off-white       (page background)
+ */
+
+:root {
+    /* Brand */
+    --pfm-burgundy:        #823040;
+    --pfm-burgundy-dark:   #5d2230;
+    --pfm-burgundy-light:  #a04458;
+    --pfm-pink:            #FEDEE5;
+    --pfm-pink-soft:       #fff0f3;
+
+    /* UI */
+    --pfm-bg:              #F8F9FA;
+    --pfm-bg-panel:        #ffffff;
+    --pfm-bg-soft:         #E0E6ED;
+    --pfm-border:          #d4d8de;
+    --pfm-border-strong:   #0074D4;
+
+    /* Text */
+    --pfm-text:            #2c3038;
+    --pfm-text-muted:      #6c757d;
+    --pfm-text-emphasis:   #0000CC;
+    --pfm-link:            #0074D4;
+    --pfm-link-hover:      #005ba6;
+
+    /* State */
+    --pfm-success:         #28a745;
+    --pfm-success-bg:      #d4edda;
+    --pfm-warning:         #993300;
+    --pfm-warning-bg:      #fff3cd;
+    --pfm-danger:          #c0392b;
+    --pfm-danger-bg:       #f8d7da;
+    --pfm-info:            #0074D4;
+    --pfm-info-bg:         #d1ecf1;
+
+    /* Geometry */
+    --pfm-radius:          6px;
+    --pfm-radius-lg:       10px;
+    --pfm-shadow:          0 2px 8px rgba(0, 0, 0, 0.06);
+    --pfm-shadow-lg:       0 4px 16px rgba(0, 0, 0, 0.1);
+
+    /* Spacing */
+    --pfm-gap:             16px;
+    --pfm-gap-lg:          24px;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/*  Reset + base                                               */
+/* ─────────────────────────────────────────────────────────── */
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 "Helvetica Neue", Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--pfm-text);
+    background: var(--pfm-bg);
+    min-height: 100vh;
+}
+
+a {
+    color: var(--pfm-link);
+    text-decoration: none;
+}
+a:hover { color: var(--pfm-link-hover); text-decoration: underline; }
+
+h1, h2, h3, h4 {
+    color: var(--pfm-burgundy);
+    margin: 0 0 12px;
+    line-height: 1.25;
+    font-weight: 600;
+}
+
+h1 { font-size: 1.75rem; }
+h2 { font-size: 1.35rem; }
+h3 { font-size: 1.15rem; }
+
+p { margin: 0 0 12px; }
+
+/* ─────────────────────────────────────────────────────────── */
+/*  Layout                                                     */
+/* ─────────────────────────────────────────────────────────── */
+
+.pfm-shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.pfm-container {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/*  Header                                                     */
+/* ─────────────────────────────────────────────────────────── */
+
+.pfm-header {
+    background: var(--pfm-burgundy);
+    color: #fff;
+    padding: 14px 0;
+    box-shadow: var(--pfm-shadow);
+    border-bottom: 4px solid var(--pfm-pink);
+}
+
+.pfm-header .pfm-container {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.pfm-header__logo {
+    height: 48px;
+    width: auto;
+    display: block;
+}
+
+.pfm-header__title {
+    color: #fff;
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.pfm-header__subtitle {
+    color: var(--pfm-pink);
+    font-size: 0.82rem;
+    margin: 2px 0 0;
+    opacity: 0.9;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/*  Main content                                               */
+/* ─────────────────────────────────────────────────────────── */
+
+.pfm-main {
+    flex: 1;
+    padding: 24px 0 48px;
+}
+
+.pfm-card {
+    background: var(--pfm-bg-panel);
+    border: 1px solid var(--pfm-border);
+    border-radius: var(--pfm-radius-lg);
+    box-shadow: var(--pfm-shadow);
+    padding: 28px 32px;
+    margin-bottom: 20px;
+}
+
+.pfm-card__header {
+    border-bottom: 1px solid var(--pfm-border);
+    padding-bottom: 14px;
+    margin-bottom: 20px;
+}
+
+.pfm-card__title {
+    margin: 0;
+    color: var(--pfm-burgundy);
+}
+
+.pfm-card__subtitle {
+    margin: 4px 0 0;
+    color: var(--pfm-text-muted);
+    font-size: 0.9rem;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/*  Progress bar                                               */
+/* ─────────────────────────────────────────────────────────── */
+
+.pfm-progress {
+    margin: 0 0 24px;
+}
+
+.pfm-progress__steps {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: pfm-step;
+    position: relative;
+}
+
+.pfm-progress__steps::before {
+    content: '';
+    position: absolute;
+    top: 14px;
+    left: 5%;
+    right: 5%;
+    height: 2px;
+    background: var(--pfm-border);
+    z-index: 0;
+}
+
+.pfm-progress__step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+.pfm-progress__num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid var(--pfm-border);
+    color: var(--pfm-text-muted);
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.pfm-progress__label {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.72rem;
+    color: var(--pfm-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+/* Completed steps */
+.pfm-progress__step--done .pfm-progress__num {
+    background: var(--pfm-success);
+    border-color: var(--pfm-success);
+    color: #fff;
+}
+.pfm-progress__step--done .pfm-progress__label {
+    color: var(--pfm-success);
+}
+
+/* Current step */
+.pfm-progress__step--current .pfm-progress__num {
+    background: var(--pfm-burgundy);
+    border-color: var(--pfm-burgundy);
+    color: #fff;
+    box-shadow: 0 0 0 4px rgba(130, 48, 64, 0.18);
+}
+.pfm-progress__step--current .pfm-progress__label {
+    color: var(--pfm-burgundy);
+    font-weight: 700;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/*  Forms                                                      */
+/* ─────────────────────────────────────────────────────────── */
+
+.pfm-field {
+    margin-bottom: 18px;
+}
+
+.pfm-field__label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--pfm-text);
+    margin-bottom: 6px;
+}
+
+.pfm-field__label .pfm-required {
+    color: var(--pfm-danger);
+    margin-left: 3px;
+}
+
+.pfm-field__hint {
+    margin-top: 4px;
+    font-size: 0.8rem;
+    color: var(--pfm-text-muted);
+}
+
+.pfm-field__error {
+    margin-top: 4px;
+    font-size: 0.82rem;
+    color: var(--pfm-danger);
+    display: none;
+}
+
+.pfm-field.pfm-field--error .pfm-field__error { display: block; }
+.pfm-field.pfm-field--error .pfm-input,
+.pfm-field.pfm-field--error .pfm-textarea,
+.pfm-field.pfm-field--error .pfm-select {
+    border-color: var(--pfm-danger);
+}
+
+.pfm-input,
+.pfm-textarea,
+.pfm-select {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: var(--pfm-text);
+    background: #fff;
+    border: 1px solid var(--pfm-border);
+    border-radius: var(--pfm-radius);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pfm-input:focus,
+.pfm-textarea:focus,
+.pfm-select:focus {
+    outline: none;
+    border-color: var(--pfm-border-strong);
+    box-shadow: 0 0 0 3px rgba(0, 116, 212, 0.15);
+}
+
+.pfm-textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+.pfm-grid {
+    display: grid;
+    gap: var(--pfm-gap);
+}
+.pfm-grid--2 { grid-template-columns: 1fr 1fr; }
+.pfm-grid--3 { grid-template-columns: 1fr 1fr 1fr; }
+
+@media (max-width: 640px) {
+    .pfm-grid--2, .pfm-grid--3 { grid-template-columns: 1fr; }
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/*  Buttons                                                    */
+/* ─────────────────────────────────────────────────────────── */
+
+.pfm-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 22px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: inherit;
+    border: 1px solid transparent;
+    border-radius: var(--pfm-radius);
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.05s ease;
+    text-decoration: none;
+}
+
+.pfm-btn:active { transform: translateY(1px); }
+.pfm-btn:focus  { outline: 2px solid rgba(0, 116, 212, 0.4); outline-offset: 2px; }
+.pfm-btn:disabled,
+.pfm-btn[aria-disabled="true"] {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.pfm-btn--primary {
+    background: var(--pfm-burgundy);
+    color: #fff;
+}
+.pfm-btn--primary:hover:not(:disabled) {
+    background: var(--pfm-burgundy-dark);
+    color: #fff;
+    text-decoration: none;
+}
+
+.pfm-btn--secondary {
+    background: #fff;
+    color: var(--pfm-burgundy);
+    border-color: var(--pfm-burgundy);
+}
+.pfm-btn--secondary:hover:not(:disabled) {
+    background: var(--pfm-pink-soft);
+    color: var(--pfm-burgundy-dark);
+    text-decoration: none;
+}
+
+.pfm-btn--ghost {
+    background: transparent;
+    color: var(--pfm-text-muted);
+    border-color: var(--pfm-border);
+}
+.pfm-btn--ghost:hover:not(:disabled) {
+    background: var(--pfm-bg-soft);
+    color: var(--pfm-text);
+    text-decoration: none;
+}
+
+.pfm-btn--danger {
+    background: #fff;
+    color: var(--pfm-danger);
+    border-color: var(--pfm-danger);
+}
+.pfm-btn--danger:hover:not(:disabled) {
+    background: var(--pfm-danger);
+    color: #fff;
+    text-decoration: none;
+}
+
+.pfm-btn--lg { padding: 14px 28px; font-size: 1rem; }
+.pfm-btn--sm { padding: 6px 14px; font-size: 0.85rem; }
+
+/* ─────────────────────────────────────────────────────────── */
+/*  Step nav (Next / Back)                                     */
+/* ─────────────────────────────────────────────────────────── */
+
+.pfm-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid var(--pfm-border);
+}
+
+.pfm-nav__save {
+    font-size: 0.85rem;
+    color: var(--pfm-text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pfm-nav__save--saved { color: var(--pfm-success); }
+.pfm-nav__save--saving { color: var(--pfm-text-muted); }
+.pfm-nav__save--error { color: var(--pfm-danger); }
+
+/* ─────────────────────────────────────────────────────────── */
+/*  Alerts / messages                                          */
+/* ─────────────────────────────────────────────────────────── */
+
+.pfm-alert {
+    padding: 12px 16px;
+    border-radius: var(--pfm-radius);
+    margin-bottom: 16px;
+    border: 1px solid transparent;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.pfm-alert--info {
+    background: var(--pfm-info-bg);
+    border-color: var(--pfm-info);
+    color: #084d80;
+}
+.pfm-alert--success {
+    background: var(--pfm-success-bg);
+    border-color: var(--pfm-success);
+    color: #155724;
+}
+.pfm-alert--warning {
+    background: var(--pfm-warning-bg);
+    border-color: var(--pfm-warning);
+    color: var(--pfm-warning);
+}
+.pfm-alert--danger {
+    background: var(--pfm-danger-bg);
+    border-color: var(--pfm-danger);
+    color: #721c24;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/*  Buyer list (Step 4)                                        */
+/* ─────────────────────────────────────────────────────────── */
+
+.pfm-buyer-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 16px;
+}
+
+.pfm-buyer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--pfm-pink-soft);
+    border: 1px solid var(--pfm-pink);
+    border-radius: var(--pfm-radius);
+    margin-bottom: 8px;
+}
+
+.pfm-buyer__avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--pfm-burgundy);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+.pfm-buyer__info {
+    flex: 1;
+    min-width: 0;
+}
+
+.pfm-buyer__name {
+    font-weight: 600;
+    color: var(--pfm-text-emphasis);
+    margin: 0;
+}
+
+.pfm-buyer__meta {
+    font-size: 0.82rem;
+    color: var(--pfm-text-muted);
+    margin: 2px 0 0;
+}
+
+.pfm-buyer__actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.pfm-buyer--removed {
+    opacity: 0.5;
+    text-decoration: line-through;
+    background: var(--pfm-bg-soft);
+    border-color: var(--pfm-border);
+}
+
+.pfm-counter {
+    font-size: 0.9rem;
+    color: var(--pfm-text-muted);
+    margin-bottom: 8px;
+}
+.pfm-counter strong { color: var(--pfm-burgundy); }
+
+/* ─────────────────────────────────────────────────────────── */
+/*  File upload (Step 5)                                       */
+/* ─────────────────────────────────────────────────────────── */
+
+.pfm-upload {
+    border: 2px dashed var(--pfm-border-strong);
+    border-radius: var(--pfm-radius-lg);
+    padding: 24px;
+    text-align: center;
+    background: var(--pfm-bg-soft);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.pfm-upload:hover,
+.pfm-upload.pfm-upload--dragover {
+    background: rgba(0, 116, 212, 0.08);
+    border-color: var(--pfm-link-hover);
+}
+
+.pfm-upload__hint {
+    color: var(--pfm-text-muted);
+    font-size: 0.85rem;
+    margin: 6px 0 0;
+}
+
+.pfm-upload input[type="file"] { display: none; }
+
+.pfm-file-list {
+    list-style: none;
+    padding: 0;
+    margin: 12px 0 0;
+}
+
+.pfm-file {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--pfm-border);
+    border-radius: var(--pfm-radius);
+    margin-bottom: 6px;
+    background: #fff;
+}
+
+.pfm-file__name {
+    flex: 1;
+    color: var(--pfm-text);
+    font-size: 0.9rem;
+}
+
+.pfm-file__meta {
+    color: var(--pfm-text-muted);
+    font-size: 0.8rem;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/*  Review (Step 6) — summary blocks                           */
+/* ─────────────────────────────────────────────────────────── */
+
+.pfm-review {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.pfm-review__section {
+    background: var(--pfm-pink-soft);
+    border: 1px solid var(--pfm-pink);
+    border-radius: var(--pfm-radius);
+    padding: 16px 18px;
+}
+
+.pfm-review__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+}
+
+.pfm-review__title {
+    margin: 0;
+    color: var(--pfm-burgundy);
+    font-size: 1.05rem;
+}
+
+.pfm-review__edit {
+    font-size: 0.82rem;
+}
+
+.pfm-review__row {
+    display: flex;
+    padding: 4px 0;
+    font-size: 0.92rem;
+}
+
+.pfm-review__key {
+    flex: 0 0 38%;
+    color: var(--pfm-text-muted);
+}
+
+.pfm-review__val {
+    flex: 1;
+    color: var(--pfm-text);
+    font-weight: 500;
+}
+
+/* Pricing breakdown */
+.pfm-pricing {
+    background: var(--pfm-bg-soft);
+    border-radius: var(--pfm-radius);
+    padding: 16px 18px;
+    margin-top: 8px;
+}
+
+.pfm-pricing__row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 0.95rem;
+}
+
+.pfm-pricing__row--total {
+    border-top: 2px solid var(--pfm-burgundy);
+    margin-top: 8px;
+    padding-top: 12px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--pfm-burgundy);
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/*  Footer                                                     */
+/* ─────────────────────────────────────────────────────────── */
+
+.pfm-footer {
+    padding: 18px 0;
+    text-align: center;
+    color: var(--pfm-text-muted);
+    font-size: 0.82rem;
+    border-top: 1px solid var(--pfm-border);
+    background: var(--pfm-bg-panel);
+}
+
+.pfm-footer a { color: var(--pfm-link); }
+
+/* ─────────────────────────────────────────────────────────── */
+/*  Utility                                                    */
+/* ─────────────────────────────────────────────────────────── */
+
+.pfm-mt-0 { margin-top: 0; }
+.pfm-mt-1 { margin-top: 8px; }
+.pfm-mt-2 { margin-top: 16px; }
+.pfm-mb-0 { margin-bottom: 0; }
+.pfm-mb-1 { margin-bottom: 8px; }
+.pfm-mb-2 { margin-bottom: 16px; }
+.pfm-text-center { text-align: center; }
+.pfm-text-muted  { color: var(--pfm-text-muted); }
+.pfm-text-emphasis { color: var(--pfm-text-emphasis); font-weight: 600; }
+
+.pfm-hidden { display: none !important; }
+
+/* Spinner */
+.pfm-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(0, 0, 0, 0.15);
+    border-top-color: var(--pfm-burgundy);
+    border-radius: 50%;
+    animation: pfm-spin 0.6s linear infinite;
+    vertical-align: middle;
+}
+@keyframes pfm-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Mobile tweaks */
+@media (max-width: 640px) {
+    .pfm-card { padding: 18px 18px; }
+    .pfm-progress__label { font-size: 0.62rem; }
+    .pfm-progress__num { width: 26px; height: 26px; font-size: 0.75rem; }
+    .pfm-header__logo { height: 38px; }
+    h1 { font-size: 1.45rem; }
+}
