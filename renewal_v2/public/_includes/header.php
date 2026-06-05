@@ -15,6 +15,14 @@
     <title><?= htmlspecialchars($PFM_PAGE_TITLE ?? 'PFM Membership Renewal') ?></title>
     <link rel="icon" href="/renewal_v2/public/assets/img/pfm_logo_small.png" type="image/png">
     <link rel="stylesheet" href="/renewal_v2/public/assets/css/wizard.css">
+    <!--
+        wizard.js loads here (in <head>) so the global window.PFM is defined
+        BEFORE the per-step inline <script> blocks run. The script itself
+        only sets up window.PFM at top-level (no DOM access) and registers
+        a DOMContentLoaded listener for auto-wiring, so loading in <head>
+        is safe.
+    -->
+    <script src="/renewal_v2/public/assets/js/wizard.js"></script>
 </head>
 <body>
 <div class="pfm-shell">

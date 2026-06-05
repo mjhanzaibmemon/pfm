@@ -126,9 +126,9 @@ require __DIR__ . '/../_includes/progress-bar.php';
             &larr; Back
         </a>
         <span data-pfm-savestate class="pfm-nav__save"></span>
-        <a href="<?= htmlspecialchars(pfm_step_url(6)) ?>" class="pfm-btn pfm-btn--primary">
+        <button type="button" id="pfm-next" class="pfm-btn pfm-btn--primary">
             Continue to Review &rarr;
-        </a>
+        </button>
     </div>
 </div>
 
@@ -136,6 +136,37 @@ require __DIR__ . '/../_includes/progress-bar.php';
 (function () {
     // Auto-save the customer_note field
     PFM.autosave.attach(document.getElementById('pfm-form-note'), { step: 5 });
+
+    // Track whether at least one BUSINESS document has been uploaded
+    // ("business document" = anything except the main_contact_id ID slot
+    //  from Step 3, which is for identity not business eligibility).
+    //
+    // Per v3 spec line 15327: "Please upload at least one business document
+    // to continue." mirrors the ID-required validation on Step 3.
+    var hasBusinessDoc = <?= (!empty($businessDoc) || !empty($additionalDocs)) ? 'true' : 'false' ?>;
+
+    function refreshBusinessDocFlag() {
+        // Recount from the live DOM: any .pfm-file row inside either the
+        // business-license list OR the additional-docs list counts.
+        var bizCount = document.querySelectorAll('#pfm-license-list .pfm-file').length;
+        var extCount = document.querySelectorAll('#pfm-extra-list .pfm-file').length;
+        hasBusinessDoc = (bizCount + extCount) > 0;
+    }
+
+    // Next button — block until at least one business document is uploaded
+    var nextBtn = document.getElementById('pfm-next');
+    nextBtn.addEventListener('click', function () {
+        refreshBusinessDocFlag();
+        if (!hasBusinessDoc) {
+            PFM.toast.show(
+                'Please upload at least one business document to continue.',
+                'danger',
+                6000
+            );
+            return;
+        }
+        window.location.href = <?= json_encode(pfm_step_url(6)) ?>;
+    });
 
     function escapeHtml(s) {
         return String(s).replace(/[&<>"']/g, function (c) {

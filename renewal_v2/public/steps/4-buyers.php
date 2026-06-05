@@ -14,14 +14,17 @@ $PFM_REQUIRES   = 'draft';
 
 require __DIR__ . '/../_includes/step_bootstrap.php';
 
-// Pull all buyers (including soft-removed) for this client
-$buyers = BuyerManager::getAll($session->clientId);
-$activeCount = 0;
-foreach ($buyers as $b) {
-    if ($b['is_active']) $activeCount++;
-}
-
-$maxBuyers = BuyerManager::MAX_BUYERS;
+// Show only currently-active buyers on first load. If the customer removes
+// someone during THIS session, the row stays visible (with a Restore button)
+// via JavaScript until they refresh — that's the in-session undo.
+//
+// Historically-removed buyers (from previous renewals / staff edits) are
+// intentionally NOT shown here — they would just be confusing noise. If the
+// customer wants to bring an old buyer back, they can simply add them fresh
+// with the same name (and staff can merge in admin if needed).
+$buyers      = BuyerManager::getActive($session->clientId);
+$activeCount = count($buyers);
+$maxBuyers   = BuyerManager::MAX_BUYERS;
 
 require __DIR__ . '/../_includes/header.php';
 require __DIR__ . '/../_includes/progress-bar.php';
@@ -98,9 +101,9 @@ require __DIR__ . '/../_includes/progress-bar.php';
             &larr; Back
         </a>
         <span data-pfm-savestate class="pfm-nav__save"></span>
-        <a href="<?= htmlspecialchars(pfm_step_url(5)) ?>" class="pfm-btn pfm-btn--primary" id="pfm-next">
+        <button type="button" class="pfm-btn pfm-btn--primary" id="pfm-next">
             Continue &rarr;
-        </a>
+        </button>
     </div>
 </div>
 
@@ -268,12 +271,35 @@ require __DIR__ . '/../_includes/progress-bar.php';
     // Bind existing rows
     list.querySelectorAll('.pfm-buyer').forEach(bindRow);
 
-    // Soft-warn on Next if no active buyers
-    nextBtn.addEventListener('click', function (e) {
-        if (activeCount() < 1) {
-            e.preventDefault();
-            PFM.toast.show('You need at least one active buyer to continue.', 'danger');
+    // Continue button — guard against two common UX mistakes:
+    //   1. No active buyers at all
+    //   2. Customer typed buyer info but forgot to click "+ Add buyer"
+    //      (we'd skip Step 4 with that buyer never saved to the DB)
+    nextBtn.addEventListener('click', function () {
+        // (a) Unsaved buyer info in the form?
+        var typedName  = nameIn.value.trim();
+        var typedEmail = emailIn.value.trim();
+        var typedPhone = phoneIn.value.trim();
+        var typedNote  = noteIn.value.trim();
+        if (typedName || typedEmail || typedPhone || typedNote) {
+            PFM.toast.show(
+                'You\'ve typed a buyer but haven\'t added them yet. Click "+ Add buyer" first, ' +
+                'or clear the form fields to continue.',
+                'warning',
+                7000
+            );
+            nameIn.focus();
+            return;
         }
+
+        // (b) Must have at least one active buyer
+        if (activeCount() < 1) {
+            PFM.toast.show('You need at least one active buyer to continue.', 'danger');
+            return;
+        }
+
+        // All good — proceed
+        window.location.href = <?= json_encode(pfm_step_url(5)) ?>;
     });
 })();
 </script>

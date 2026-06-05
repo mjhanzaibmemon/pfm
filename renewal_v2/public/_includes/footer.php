@@ -16,6 +16,10 @@
     </footer>
 </div><!-- /.pfm-shell -->
 
-<script src="/renewal_v2/public/assets/js/wizard.js"></script>
+<?php
+// Note: wizard.js is loaded in header.php (inside <head>) so that the
+// global window.PFM is available BEFORE any per-step inline <script>
+// runs. Don't load it again here — duplicate load would re-bind handlers.
+?>
 </body>
 </html>

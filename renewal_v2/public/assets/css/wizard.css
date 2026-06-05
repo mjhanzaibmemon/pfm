@@ -2,50 +2,65 @@
  * PFM Renewal v2 — Wizard CSS
  *
  * Colour palette and visual language match the existing PFM site
- * (ScriptCase "SweetBlue 9" theme) so the rebuild feels native to
- * customers who already know the platform.
+ * (ScriptCase "SweetBlue 9" theme — Hyper-style admin look) so the
+ * rebuild feels native to customers who already know the platform.
  *
- * Reference colours (extracted from existing PFM CSS):
- *   #823040 — burgundy        (primary brand colour)
- *   #FEDEE5 — soft pink       (accent backgrounds)
- *   #E0E6ED — pale blue-grey  (section backgrounds)
- *   #0074D4 — bright blue     (interactive borders, links)
- *   #0000CC — strong blue     (company / contact emphasis)
- *   #993300 — dark orange     (warnings)
- *   #F8F9FA — off-white       (page background)
+ * Reference colours (extracted from the live PFM theme CSS):
+ *   #727cf5 — purple-blue   (primary brand — header, buttons, links)
+ *   #313a46 — dark navy     (headings)
+ *   #3C4858 — dark slate    (subheadings / emphasis)
+ *   #6c757d — Bootstrap grey (body text)
+ *   #fafbfe — very-light bg (page background)
+ *   #f9fafc — off-white     (alternate / section backgrounds)
+ *   #E0E6ED — light grey    (borders)
+ *   #0acf97 — teal green    (success)
+ *   #fa5c7c — pink-red      (danger)
+ *   Font: 'Nunito', sans-serif
+ *
+ * Variable names below kept their original ("burgundy", "pink") shape
+ * intentionally — only the *values* changed when re-themed, so every
+ * existing rule that uses var(--pfm-burgundy) automatically picks up
+ * the new purple-blue. Don't rename them in one big sweep; that would
+ * touch every selector unnecessarily.
  */
+
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap');
 
 :root {
     /* Brand */
-    --pfm-burgundy:        #823040;
-    --pfm-burgundy-dark:   #5d2230;
-    --pfm-burgundy-light:  #a04458;
-    --pfm-pink:            #FEDEE5;
-    --pfm-pink-soft:       #fff0f3;
+    --pfm-burgundy:        #727cf5;      /* purple-blue primary */
+    --pfm-burgundy-dark:   #5a64d8;      /* hover/active */
+    --pfm-burgundy-light:  #8c95f7;
+    --pfm-pink:            #e3e5fd;      /* soft purple-tinted accent */
+    --pfm-pink-soft:       #f4f5fe;      /* very-soft purple bg */
 
     /* UI */
-    --pfm-bg:              #F8F9FA;
+    --pfm-bg:              #fafbfe;
     --pfm-bg-panel:        #ffffff;
-    --pfm-bg-soft:         #E0E6ED;
-    --pfm-border:          #d4d8de;
-    --pfm-border-strong:   #0074D4;
+    --pfm-bg-soft:         #f9fafc;
+    --pfm-border:          #E0E6ED;
+    --pfm-border-strong:   #727cf5;
 
     /* Text */
-    --pfm-text:            #2c3038;
+    --pfm-text:            #313a46;      /* dark navy — body */
     --pfm-text-muted:      #6c757d;
-    --pfm-text-emphasis:   #0000CC;
-    --pfm-link:            #0074D4;
-    --pfm-link-hover:      #005ba6;
+    --pfm-text-emphasis:   #3C4858;      /* dark slate */
+    --pfm-link:            #727cf5;
+    --pfm-link-hover:      #5a64d8;
 
     /* State */
-    --pfm-success:         #28a745;
-    --pfm-success-bg:      #d4edda;
-    --pfm-warning:         #993300;
-    --pfm-warning-bg:      #fff3cd;
-    --pfm-danger:          #c0392b;
-    --pfm-danger-bg:       #f8d7da;
-    --pfm-info:            #0074D4;
-    --pfm-info-bg:         #d1ecf1;
+    --pfm-success:         #0acf97;
+    --pfm-success-bg:      #d2f6e7;
+    --pfm-warning:         #f7b84b;
+    --pfm-warning-bg:      #fff4dd;
+    --pfm-danger:          #fa5c7c;
+    --pfm-danger-bg:       #ffd9e0;
+    --pfm-info:            #727cf5;
+    --pfm-info-bg:         #e3e5fd;
+
+    /* Heading colour — separate from primary because headings on this
+       theme are dark navy, not the purple brand colour */
+    --pfm-heading:         #313a46;
 
     /* Geometry */
     --pfm-radius:          6px;
@@ -70,9 +85,9 @@ html, body {
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                 "Helvetica Neue", Arial, sans-serif;
-    font-size: 15px;
+    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI",
+                 Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
     line-height: 1.5;
     color: var(--pfm-text);
     background: var(--pfm-bg);
@@ -86,7 +101,9 @@ a {
 a:hover { color: var(--pfm-link-hover); text-decoration: underline; }
 
 h1, h2, h3, h4 {
-    color: var(--pfm-burgundy);
+    /* Headings are dark navy in the real PFM theme — the primary purple
+       is reserved for the header bar / buttons / interactive accents. */
+    color: var(--pfm-heading);
     margin: 0 0 12px;
     line-height: 1.25;
     font-weight: 600;
@@ -180,7 +197,7 @@ p { margin: 0 0 12px; }
 
 .pfm-card__title {
     margin: 0;
-    color: var(--pfm-burgundy);
+    color: var(--pfm-heading);
 }
 
 .pfm-card__subtitle {
@@ -563,6 +580,9 @@ p { margin: 0 0 12px; }
 /* ─────────────────────────────────────────────────────────── */
 
 .pfm-upload {
+    /* Element is a <label> — browsers default labels to inline, which makes
+       padding/border render incorrectly. Force block to get a proper box. */
+    display: block;
     border: 2px dashed var(--pfm-border-strong);
     border-radius: var(--pfm-radius-lg);
     padding: 24px;
@@ -570,6 +590,14 @@ p { margin: 0 0 12px; }
     background: var(--pfm-bg-soft);
     cursor: pointer;
     transition: background 0.15s ease, border-color 0.15s ease;
+    margin-bottom: 8px;
+}
+
+.pfm-upload strong {
+    display: block;
+    color: var(--pfm-heading);
+    font-size: 1.02rem;
+    margin-bottom: 4px;
 }
 
 .pfm-upload:hover,
@@ -640,7 +668,7 @@ p { margin: 0 0 12px; }
 
 .pfm-review__title {
     margin: 0;
-    color: var(--pfm-burgundy);
+    color: var(--pfm-heading);
     font-size: 1.05rem;
 }
 
