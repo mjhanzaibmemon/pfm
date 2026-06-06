@@ -56,6 +56,11 @@ class RenewalSession
     public string $createdAt;
     public string $updatedAt;
 
+    // Phase 4 — admin-review workflow fields (migration 002)
+    public ?string $adminReviewToken;
+    public ?string $adminReviewedAt;
+    public ?string $adminConfirmedAt;
+
     private function __construct(array $row)
     {
         $this->id              = (int) $row['id'];
@@ -73,6 +78,11 @@ class RenewalSession
             ? (float) $row['amount_charged'] : null;
         $this->createdAt       = (string) $row['created_at'];
         $this->updatedAt       = (string) $row['updated_at'];
+
+        // Phase 4 fields — may be absent on older rows from before migration 002
+        $this->adminReviewToken = $row['admin_review_token'] ?? null;
+        $this->adminReviewedAt  = $row['admin_reviewed_at']  ?? null;
+        $this->adminConfirmedAt = $row['admin_confirmed_at'] ?? null;
     }
 
     // ===== TOKEN VALIDATION =====
@@ -119,13 +129,26 @@ class RenewalSession
             return null;
         }
 
-        // Find active (non-terminal) session for this client
-        $inList = implode(',', array_fill(0, count(self::ACTIVE_STATUSES), '?'));
+        // Find any non-cancelled session for this client. This deliberately
+        // covers a broader set than ACTIVE_STATUSES — we also want to find
+        // sessions in 'awaiting_review' and 'completed' state, because if
+        // the customer revisits their renewal link after paying, we should
+        // resume that same session (so they land on Step 8 confirmation,
+        // not have us try to create a duplicate row that fails the UNIQUE
+        // constraint on token).
+        $nonCancelledStates = [
+            self::STATUS_DRAFT,
+            self::STATUS_SUBMITTED,
+            self::STATUS_AWAITING_PAYMENT,
+            self::STATUS_AWAITING_REVIEW,
+            self::STATUS_COMPLETED,
+        ];
+        $inList = implode(',', array_fill(0, count($nonCancelledStates), '?'));
         $row = Db::one(
             "SELECT * FROM renewal_sessions
              WHERE client_id = ? AND status IN ({$inList})
              ORDER BY updated_at DESC LIMIT 1",
-            array_merge([$clientId], self::ACTIVE_STATUSES)
+            array_merge([$clientId], $nonCancelledStates)
         );
 
         if ($row !== null) {
@@ -186,6 +209,24 @@ class RenewalSession
         $row = Db::one(
             'SELECT * FROM renewal_sessions WHERE token = ? LIMIT 1',
             [$token]
+        );
+        return $row !== null ? new self($row) : null;
+    }
+
+    /**
+     * Load a session by its admin_review_token (the one sent to staff via email).
+     * Returns null if no session has that token.
+     *
+     * Used by the staff-side admin review page to authenticate the request.
+     */
+    public static function loadByAdminToken(string $adminToken): ?self
+    {
+        if ($adminToken === '' || strlen($adminToken) > 50) {
+            return null;
+        }
+        $row = Db::one(
+            'SELECT * FROM renewal_sessions WHERE admin_review_token = ? LIMIT 1',
+            [$adminToken]
         );
         return $row !== null ? new self($row) : null;
     }
@@ -437,6 +478,104 @@ class RenewalSession
               WHERE id = ?',
             [self::STATUS_CANCELLED, $this->id]
         );
+    }
+
+    // ===== ADMIN-SIDE REVIEW WORKFLOW (Phase 4) =====
+
+    /**
+     * Generate and store a unique admin_review_token. This token will be
+     * embedded in the link sent to PFM staff via email after a customer
+     * payment is received. Staff land on /renewal_v2/admin/review.php?token=...
+     * and that token authenticates the request.
+     *
+     * Idempotent: if a token already exists for this session, returns the
+     * existing one without generating a new one (so re-sending the email
+     * uses the same URL).
+     *
+     * @return string The token (32-char hex)
+     */
+    public function ensureAdminReviewToken(): string
+    {
+        if ($this->adminReviewToken !== null && $this->adminReviewToken !== '') {
+            return $this->adminReviewToken;
+        }
+
+        // 32 hex chars (16 random bytes) — fits in our VARCHAR(50) column
+        $token = bin2hex(random_bytes(16));
+
+        Db::exec(
+            'UPDATE renewal_sessions
+                SET admin_review_token = ?, updated_at = NOW()
+              WHERE id = ?',
+            [$token, $this->id]
+        );
+
+        $this->adminReviewToken = $token;
+        return $token;
+    }
+
+    /**
+     * Mark the moment staff first OPENED the admin review page. Idempotent —
+     * only writes if not already marked (so repeated visits don't overwrite
+     * the original review time).
+     *
+     * Note: this is intentionally permissive — we don't check session status
+     * because staff may legitimately review a session that's already
+     * confirmed (e.g. to look up payment ID later). Confirming again won't
+     * re-write client_pmts (writeClientPayment is idempotent on its end).
+     */
+    public function markAdminReviewed(): void
+    {
+        if ($this->adminReviewedAt !== null) {
+            return; // already marked — keep original timestamp
+        }
+
+        $now = date('Y-m-d H:i:s');
+        Db::exec(
+            'UPDATE renewal_sessions
+                SET admin_reviewed_at = NOW(), updated_at = NOW()
+              WHERE id = ?',
+            [$this->id]
+        );
+        $this->adminReviewedAt = $now;
+    }
+
+    /**
+     * Mark the moment staff CLICKED the "Confirm Receipt" button on the
+     * admin review page. This is the gate event — caller (confirm-receipt.php)
+     * is responsible for invoking StripeClient::writeClientPayment AFTER
+     * this returns successfully, so that client_pmts has an entry only
+     * once staff has acknowledged the payment.
+     *
+     * Idempotent: if already confirmed, returns false without re-writing.
+     *
+     * @return bool true if this call did the marking, false if it was
+     *              already marked (the caller should NOT re-trigger
+     *              client_pmts write).
+     */
+    public function markAdminConfirmed(): bool
+    {
+        if ($this->adminConfirmedAt !== null) {
+            return false;
+        }
+
+        $now = date('Y-m-d H:i:s');
+        Db::exec(
+            'UPDATE renewal_sessions
+                SET admin_confirmed_at = NOW(), updated_at = NOW()
+              WHERE id = ?',
+            [$this->id]
+        );
+        $this->adminConfirmedAt = $now;
+        return true;
+    }
+
+    /**
+     * Convenience: true if staff have NOT yet clicked Confirm Receipt.
+     */
+    public function isAwaitingAdminConfirmation(): bool
+    {
+        return $this->adminConfirmedAt === null && $this->isPaid();
     }
 
     // ===== CHANGE LOGGING =====

@@ -299,24 +299,57 @@ class StripeClient
     }
 
     /**
-     * Handle a verified 'checkout.session.completed' event.
+     * Primary success-path entry point: confirm a payment by polling the
+     * Stripe API directly (called from Step 8 confirmation page).
      *
-     * Looks up the renewal session from event metadata, calls markPaid(),
-     * and writes a record to client_pmts so staff see the payment in the
-     * existing admin interface.
+     * This is the existing PFM pattern (see legacy stripe_integration/
+     * payment-success.php) — no webhook required. The webhook handler
+     * below also exists and shares the same internal helper, so either
+     * trigger produces identical results.
      *
-     * Returns the updated RenewalSession on success.
-     * Returns null if the event is not for this renewal flow (safe to ignore).
+     * Flow:
+     *   1. Call Stripe API to retrieve the Checkout Session
+     *   2. Verify payment_status === 'paid'
+     *   3. Extract amount and payment_intent
+     *   4. Delegate to syncStripePaymentInto() for the actual local state changes
      *
-     * Edge-case handling:
-     *  - Idempotent: if session is already paid, returns without re-processing
-     *    (Stripe may retry webhooks; we must accept the retry without erroring)
-     *  - Resilient: accepts both 'submitted' AND 'awaiting_payment' prior states
-     *    (handles the orphan-payment case where createCheckoutSession() got a
-     *    response from Stripe but setStripeSession() failed to record it locally)
+     * @param  string $stripeSessionId  e.g. cs_test_a1b2c3...
+     * @return RenewalSession|null  The synced renewal session, or null if
+     *                              the Stripe session is not paid yet (caller
+     *                              should show "processing, refresh shortly")
+     * @throws RuntimeException on Stripe API error or unrelated session
+     */
+    public static function confirmAndSync(string $stripeSessionId): ?RenewalSession
+    {
+        if ($stripeSessionId === '') {
+            throw new RuntimeException('confirmAndSync: empty Stripe session id.');
+        }
+
+        $stripeSession = self::retrieveCheckoutSession($stripeSessionId);
+
+        // Stripe Checkout Session has a `payment_status` field with values
+        // 'paid', 'unpaid', 'no_payment_required'. We only proceed on 'paid'.
+        $paymentStatus = (string) ($stripeSession['payment_status'] ?? '');
+        if ($paymentStatus !== 'paid') {
+            // Not yet — caller will display a "processing" UI and retry
+            return null;
+        }
+
+        return self::syncStripePaymentInto($stripeSession);
+    }
+
+    /**
+     * Webhook entry point — kept for the case when Larissa eventually wires
+     * up a Stripe webhook in the dashboard. Shares the syncStripePaymentInto
+     * helper with confirmAndSync, so identical state changes regardless of
+     * trigger.
+     *
+     * Idempotent: if the session is already paid, returns immediately
+     * (Stripe retries webhooks; we must accept that without erroring).
      *
      * @param  array $event  Verified Stripe event (from verifyWebhook)
-     * @return RenewalSession|null
+     * @return RenewalSession|null  null if event is not for renewal_v2 or
+     *                              if session not yet in a syncable state
      * @throws RuntimeException on data integrity error
      */
     public static function handleCheckoutCompleted(array $event): ?RenewalSession
@@ -324,69 +357,189 @@ class StripeClient
         if (($event['type'] ?? '') !== 'checkout.session.completed') {
             return null; // not our event type
         }
-
         $stripeSession = $event['data']['object'] ?? [];
-        $metadata      = $stripeSession['metadata'] ?? [];
+        return self::syncStripePaymentInto($stripeSession);
+    }
 
+    /**
+     * Internal helper — applies a paid Stripe Checkout Session object onto
+     * our local renewal_sessions row. Used by both confirmAndSync (success
+     * URL polling) and handleCheckoutCompleted (webhook).
+     *
+     * DOES:
+     *   - mark our renewal session as paid (awaiting_review)
+     *   - generate the admin_review_token if not already set
+     *   - send the staff notification email (best-effort, never fatal)
+     *
+     * DOES NOT:
+     *   - write to client_pmts. That deferral is intentional and is the
+     *     Phase 4 "gate": payment becomes visible in the existing admin
+     *     UI only after staff click "Confirm Receipt" on the admin review
+     *     page. See public/admin/confirm-receipt.php for the writer.
+     *
+     * Idempotent: re-applying for an already-paid session is a no-op
+     * (just returns the session) — the staff email is NOT re-sent.
+     *
+     * @param  array $stripeSession  Stripe Checkout Session object
+     * @return RenewalSession|null   null if the session has no
+     *                               renewal_session_id metadata (i.e. it's
+     *                               not one of our payments — safe to ignore)
+     * @throws RuntimeException on data integrity error
+     */
+    private static function syncStripePaymentInto(array $stripeSession): ?RenewalSession
+    {
+        $metadata         = $stripeSession['metadata'] ?? [];
         $renewalSessionId = isset($metadata['renewal_session_id'])
             ? (int) $metadata['renewal_session_id'] : 0;
 
         if ($renewalSessionId <= 0) {
-            return null; // not a renewal payment — ignore
+            return null; // not a renewal_v2 payment
         }
 
         $session = RenewalSession::loadById($renewalSessionId);
         if ($session === null) {
             throw new RuntimeException(
-                "Webhook: renewal session {$renewalSessionId} not found."
+                "syncStripePaymentInto: renewal session {$renewalSessionId} not found."
             );
         }
 
-        // Idempotency: if already marked paid, do nothing (Stripe can retry webhooks).
-        // BUT we still want to attempt the client_pmts insert in case the previous
-        // attempt failed there — writeClientPayment() is itself idempotent.
+        // Idempotency — already paid means we've been here before, just return.
+        // We do NOT re-send the staff email (would spam them with duplicates).
         if ($session->isPaid()) {
-            $existingPaymentId = $session->paymentId ?? (string) ($stripeSession['payment_intent'] ?? '');
-            $amountFromStripe  = ((int) ($stripeSession['amount_total'] ?? 0)) / 100.0;
-            if ($existingPaymentId !== '') {
-                self::writeClientPayment(
-                    $session,
-                    $existingPaymentId,
-                    $session->amountCharged ?? $amountFromStripe
-                );
-            }
             return $session;
         }
 
-        // Accept both 'submitted' and 'awaiting_payment' — markPaid() enforces this too,
-        // but checking here gives a clearer error message before we extract Stripe fields.
+        // Defensive: only transition from submitted or awaiting_payment
         $validStates = [
             RenewalSession::STATUS_SUBMITTED,
             RenewalSession::STATUS_AWAITING_PAYMENT,
         ];
         if (!in_array($session->status, $validStates, true)) {
             throw new RuntimeException(
-                "Webhook: session {$renewalSessionId} is in state '{$session->status}', "
-                . "expected submitted or awaiting_payment."
+                "syncStripePaymentInto: session {$renewalSessionId} in state '{$session->status}', "
+                . 'expected submitted or awaiting_payment.'
             );
         }
 
-        // Extract payment details from Stripe
         $paymentIntentId = (string) ($stripeSession['payment_intent'] ?? '');
         $amountTotal     = (int) ($stripeSession['amount_total'] ?? 0); // cents
         $amountDollars   = $amountTotal / 100.0;
 
         if ($paymentIntentId === '') {
-            throw new RuntimeException('Webhook: no payment_intent in checkout.session.completed event.');
+            throw new RuntimeException(
+                'syncStripePaymentInto: no payment_intent on Stripe session.'
+            );
         }
 
-        // Mark paid → auto-transitions to awaiting_review (accepts either prior state)
+        // 1. Mark our session paid (state → awaiting_review)
         $session->markPaid($paymentIntentId, $amountDollars);
 
-        // Write to client_pmts so staff see it in the existing admin interface
-        self::writeClientPayment($session, $paymentIntentId, $amountDollars);
+        // 2. Generate admin review token (used in the staff email link)
+        $session->ensureAdminReviewToken();
+
+        // 3. Notify staff via email (non-fatal — logs but does not throw if
+        //    mail() fails, so payment processing isn't blocked by mail issues).
+        try {
+            self::sendStaffReviewEmail($session);
+        } catch (Throwable $e) {
+            error_log(sprintf(
+                '[renewal_v2] Staff email send failed for session %d: %s',
+                $session->id, $e->getMessage()
+            ));
+        }
 
         return $session;
+    }
+
+    // ===== STAFF NOTIFICATION EMAIL (Phase 4) =====
+
+    /**
+     * Send the "payment received, review required" notification email to
+     * PFM staff inboxes. Includes a deep link to the admin review page
+     * (which carries the admin_review_token in the URL for authentication).
+     *
+     * Recipients: PFM_RNW_STAFF_NOTIFY_EMAILS (config — comma-separated).
+     * From:       PFM_RNW_NOTIFY_FROM        (config).
+     * Subject:    Prefixed with [STAGING TEST] on staging only.
+     *
+     * @param  RenewalSession $session  Must be paid and have admin_review_token set
+     * @return bool  true if mail() returned success (queued), false otherwise
+     */
+    public static function sendStaffReviewEmail(RenewalSession $session): bool
+    {
+        if ($session->adminReviewToken === null || $session->adminReviewToken === '') {
+            // Defensive — caller is supposed to have set this before invoking us
+            throw new RuntimeException(
+                "sendStaffReviewEmail: session {$session->id} has no admin_review_token."
+            );
+        }
+
+        // Look up the customer's company name for a more useful subject line.
+        $client = Db::one(
+            'SELECT co_name FROM clients WHERE client_id = ?',
+            [$session->clientId]
+        );
+        $companyName = $client['co_name'] ?? 'Unknown Customer';
+
+        $reviewUrl = PFM_RNW_BASE_URL
+            . '/public/admin/review.php?token='
+            . rawurlencode($session->adminReviewToken);
+
+        $amount = $session->amountCharged !== null
+            ? '$' . number_format($session->amountCharged, 2)
+            : '(amount unknown)';
+
+        $subject = PFM_RNW_NOTIFY_SUBJECT_PREFIX
+            . 'PFM Renewal — ' . $companyName . ' paid '
+            . $amount . ' · Review required before approval';
+
+        // Plain-text body (Gmail renders it cleanly; no HTML markup needed
+        // for a notification this short).
+        $body = "Hello PFM Team,\n\n"
+              . "A customer renewal payment has been received and is awaiting your review:\n\n"
+              . "  Customer:      {$companyName}\n"
+              . "  Amount paid:   {$amount}\n"
+              . "  Renewal id:    #{$session->id}\n"
+              . "  Paid at:       " . ($session->paidAt ?? '(just now)') . "\n\n"
+              . "Please open the review page below to see the full Changes Summary\n"
+              . "(buyers added/removed/modified, company changes, uploaded documents)\n"
+              . "and Stripe payment details. After you click \"Confirm Receipt\" on that\n"
+              . "page, the payment will appear in the existing admin form for approval.\n\n"
+              . "Review URL:\n"
+              . "  {$reviewUrl}\n\n"
+              . "If you can't click the link, copy and paste it into your browser.\n\n"
+              . "—\n"
+              . "This is an automated notification from the PFM renewal system.\n";
+
+        $fromAddr = PFM_RNW_NOTIFY_FROM;
+        $fromName = PFM_RNW_NOTIFY_FROM_NAME;
+
+        $headers = [
+            "From: {$fromName} <{$fromAddr}>",
+            "Reply-To: {$fromAddr}",
+            "X-Mailer: PFM-Renewal-v2",
+            "Content-Type: text/plain; charset=utf-8",
+        ];
+
+        // Recipients: comma-separated → trimmed list
+        $toList = array_filter(array_map('trim', explode(',', PFM_RNW_STAFF_NOTIFY_EMAILS)));
+        if (empty($toList)) {
+            error_log('[renewal_v2] No PFM_RNW_STAFF_NOTIFY_EMAILS configured — skipping staff email.');
+            return false;
+        }
+        $to = implode(', ', $toList);
+
+        $ok = mail($to, $subject, $body, implode("\r\n", $headers));
+
+        error_log(sprintf(
+            '[renewal_v2] Staff email %s for session %d to [%s]: %s',
+            $ok ? 'queued' : 'FAILED',
+            $session->id,
+            $to,
+            $subject
+        ));
+
+        return $ok;
     }
 
     /**

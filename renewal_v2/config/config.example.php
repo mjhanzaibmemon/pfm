@@ -90,6 +90,31 @@ define('PFM_RNW_MAX_BUYERS_PER_MEMBERSHIP', 50);
 
 define('PFM_RNW_SUPPORT_EMAIL', 'info@pfm-app.com');
 
+// ---------- Staff Notifications (Phase 4) ----------
+// Comma-separated list of staff inboxes that should receive a notification
+// email when a customer payment is received and is awaiting review.
+define('PFM_RNW_STAFF_NOTIFY_EMAILS', 'portlandflowermarketinfo@gmail.com,OFGA.FMA.GM@gmail.com');
+
+// "From" address used by mail() for staff notifications. Use a domain
+// that the server is allowed to send for (Gmail accepts mail from any
+// configured sender; for production you may want a real noreply@pfm-app.com).
+define('PFM_RNW_NOTIFY_FROM', 'portlandflowermarketinfo@gmail.com');
+define('PFM_RNW_NOTIFY_FROM_NAME', 'Portland Flower Market — Renewals');
+
+// On staging the email subject is prefixed so recipients can immediately
+// identify (and ignore/triage) test emails. On production the prefix is
+// empty and emails look identical to any other staff notification.
+define('PFM_RNW_NOTIFY_SUBJECT_PREFIX', $ENV === 'staging' ? '[STAGING TEST] ' : '');
+
+// ---------- Admin dashboard auth (Phase 4) ----------
+// Simple shared-password gate for the /renewal_v2/admin/dashboard.php page
+// (the backup discovery list of pending reviews). Each individual review
+// page uses its own per-session admin_review_token from the email link, so
+// this password ONLY protects the dashboard listing.
+// CHANGE THIS in production. The Larissa demo password is set in the real
+// (non-example) config.php on the server.
+define('PFM_RNW_ADMIN_DASHBOARD_PASSWORD', 'pfm_admin_change_me');
+
 // ---------- Misc ----------
 
 define('PFM_RNW_ENVIRONMENT', $ENV);

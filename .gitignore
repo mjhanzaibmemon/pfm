@@ -48,6 +48,9 @@ log/
 *backup*.zip
 pfm_production_*.tar.gz
 
+# ...but DO commit our migration scripts (these are tracked schema history)
+!renewal_v2/db_migrations/*.sql
+
 # ─── OS junk ───
 .DS_Store
 Thumbs.db
