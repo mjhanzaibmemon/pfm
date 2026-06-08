@@ -462,8 +462,12 @@ class StripeClient
      * From:       PFM_RNW_NOTIFY_FROM        (config).
      * Subject:    Prefixed with [STAGING TEST] on staging only.
      *
+     * Delivery goes through PHPMailer + MailerSend SMTP (port 587/TLS) — the
+     * same relay the existing PFM admin uses. NOT through mail()/postfix,
+     * because AWS blocks outbound port 25 from EC2.
+     *
      * @param  RenewalSession $session  Must be paid and have admin_review_token set
-     * @return bool  true if mail() returned success (queued), false otherwise
+     * @return bool  true if SMTP relay accepted the message, false otherwise
      */
     public static function sendStaffReviewEmail(RenewalSession $session): bool
     {
@@ -511,32 +515,27 @@ class StripeClient
               . "—\n"
               . "This is an automated notification from the PFM renewal system.\n";
 
-        $fromAddr = PFM_RNW_NOTIFY_FROM;
-        $fromName = PFM_RNW_NOTIFY_FROM_NAME;
-
-        $headers = [
-            "From: {$fromName} <{$fromAddr}>",
-            "Reply-To: {$fromAddr}",
-            "X-Mailer: PFM-Renewal-v2",
-            "Content-Type: text/plain; charset=utf-8",
-        ];
-
         // Recipients: comma-separated → trimmed list
         $toList = array_filter(array_map('trim', explode(',', PFM_RNW_STAFF_NOTIFY_EMAILS)));
         if (empty($toList)) {
             error_log('[renewal_v2] No PFM_RNW_STAFF_NOTIFY_EMAILS configured — skipping staff email.');
             return false;
         }
-        $to = implode(', ', $toList);
 
-        $ok = mail($to, $subject, $body, implode("\r\n", $headers));
+        // Send via MailerSend SMTP relay (port 587/TLS) — same path the
+        // existing PFM admin uses. We deliberately avoid PHP mail() because
+        // AWS blocks outbound port 25 from EC2, so postfix can never deliver
+        // to Gmail/Outlook from staging or production.
+        require_once __DIR__ . '/Mailer.php';
+        [$ok, $detail] = Mailer::send($toList, $subject, $body, /* isHtml */ false);
 
         error_log(sprintf(
-            '[renewal_v2] Staff email %s for session %d to [%s]: %s',
-            $ok ? 'queued' : 'FAILED',
+            '[renewal_v2] Staff email %s for session %d to [%s]: subject="%s" detail=%s',
+            $ok ? 'sent' : 'FAILED',
             $session->id,
-            $to,
-            $subject
+            implode(', ', $toList),
+            $subject,
+            $detail
         ));
 
         return $ok;

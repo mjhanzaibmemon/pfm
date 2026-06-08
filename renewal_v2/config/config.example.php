@@ -98,8 +98,25 @@ define('PFM_RNW_STAFF_NOTIFY_EMAILS', 'portlandflowermarketinfo@gmail.com,OFGA.F
 // "From" address used by mail() for staff notifications. Use a domain
 // that the server is allowed to send for (Gmail accepts mail from any
 // configured sender; for production you may want a real noreply@pfm-app.com).
-define('PFM_RNW_NOTIFY_FROM', 'portlandflowermarketinfo@gmail.com');
+//
+// IMPORTANT: This value MUST be on a domain that's verified inside the
+// MailerSend account whose SMTP credentials are configured below. Sending
+// from gmail.com or any unverified domain results in a 550 reject. The
+// existing PFM admin uses pfm@pdxflowermarket.com — match that for parity.
+define('PFM_RNW_NOTIFY_FROM', 'pfm@pdxflowermarket.com');
 define('PFM_RNW_NOTIFY_FROM_NAME', 'Portland Flower Market — Renewals');
+
+// ---------- SMTP relay (MailerSend) ----------
+// AWS EC2 blocks outbound port 25 by default, so PHP mail()/postfix cannot
+// deliver to Gmail/Outlook. We use the same MailerSend SMTP relay the
+// existing PFM admin uses (see grid_vw_clients_main_member_renew_*.class.php
+// in the legacy ScriptCase code). Real credentials live in this server's
+// non-example config.php — never commit them to git.
+define('PFM_RNW_SMTP_HOST',     'smtp.mailersend.net');
+define('PFM_RNW_SMTP_PORT',     587);
+define('PFM_RNW_SMTP_SECURE',   'tls');
+define('PFM_RNW_SMTP_USERNAME', 'CHANGE_ME_mailersend_smtp_username');
+define('PFM_RNW_SMTP_PASSWORD', 'CHANGE_ME_mailersend_smtp_password');
 
 // On staging the email subject is prefixed so recipients can immediately
 // identify (and ignore/triage) test emails. On production the prefix is
