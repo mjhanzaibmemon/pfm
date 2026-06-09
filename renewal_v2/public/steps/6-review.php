@@ -15,6 +15,7 @@ $PFM_STEP_TITLE = 'Review &amp; Submit';
 $PFM_REQUIRES   = 'draft';
 
 require __DIR__ . '/../_includes/step_bootstrap.php';
+require_once __DIR__ . '/../../lib/PhoneFormat.php';
 
 // Small inline helper used by the pricing-block markup below.
 function PFM_money(float $n): string {
@@ -104,7 +105,7 @@ require __DIR__ . '/../_includes/progress-bar.php';
             </div>
             <div class="pfm-review__row">
                 <div class="pfm-review__key">Phone</div>
-                <div class="pfm-review__val"><?= htmlspecialchars($effContact['phone'] ?: '—') ?></div>
+                <div class="pfm-review__val"><?= htmlspecialchars($effContact['phone'] ? pfm_format_phone($effContact['phone']) : '—') ?></div>
             </div>
         </section>
 
@@ -128,7 +129,7 @@ require __DIR__ . '/../_includes/progress-bar.php';
                                 <p class="pfm-buyer__meta">
                                     <?= htmlspecialchars((string) ($b['email'] ?? '')) ?>
                                     <?php if (!empty($b['phone1'])): ?>
-                                        &middot; <?= htmlspecialchars((string) $b['phone1']) ?>
+                                        &middot; <?= htmlspecialchars(pfm_format_phone((string) $b['phone1'])) ?>
                                     <?php endif; ?>
                                 </p>
                             </div>

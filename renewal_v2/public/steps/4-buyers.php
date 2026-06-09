@@ -13,6 +13,7 @@ $PFM_STEP_TITLE = 'Buyers';
 $PFM_REQUIRES   = 'draft';
 
 require __DIR__ . '/../_includes/step_bootstrap.php';
+require_once __DIR__ . '/../../lib/PhoneFormat.php';
 
 // Show only currently-active buyers on first load. If the customer removes
 // someone during THIS session, the row stays visible (with a Restore button)
@@ -54,7 +55,7 @@ require __DIR__ . '/../_includes/progress-bar.php';
                     <p class="pfm-buyer__meta">
                         <?= htmlspecialchars((string) ($b['email'] ?? '')) ?>
                         <?php if (!empty($b['phone1'])): ?>
-                            &middot; <?= htmlspecialchars((string) $b['phone1']) ?>
+                            &middot; <?= htmlspecialchars(pfm_format_phone((string) $b['phone1'])) ?>
                         <?php endif; ?>
                     </p>
                 </div>

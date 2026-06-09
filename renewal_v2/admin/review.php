@@ -26,6 +26,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../lib/Db.php';
 require_once __DIR__ . '/../lib/RenewalSession.php';
+require_once __DIR__ . '/../lib/PhoneFormat.php';
 require_once __DIR__ . '/_includes/admin_layout.php';
 
 // PHP session is needed for CSRF token used by the confirm form below
@@ -231,7 +232,7 @@ $alreadyConfirmed = ($session->adminConfirmedAt !== null);
             </div>
             <div class="pfm-data-row">
                 <span class="label">Phone</span>
-                <span class="value"><?= htmlspecialchars($client['main_contact_phone'] ?? '—') ?></span>
+                <span class="value"><?= htmlspecialchars(pfm_format_phone($client['main_contact_phone'] ?? null) ?: '—') ?></span>
             </div>
 
             <h3 class="pfm-card__subtitle pfm-mt-3">Company</h3>
@@ -380,7 +381,7 @@ $alreadyConfirmed = ($session->adminConfirmedAt !== null);
                 <strong><?= htmlspecialchars((string) ($buyer['member_name'] ?? '')) ?></strong>
                 <span class="pfm-text-muted" style="font-size:0.85rem;">
                     &middot; <?= htmlspecialchars((string) ($buyer['email'] ?? '')) ?>
-                    &middot; <?= htmlspecialchars((string) ($buyer['phone1'] ?? '')) ?>
+                    &middot; <?= htmlspecialchars(pfm_format_phone((string) ($buyer['phone1'] ?? ''))) ?>
                     &middot; <span style="font-family:monospace;">#<?= (int) $buyer['member_id'] ?></span>
                 </span>
             </li>
