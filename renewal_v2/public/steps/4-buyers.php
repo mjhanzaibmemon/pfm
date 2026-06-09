@@ -27,6 +27,29 @@ $buyers      = BuyerManager::getActive($session->clientId);
 $activeCount = count($buyers);
 $maxBuyers   = BuyerManager::MAX_BUYERS;
 
+// ── Pricing for the live "X buyers — base + Y additional = $A + $B = $T" line ──
+// Per v3 spec line 494: "Counter updates in real time: '4 buyers — base + 1
+// additional = $50 + $15 = $65 total'". Fetch the level row once on page load,
+// pass the constants to JS, and let JS recompute as buyers are added/removed
+// (no per-action API call needed — pricing is dollar-deterministic from count).
+//
+// Wrapped in try/catch because clients with no pricing_level_id throw; the page
+// still works without the live total (the count + cap line still renders).
+try {
+    require_once __DIR__ . '/../../lib/StripeClient.php';
+    $level    = StripeClient::getClientLevel($session->clientId);
+    $pricing  = [
+        'level_name'      => (string) $level['pricing_level'],
+        'base_price'      => (float)  $level['curr_price'],
+        'included_buyers' => (int)    $level['num_of_buyers'],
+        'extra_per_buyer' => (float)  $level['price_after'],
+    ];
+} catch (\Throwable $e) {
+    error_log('[renewal_v2] Step 4 pricing fetch failed for client '
+        . $session->clientId . ': ' . $e->getMessage());
+    $pricing = null;
+}
+
 require __DIR__ . '/../_includes/header.php';
 require __DIR__ . '/../_includes/progress-bar.php';
 ?>
@@ -43,6 +66,36 @@ require __DIR__ . '/../_includes/progress-bar.php';
     <div class="pfm-counter">
         Active buyers: <strong id="pfm-buyer-count"><?= (int) $activeCount ?></strong> of <?= (int) $maxBuyers ?>
     </div>
+
+    <?php if ($pricing !== null): ?>
+        <!-- Live pricing line — updated by refreshPricing() in JS as buyers
+             are added/removed. Format per v3 spec line 494 (L1 compact).
+             Server-renders the initial value so the line is correct on
+             first paint even before JS boots. -->
+        <div class="pfm-counter" id="pfm-pricing-line" style="background: var(--pfm-pink-soft, #fff5f7); margin-top: 8px; font-size: 0.95rem;">
+            <?php
+                $included      = (int)   $pricing['included_buyers'];
+                $base          = (float) $pricing['base_price'];
+                $perExtra      = (float) $pricing['extra_per_buyer'];
+                $extraInitial  = max(0, (int) $activeCount - $included);
+                $totalInitial  = $base + ($extraInitial * $perExtra);
+                $extraCharge   = $extraInitial * $perExtra;
+            ?>
+            <strong id="pfm-pricing-count"><?= (int) $activeCount ?></strong> buyers &mdash;
+            <?php if ($extraInitial > 0): ?>
+                base + <span id="pfm-pricing-extra-n"><?= $extraInitial ?></span> additional =
+                $<span id="pfm-pricing-base"><?= number_format($base, 2) ?></span>
+                + $<span id="pfm-pricing-extra-charge"><?= number_format($extraCharge, 2) ?></span>
+                = <strong>$<span id="pfm-pricing-total"><?= number_format($totalInitial, 2) ?></span> total</strong>
+            <?php else: ?>
+                base =
+                <strong>$<span id="pfm-pricing-total"><?= number_format($base, 2) ?></span> total</strong>
+                <span class="pfm-text-muted" style="font-size: 0.85rem;">
+                    (<?= $included ?> buyers included; $<?= number_format($perExtra, 2) ?> each additional)
+                </span>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
 
     <ul class="pfm-buyer-list" id="pfm-buyer-list">
         <?php foreach ($buyers as $b): ?>
@@ -127,6 +180,50 @@ require __DIR__ . '/../_includes/progress-bar.php';
         counter.textContent = activeCount();
         addBtn.disabled = activeCount() >= maxBuyers;
         nextBtn.style.opacity = activeCount() < 1 ? '0.6' : '';
+        refreshPricing();
+    }
+
+    // ── Live pricing line update (v3 spec C7 — refreshes as buyers change) ──
+    // Constants are passed from the server (PHP $pricing) at page load.
+    // Calculation is the same as StripeClient::calculateAmountCents():
+    //   total = base + max(0, buyerCount - included) * extra_per_buyer
+    // The pricing display node is rebuilt rather than partially mutated so
+    // the "base = $50 total" vs "base + 2 additional = ..." layouts can
+    // switch cleanly as the count crosses the included threshold.
+    var pricing = <?= $pricing !== null ? json_encode([
+        'base_price'      => (float) $pricing['base_price'],
+        'included_buyers' => (int)   $pricing['included_buyers'],
+        'extra_per_buyer' => (float) $pricing['extra_per_buyer'],
+    ]) : 'null' ?>;
+
+    function fmtMoney(n) {
+        return Number(n).toFixed(2);
+    }
+
+    function refreshPricing() {
+        if (!pricing) return; // graceful — pricing block didn't render
+        var node = document.getElementById('pfm-pricing-line');
+        if (!node) return;
+
+        var count       = activeCount();
+        var extra       = Math.max(0, count - pricing.included_buyers);
+        var extraCharge = extra * pricing.extra_per_buyer;
+        var total       = pricing.base_price + extraCharge;
+
+        var html = '<strong>' + count + '</strong> buyers &mdash; ';
+        if (extra > 0) {
+            html += 'base + <strong>' + extra + '</strong> additional = '
+                  + '$' + fmtMoney(pricing.base_price)
+                  + ' + $' + fmtMoney(extraCharge)
+                  + ' = <strong>$' + fmtMoney(total) + ' total</strong>';
+        } else {
+            html += 'base = <strong>$' + fmtMoney(total) + ' total</strong>'
+                  + ' <span class="pfm-text-muted" style="font-size: 0.85rem;">'
+                  + '(' + pricing.included_buyers + ' buyers included; '
+                  + '$' + fmtMoney(pricing.extra_per_buyer) + ' each additional)'
+                  + '</span>';
+        }
+        node.innerHTML = html;
     }
     refreshCounter();
 
