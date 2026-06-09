@@ -304,6 +304,12 @@ $alreadyConfirmed = ($session->adminConfirmedAt !== null);
 
             <h3 class="pfm-card__subtitle pfm-mt-3">Renewal session</h3>
             <div class="pfm-data-row">
+                <span class="label">Reference number</span>
+                <span class="value" style="font-family:monospace; font-weight:600;">
+                    <?= htmlspecialchars($session->getReferenceNumber()) ?>
+                </span>
+            </div>
+            <div class="pfm-data-row">
                 <span class="label">Session ID</span>
                 <span class="value">#<?= (int) $session->id ?></span>
             </div>

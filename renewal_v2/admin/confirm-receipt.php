@@ -138,8 +138,17 @@ try {
     // pmt_mode matches the existing convention used by the legacy renewal
     // (see client_pmts samples — "Crediit Card" [sic] is in the prod data).
     // We use the corrected spelling "Credit Card" so reports show clean labels;
-    // amt_received, reference (Stripe payment id), and pmt_date are all from
-    // the renewal_sessions row we synced at payment time.
+    // amt_received and pmt_date come from the renewal_sessions row.
+    //
+    // reference is a HYBRID format: "RNW-{id} / pi_xxx"
+    //   - "RNW-27"          → human-friendly number customer cites on phone
+    //   - " / pi_3TfzJK..." → full Stripe payment intent ID for reconciliation
+    // Both in one field so existing PFM admin grids show both at once and
+    // staff can search by either.
+    $stripeId  = (string) ($session->paymentId ?? '');
+    $reference = $session->getReferenceNumber()
+               . ($stripeId !== '' ? ' / ' . $stripeId : '');
+
     $stmt = $pdo->prepare(
         'INSERT INTO client_pmts (client_id, pmt_mode, reference, pmt_date, amt_received, remarks)
               VALUES (?,         ?,        ?,         ?,        ?,            ?)'
@@ -147,7 +156,7 @@ try {
     $stmt->execute([
         $session->clientId,
         'Credit Card',
-        (string) ($session->paymentId ?? ''),
+        $reference,
         $session->paidAt ?: date('Y-m-d H:i:s'),
         number_format((float) $session->amountCharged, 2, '.', ''),
         'Renewal (Stripe via renewal_v2)',

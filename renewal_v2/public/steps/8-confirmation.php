@@ -107,9 +107,15 @@ require __DIR__ . '/../_includes/progress-bar.php';
             <div><?= htmlspecialchars($paidAt) ?></div>
         </div>
         <?php endif; ?>
+        <div class="pfm-pricing__row">
+            <div>Reference Number</div>
+            <div style="font-family: monospace; font-weight: 600;">
+                <?= htmlspecialchars($session->getReferenceNumber()) ?>
+            </div>
+        </div>
         <?php if ($paymentId !== ''): ?>
         <div class="pfm-pricing__row">
-            <div>Reference</div>
+            <div>Transaction ID</div>
             <div style="font-family: monospace; font-size: 0.82rem;">
                 <?= htmlspecialchars($paymentId) ?>
             </div>

@@ -85,6 +85,23 @@ class RenewalSession
         $this->adminConfirmedAt = $row['admin_confirmed_at'] ?? null;
     }
 
+    /**
+     * Human-readable reference number shown to customers + written into
+     * client_pmts.reference so staff can search by it. Format: "RNW-{id}".
+     *
+     * Matches Stripe's own prefix convention (`pi_`, `cs_`, `ch_`, etc.):
+     * the type of the ID is obvious at a glance. Examples:
+     *   RNW-27   — renewal_sessions row 27
+     *   RNW-389  — renewal_sessions row 389
+     *
+     * The integer part is just renewal_sessions.id (no padding) so the
+     * sequence matches admin URLs (?session=27) one-to-one.
+     */
+    public function getReferenceNumber(): string
+    {
+        return 'RNW-' . $this->id;
+    }
+
     // ===== TOKEN VALIDATION =====
 
     /**
