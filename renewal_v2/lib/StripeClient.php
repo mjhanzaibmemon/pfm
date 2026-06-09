@@ -448,6 +448,20 @@ class StripeClient
             ));
         }
 
+        // 4. Send the existing PFM "Thank You for Your Buyer's Pass Application"
+        //    confirmation email to the customer. Per v3 spec section 8 / Step 8:
+        //    use the template stored in members_status WHERE memb_status_id=1
+        //    (status "Awaiting Review"). Non-fatal — payment confirmation never
+        //    blocks on email delivery.
+        try {
+            self::sendCustomerConfirmationEmail($session);
+        } catch (Throwable $e) {
+            error_log(sprintf(
+                '[renewal_v2] Customer confirmation email send failed for session %d: %s',
+                $session->id, $e->getMessage()
+            ));
+        }
+
         return $session;
     }
 
@@ -535,6 +549,119 @@ class StripeClient
             $session->id,
             implode(', ', $toList),
             $subject,
+            $detail
+        ));
+
+        return $ok;
+    }
+
+    // ===== CUSTOMER CONFIRMATION EMAIL (v3 spec Step 8) =====
+
+    /**
+     * Send the customer the existing PFM "Thank You for Your Buyer's Pass
+     * Application" confirmation email after their payment succeeds.
+     *
+     * Per v3 spec section 8 (Step 8 — Confirmation):
+     *   "Source: existing email already in the system — stored in the
+     *    members_status table under status_id = 1 (Awaiting Review).
+     *    Trigger: Sent automatically when the application moves to
+     *    awaiting_review (immediately after Stripe webhook confirms payment).
+     *    Personalization: ~COMPANY NAME~ placeholder is replaced with the
+     *    customer's company name as it already works today."
+     *
+     * Recipient: clients.main_contact_email (fallback to clients.email).
+     * From:      PFM_RNW_NOTIFY_FROM (must be MailerSend-verified domain).
+     * Subject:   members_status.msg_subject (with [STAGING TEST] prefix on
+     *            staging only).
+     * Body:      members_status.msg_body (HTML), with ~COMPANY NAME~ replaced.
+     *
+     * Reading the template from the DB (not hardcoding) means Larissa can
+     * edit the email content via the existing admin's Email Notices grid
+     * and the change flows through automatically — no code redeploy needed.
+     *
+     * @param  RenewalSession $session  Must be paid
+     * @return bool  true if SMTP relay accepted the message, false otherwise
+     */
+    public static function sendCustomerConfirmationEmail(RenewalSession $session): bool
+    {
+        // ── 1. Fetch the email template from members_status ───────────────
+        // memb_status_id = 1 corresponds to "Awaiting Review" per v3 spec.
+        $template = Db::one(
+            'SELECT msg_subject, msg_body
+               FROM members_status
+              WHERE memb_status_id = 1',
+            []
+        );
+        if (!$template || empty($template['msg_subject']) || empty($template['msg_body'])) {
+            error_log(sprintf(
+                '[renewal_v2] Customer confirmation email skipped for session %d: '
+                . 'members_status row for status_id=1 is missing or empty.',
+                $session->id
+            ));
+            return false;
+        }
+
+        // ── 2. Look up the customer's company name + email address ────────
+        // We prefer main_contact_email (the person managing the renewal); fall
+        // back to clients.email if it's empty. Spec doesn't specify which to
+        // use, but main_contact_email is the standard PFM convention.
+        $client = Db::one(
+            'SELECT co_name, main_contact_email, email AS company_email
+               FROM clients
+              WHERE client_id = ?',
+            [$session->clientId]
+        );
+        if (!$client) {
+            error_log(sprintf(
+                '[renewal_v2] Customer confirmation email skipped for session %d: '
+                . 'client_id %d not found in clients table.',
+                $session->id, $session->clientId
+            ));
+            return false;
+        }
+
+        $toEmail = trim((string) ($client['main_contact_email'] ?? ''));
+        if ($toEmail === '') {
+            $toEmail = trim((string) ($client['company_email'] ?? ''));
+        }
+        if ($toEmail === '') {
+            error_log(sprintf(
+                '[renewal_v2] Customer confirmation email skipped for session %d: '
+                . 'no main_contact_email or email on client %d.',
+                $session->id, $session->clientId
+            ));
+            return false;
+        }
+
+        $companyName = trim((string) ($client['co_name'] ?? ''));
+        if ($companyName === '') {
+            $companyName = 'Customer'; // graceful fallback for placeholder
+        }
+
+        // ── 3. Replace ~COMPANY NAME~ placeholder ─────────────────────────
+        // Existing PFM convention — see members_status.msg_body for "Dear
+        // ~COMPANY NAME~,". Both subject and body get the substitution in
+        // case staff later adds the placeholder to the subject too.
+        $subject = str_replace('~COMPANY NAME~', $companyName, (string) $template['msg_subject']);
+        $body    = str_replace('~COMPANY NAME~', $companyName, (string) $template['msg_body']);
+
+        // Prefix subject with [STAGING TEST] on staging only (matches the
+        // staff notification email behaviour for consistency).
+        if (defined('PFM_RNW_NOTIFY_SUBJECT_PREFIX') && PFM_RNW_NOTIFY_SUBJECT_PREFIX !== '') {
+            $subject = PFM_RNW_NOTIFY_SUBJECT_PREFIX . $subject;
+        }
+
+        // ── 4. Send via MailerSend SMTP (HTML body — template uses <p> tags) ──
+        require_once __DIR__ . '/Mailer.php';
+        [$ok, $detail] = Mailer::send($toEmail, $subject, $body, /* isHtml */ true);
+
+        error_log(sprintf(
+            '[renewal_v2] Customer confirmation email %s for session %d to %s: '
+            . 'company="%s" detail=%s',
+            $ok ? 'sent' : 'FAILED',
+            $session->id,
+            $toEmail,
+            $companyName,
             $detail
         ));
 
