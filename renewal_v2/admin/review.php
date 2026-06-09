@@ -290,6 +290,30 @@ $alreadyConfirmed = ($session->adminConfirmedAt !== null);
                 </span>
             </div>
             <div class="pfm-data-row">
+                <span class="label">Card</span>
+                <span class="value">
+                    <?php if ($session->stripeCardBrand && $session->stripeCardLast4): ?>
+                        <?= htmlspecialchars(ucfirst($session->stripeCardBrand)) ?>
+                        ending in <strong><?= htmlspecialchars($session->stripeCardLast4) ?></strong>
+                    <?php else: ?>
+                        &mdash;
+                    <?php endif; ?>
+                </span>
+            </div>
+            <div class="pfm-data-row">
+                <span class="label">Receipt</span>
+                <span class="value">
+                    <?php if ($session->stripeReceiptUrl): ?>
+                        <a href="<?= htmlspecialchars($session->stripeReceiptUrl, ENT_QUOTES) ?>"
+                           target="_blank" rel="noopener noreferrer">
+                            View Stripe Receipt &nearr;
+                        </a>
+                    <?php else: ?>
+                        &mdash;
+                    <?php endif; ?>
+                </span>
+            </div>
+            <div class="pfm-data-row">
                 <span class="label">Stripe payment ID</span>
                 <span class="value" style="font-family:monospace; font-size:0.82rem;">
                     <?= htmlspecialchars($session->paymentId ?? '—') ?>

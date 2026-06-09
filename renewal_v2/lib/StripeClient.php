@@ -240,6 +240,91 @@ class StripeClient
         return $response;
     }
 
+    /**
+     * Retrieve a PaymentIntent from Stripe with the latest_charge object
+     * expanded inline so we get the receipt_url and card details in one call.
+     *
+     * Used by syncStripePaymentInto() / fetchAndSaveStripePaymentDetails()
+     * to populate the renewal_sessions.stripe_receipt_url / card_brand /
+     * card_last4 columns (migration 004).
+     *
+     * Stripe docs:
+     *   GET /v1/payment_intents/{id}?expand[]=latest_charge
+     *   - latest_charge.receipt_url             → Stripe-hosted receipt PDF
+     *   - latest_charge.payment_method_details.card.brand  → "visa", etc.
+     *   - latest_charge.payment_method_details.card.last4  → "4242"
+     *
+     * @param  string $paymentIntentId  e.g. pi_3TfzJK...
+     * @return array  Full PaymentIntent object (latest_charge inlined)
+     * @throws RuntimeException on API error
+     */
+    public static function retrievePaymentIntentWithCharge(string $paymentIntentId): array
+    {
+        $endpoint = '/payment_intents/' . urlencode($paymentIntentId)
+                  . '?expand[]=latest_charge';
+
+        $response = self::apiGet($endpoint);
+
+        if (isset($response['error'])) {
+            $errMsg = $response['error']['message'] ?? 'Unknown error';
+            throw new RuntimeException("Stripe PaymentIntent retrieve failed: {$errMsg}");
+        }
+
+        return $response;
+    }
+
+    /**
+     * Fetch the receipt URL + card details for a paid renewal session and
+     * persist them on the renewal_sessions row. Idempotent (re-saving same
+     * values is harmless). Logs but does not throw on API/DB failure — this
+     * is best-effort metadata and must not block payment processing.
+     *
+     * @param  RenewalSession $session
+     * @param  string         $paymentIntentId
+     */
+    public static function fetchAndSaveStripePaymentDetails(
+        RenewalSession $session,
+        string $paymentIntentId
+    ): void {
+        if ($paymentIntentId === '') {
+            return;
+        }
+
+        $pi     = self::retrievePaymentIntentWithCharge($paymentIntentId);
+        $charge = $pi['latest_charge'] ?? null;
+
+        // Stripe sometimes returns latest_charge as a string ID instead of
+        // expanded object (e.g. if `expand` was silently dropped). Tolerate
+        // both shapes — if it's a string, we just don't have details.
+        if (!is_array($charge)) {
+            error_log(sprintf(
+                '[renewal_v2] fetchAndSaveStripePaymentDetails: latest_charge not '
+                . 'expanded for session %d (pi=%s)',
+                $session->id, $paymentIntentId
+            ));
+            return;
+        }
+
+        $receiptUrl = isset($charge['receipt_url']) ? (string) $charge['receipt_url'] : null;
+        $cardBrand  = $charge['payment_method_details']['card']['brand'] ?? null;
+        $cardLast4  = $charge['payment_method_details']['card']['last4'] ?? null;
+
+        $session->saveStripePaymentDetails(
+            $receiptUrl !== '' ? $receiptUrl : null,
+            $cardBrand  !== null ? (string) $cardBrand : null,
+            $cardLast4  !== null ? (string) $cardLast4 : null
+        );
+
+        error_log(sprintf(
+            '[renewal_v2] Stripe payment details saved for session %d: '
+            . 'brand=%s last4=%s receipt=%s',
+            $session->id,
+            $cardBrand ?? '(none)',
+            $cardLast4 ?? '(none)',
+            $receiptUrl ? 'YES' : 'NO'
+        ));
+    }
+
     // ===== WEBHOOK =====
 
     /**
@@ -433,6 +518,19 @@ class StripeClient
 
         // 1. Mark our session paid (state → awaiting_review)
         $session->markPaid($paymentIntentId, $amountDollars);
+
+        // 1b. Fetch Stripe receipt URL + card details (one extra API call,
+        //     stored permanently so admin review page doesn't hit Stripe
+        //     on every load). Non-fatal — payment processing never blocks
+        //     on this best-effort metadata save.
+        try {
+            self::fetchAndSaveStripePaymentDetails($session, $paymentIntentId);
+        } catch (Throwable $e) {
+            error_log(sprintf(
+                '[renewal_v2] Stripe payment detail fetch failed for session %d (%s): %s',
+                $session->id, $paymentIntentId, $e->getMessage()
+            ));
+        }
 
         // 2. Generate admin review token (used in the staff email link)
         $session->ensureAdminReviewToken();

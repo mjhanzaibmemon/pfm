@@ -61,6 +61,14 @@ class RenewalSession
     public ?string $adminReviewedAt;
     public ?string $adminConfirmedAt;
 
+    // Phase 4 polish — Stripe receipt + card detail fields (migration 004)
+    // Populated once in StripeClient::syncStripePaymentInto via a single
+    // Stripe API call after payment succeeds; admin review page reads these
+    // from the DB so it doesn't have to hit the Stripe API on every load.
+    public ?string $stripeReceiptUrl;
+    public ?string $stripeCardBrand;
+    public ?string $stripeCardLast4;
+
     private function __construct(array $row)
     {
         $this->id              = (int) $row['id'];
@@ -83,6 +91,11 @@ class RenewalSession
         $this->adminReviewToken = $row['admin_review_token'] ?? null;
         $this->adminReviewedAt  = $row['admin_reviewed_at']  ?? null;
         $this->adminConfirmedAt = $row['admin_confirmed_at'] ?? null;
+
+        // Phase 4 polish — Stripe receipt/card (migration 004 columns)
+        $this->stripeReceiptUrl = $row['stripe_receipt_url'] ?? null;
+        $this->stripeCardBrand  = $row['stripe_card_brand']  ?? null;
+        $this->stripeCardLast4  = $row['stripe_card_last4']  ?? null;
     }
 
     /**
@@ -100,6 +113,44 @@ class RenewalSession
     public function getReferenceNumber(): string
     {
         return 'RNW-' . $this->id;
+    }
+
+    /**
+     * Persist Stripe receipt + card details fetched from a Payment Intent
+     * (with expanded latest_charge). Called once after payment succeeds —
+     * see StripeClient::syncStripePaymentInto. Idempotent: re-saving same
+     * values is harmless. Logs but does not throw on DB error so payment
+     * processing is never blocked by this best-effort detail save.
+     */
+    public function saveStripePaymentDetails(
+        ?string $receiptUrl,
+        ?string $cardBrand,
+        ?string $cardLast4
+    ): void {
+        try {
+            Db::exec(
+                'UPDATE renewal_sessions
+                    SET stripe_receipt_url = ?,
+                        stripe_card_brand  = ?,
+                        stripe_card_last4  = ?,
+                        updated_at         = NOW()
+                  WHERE id = ?',
+                [
+                    $receiptUrl !== null ? mb_substr($receiptUrl, 0, 500) : null,
+                    $cardBrand  !== null ? mb_substr($cardBrand,  0, 20)  : null,
+                    $cardLast4  !== null ? mb_substr($cardLast4,  0, 4)   : null,
+                    $this->id,
+                ]
+            );
+            $this->stripeReceiptUrl = $receiptUrl;
+            $this->stripeCardBrand  = $cardBrand;
+            $this->stripeCardLast4  = $cardLast4;
+        } catch (\Throwable $e) {
+            error_log(sprintf(
+                '[renewal_v2] saveStripePaymentDetails failed for session %d: %s',
+                $this->id, $e->getMessage()
+            ));
+        }
     }
 
     // ===== TOKEN VALIDATION =====
