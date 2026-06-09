@@ -120,10 +120,12 @@ $pendingRows = Db::all(
     [RenewalSession::STATUS_AWAITING_REVIEW]
 );
 
-// Recently confirmed (last 30 days) — purely informational
+// Recently confirmed (last 30 days) — informational + clickable for re-review
+// admin_review_token included so staff can re-open the review page (e.g. to
+// re-download the Stripe receipt or check the Changes Summary post-confirm).
 $recentRows = Db::all(
     'SELECT rs.id, rs.client_id, rs.amount_charged, rs.paid_at,
-            rs.admin_confirmed_at, rs.payment_id,
+            rs.admin_confirmed_at, rs.payment_id, rs.admin_review_token,
             c.co_name, c.MembershipID
        FROM renewal_sessions rs
        LEFT JOIN clients c ON c.client_id = rs.client_id
@@ -245,6 +247,7 @@ pfm_admin_header(
                     <th style="text-align:right; padding:8px;">Amount</th>
                     <th style="text-align:left; padding:8px;">Confirmed at</th>
                     <th style="text-align:left; padding:8px;">Stripe ID</th>
+                    <th style="text-align:right; padding:8px;">Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -264,6 +267,16 @@ pfm_admin_header(
                     </td>
                     <td style="padding:8px; font-family:monospace; font-size:0.78rem;">
                         <?= htmlspecialchars((string) ($row['payment_id'] ?? '—')) ?>
+                    </td>
+                    <td style="padding:8px; text-align:right;">
+                        <?php if (!empty($row['admin_review_token'])): ?>
+                            <a class="pfm-btn" style="font-size:0.8rem; padding: 4px 10px;"
+                               href="/renewal_v2/admin/review.php?token=<?= htmlspecialchars((string) $row['admin_review_token']) ?>">
+                                View
+                            </a>
+                        <?php else: ?>
+                            <span class="pfm-text-muted" style="font-size:0.78rem;">—</span>
+                        <?php endif; ?>
                     </td>
                 </tr>
             <?php endforeach; ?>
