@@ -426,7 +426,10 @@ if (!isset($_SESSION['scriptcase']['menu_main']['session_timeout']['redir']) && 
       }
       if ($_SESSION['scriptcase']['sc_item_menu'] == "item_50")
       {
-          $apl_run  = "https://staging.pfm-app.com/renewal_v2/admin/dashboard.php";
+          // Auto-detect host so the same code works on staging
+          // (staging.pfm-app.com) AND production (pfm-app.com) without
+          // a manual edit at Phase 7 deploy.
+          $apl_run  = "https://" . $_SERVER['HTTP_HOST'] . "/renewal_v2/admin/dashboard.php";
           $link_url = true;
       }
       if ($_SESSION['scriptcase']['sc_item_menu'] == "item_25")

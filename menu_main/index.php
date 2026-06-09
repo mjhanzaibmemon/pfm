@@ -1711,7 +1711,7 @@ if (isset($_SESSION['scriptcase']['sc_apl_seg']['grid_vw_requests']) && strtolow
 if (isset($_SESSION['scriptcase']['sc_apl_seg']['grid_vw_clients_main_member_renew']) && strtolower($_SESSION['scriptcase']['sc_apl_seg']['grid_vw_clients_main_member_renew']) == "on")
 {
     $menu_main_menuData['data'] .= "item_19|.|" . $nm_var_lab[3] . "|menu_main_form_php.php?sc_item_menu=item_19&sc_apl_menu=grid_vw_clients_main_member_renew&sc_apl_link=" . urlencode($menu_main_menuData['url']['link']) . "&sc_usa_grupo=" . $_SESSION['scriptcase']['menu_main']['glo_nm_usa_grupo'] . "|" . $nm_var_hint[3] . "||" . $this->menu_main_target('_self') . "|" . "\n";
-$menu_main_menuData['data'] .= "item_50|.|" . $nm_var_lab[16] . "|menu_main_form_php.php?sc_item_menu=item_50&sc_apl_menu=https://staging.pfm-app.com/renewal_v2/admin/dashboard.php&sc_apl_link=" . urlencode($menu_main_menuData['url']['link']) . "&sc_usa_grupo=" . $_SESSION['scriptcase']['menu_main']['glo_nm_usa_grupo'] . "|" . $nm_var_hint[16] . "||" . $this->menu_main_target('_blank') . "|" . "
+$menu_main_menuData['data'] .= "item_50|.|" . $nm_var_lab[16] . "|menu_main_form_php.php?sc_item_menu=item_50&sc_apl_menu=https://" . $_SERVER['HTTP_HOST'] . "/renewal_v2/admin/dashboard.php&sc_apl_link=" . urlencode($menu_main_menuData['url']['link']) . "&sc_usa_grupo=" . $_SESSION['scriptcase']['menu_main']['glo_nm_usa_grupo'] . "|" . $nm_var_hint[16] . "||" . $this->menu_main_target('_blank') . "|" . "
 ";
 }
 
@@ -2122,7 +2122,7 @@ $menu_main_menuData['data'][] = array(
     'icon_color_disabled'     => "",
 );
 $str_disabled = "N";
-$str_link = "menu_main_form_php.php?sc_item_menu=item_50&sc_apl_menu=https://staging.pfm-app.com/renewal_v2/admin/dashboard.php&sc_apl_link=" . urlencode($menu_main_menuData['url']['link']) . "&sc_usa_grupo=" . $_SESSION['scriptcase']['menu_main']['glo_nm_usa_grupo'] . "";
+$str_link = "menu_main_form_php.php?sc_item_menu=item_50&sc_apl_menu=https://" . $_SERVER['HTTP_HOST'] . "/renewal_v2/admin/dashboard.php&sc_apl_link=" . urlencode($menu_main_menuData['url']['link']) . "&sc_usa_grupo=" . $_SESSION['scriptcase']['menu_main']['glo_nm_usa_grupo'] . "";
 $str_icon = "";
 $icon_aba = "";
 $icon_aba_inactive = "";
