@@ -1686,6 +1686,16 @@ if ($_SESSION['scriptcase']['charset'] != "UTF-8" && NM_is_utf8($nm_var_lab[15])
 {
     $nm_var_lab[15] = sc_convert_encoding($nm_var_lab[15], $_SESSION['scriptcase']['charset'], "UTF-8");
 }
+ $nm_var_lab[16] = "Renewal Reviews (NEW)";
+if ($_SESSION['scriptcase']['charset'] != "UTF-8" && NM_is_utf8($nm_var_lab[16]))
+{
+    $nm_var_lab[16] = sc_convert_encoding($nm_var_lab[16], $_SESSION['scriptcase']['charset'], "UTF-8");
+}
+ $nm_var_hint[16] = "Approve paid renewals from the new renewal wizard";
+if ($_SESSION['scriptcase']['charset'] != "UTF-8" && NM_is_utf8($nm_var_hint[16]))
+{
+    $nm_var_hint[16] = sc_convert_encoding($nm_var_hint[16], $_SESSION['scriptcase']['charset'], "UTF-8");
+}
  $nm_var_hint[15] = "Bulk CSV exports for current, expired, and all members";
 if ($_SESSION['scriptcase']['charset'] != "UTF-8" && NM_is_utf8($nm_var_hint[15]))
 {
@@ -1701,6 +1711,8 @@ if (isset($_SESSION['scriptcase']['sc_apl_seg']['grid_vw_requests']) && strtolow
 if (isset($_SESSION['scriptcase']['sc_apl_seg']['grid_vw_clients_main_member_renew']) && strtolower($_SESSION['scriptcase']['sc_apl_seg']['grid_vw_clients_main_member_renew']) == "on")
 {
     $menu_main_menuData['data'] .= "item_19|.|" . $nm_var_lab[3] . "|menu_main_form_php.php?sc_item_menu=item_19&sc_apl_menu=grid_vw_clients_main_member_renew&sc_apl_link=" . urlencode($menu_main_menuData['url']['link']) . "&sc_usa_grupo=" . $_SESSION['scriptcase']['menu_main']['glo_nm_usa_grupo'] . "|" . $nm_var_hint[3] . "||" . $this->menu_main_target('_self') . "|" . "\n";
+$menu_main_menuData['data'] .= "item_50|.|" . $nm_var_lab[16] . "|menu_main_form_php.php?sc_item_menu=item_50&sc_apl_menu=https://staging.pfm-app.com/renewal_v2/admin/dashboard.php&sc_apl_link=" . urlencode($menu_main_menuData['url']['link']) . "&sc_usa_grupo=" . $_SESSION['scriptcase']['menu_main']['glo_nm_usa_grupo'] . "|" . $nm_var_hint[16] . "||" . $this->menu_main_target('_blank') . "|" . "
+";
 }
 
 $menu_main_menuData['data'] .= "item_2|.|" . $nm_var_lab[4] . "||" . $nm_var_hint[4] . "||_self|\n";
@@ -2105,6 +2117,42 @@ $menu_main_menuData['data'][] = array(
     'display'     => "text_fontawesomeicon",
     'display_position'=> "text_right",
     'icon_fa'     => "far fa-envelope-open",
+    'icon_color'     => "",
+    'icon_color_hover'     => "",
+    'icon_color_disabled'     => "",
+);
+$str_disabled = "N";
+$str_link = "menu_main_form_php.php?sc_item_menu=item_50&sc_apl_menu=https://staging.pfm-app.com/renewal_v2/admin/dashboard.php&sc_apl_link=" . urlencode($menu_main_menuData['url']['link']) . "&sc_usa_grupo=" . $_SESSION['scriptcase']['menu_main']['glo_nm_usa_grupo'] . "";
+$str_icon = "";
+$icon_aba = "";
+$icon_aba_inactive = "";
+if(empty($icon_aba) && isset($arr_menuicons['others']['active']))
+{
+    $icon_aba = $arr_menuicons['others']['active'];
+}
+if(empty($icon_aba_inactive) && isset($arr_menuicons['others']['inactive']))
+{
+    $icon_aba_inactive = $arr_menuicons['others']['inactive'];
+}
+if($this->force_mobile || ($_SESSION['scriptcase']['device_mobile'] && $_SESSION['scriptcase']['display_mobile']))
+{
+$str_link = "#";
+}
+$menu_main_menuData['data'][] = array(
+    'label'    => "" . $nm_var_lab[16] . "",
+    'level'    => "0",
+    'link'     => $str_link,
+    'hint'     => "" . $nm_var_hint[16] . "",
+    'id'       => "item_50",
+    'icon'     => $str_icon,
+    'icon_aba' => $icon_aba,
+    'icon_aba_inactive' => $icon_aba_inactive,
+    'target'   => " item-target=\"" . $this->menu_main_target('_blank') . "\"",
+    'sc_id'    => "item_50",
+    'disabled' => $str_disabled,
+    'display'     => "text_fontawesomeicon",
+    'display_position'=> "text_right",
+    'icon_fa'     => "fas fa-clipboard-check",
     'icon_color'     => "",
     'icon_color_hover'     => "",
     'icon_color_disabled'     => "",

@@ -424,6 +424,11 @@ if (!isset($_SESSION['scriptcase']['menu_main']['session_timeout']['redir']) && 
           $apl_run  = "https://app.mailersend.com/activity";
           $link_url = true;
       }
+      if ($_SESSION['scriptcase']['sc_item_menu'] == "item_50")
+      {
+          $apl_run  = "https://staging.pfm-app.com/renewal_v2/admin/dashboard.php";
+          $link_url = true;
+      }
       if ($_SESSION['scriptcase']['sc_item_menu'] == "item_25")
       {
           $apl_run = $_SESSION['scriptcase']['sc_apl_menu_link'] . $this->tab_grupo[0] . SC_dir_app_name("grid_vw_clients_main_member_inactive") . "/?nm_run_menu=1&nm_apl_menu=menu_main&script_case_init=" . $this->Gera_sc_init($this->sc_menu_item) . "";
