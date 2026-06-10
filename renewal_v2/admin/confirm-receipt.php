@@ -30,6 +30,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../lib/Db.php';
 require_once __DIR__ . '/../lib/RenewalSession.php';
+require_once __DIR__ . '/../lib/StripeClient.php';
 require_once __DIR__ . '/_includes/admin_layout.php';
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
