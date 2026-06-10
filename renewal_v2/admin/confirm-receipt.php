@@ -183,12 +183,39 @@ try {
           WHERE client_id = ? AND token = ?'
     )->execute([$session->clientId, $session->token]);
 
+    // 5d. Advance the member's membership cycle (the actual "renewal"
+    //     effect that removes them from the Renewing Active grid and
+    //     gives them another year). Per Muhammad's product decision
+    //     (confirmed 2026-06-10):
+    //       - memb_status_id is set authoritatively to 3 (Active) — this
+    //         flips the status from 9 (Renewing Active) back to normal.
+    //         We set it unconditionally rather than only-if-9 because
+    //         Confirm Receipt is the staff's explicit "this member is
+    //         good" action; whatever the prior state, we want Active.
+    //       - renewal_date is advanced by 1 calendar year from its OWN
+    //         current value (NOT from today). This keeps the yearly
+    //         cycle stable — a member who renews 10 days late doesn't
+    //         get 10 free days; their next due date stays on the same
+    //         anniversary. If renewal_date is NULL (rare — legacy data
+    //         hole), we skip the date bump so we don't store a NULL+1Y
+    //         garbage value; staff can then set it manually via the
+    //         edit form.
+    $pdo->prepare(
+        'UPDATE clients
+            SET memb_status_id = 3,
+                renewal_date   = CASE
+                                   WHEN renewal_date IS NULL THEN renewal_date
+                                   ELSE DATE_ADD(renewal_date, INTERVAL 1 YEAR)
+                                 END
+          WHERE client_id = ?'
+    )->execute([$session->clientId]);
+
     $pdo->commit();
 
     // Refresh local object so terminal screen shows the new state
     $session = RenewalSession::loadByAdminToken($adminToken);
 
-    // 5d. Close the loop with the customer — send the "renewal approved /
+    // 5e. Close the loop with the customer — send the "renewal approved /
     //     membership active" email. Non-fatal: payment confirmation is
     //     already committed above, so an email failure here must NOT
     //     undo the DB writes. The earlier sendCustomerConfirmationEmail
