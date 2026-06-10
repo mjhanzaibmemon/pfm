@@ -598,7 +598,7 @@ class StripeClient
         $companyName = $client['co_name'] ?? 'Unknown Customer';
 
         $reviewUrl = PFM_RNW_BASE_URL
-            . '/public/admin/review.php?token='
+            . '/admin/review.php?token='
             . rawurlencode($session->adminReviewToken);
 
         $amount = $session->amountCharged !== null
