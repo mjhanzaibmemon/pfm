@@ -70,27 +70,31 @@ if (empty($_SESSION['csrf_token'])) {
 }
 
 // ── Route based on current state ─────────────────────────────────────
-// stepUrl() returns a URL path like '/renewal_v2/public/steps/1-welcome.php'
-// — NOT a filesystem path. The browser needs a URL to redirect to.
+// stepUrl() returns a URL path like
+// '/renewal_v2/public/steps/1-welcome.php?token=...'
+// The token is appended to every step URL so the wizard is self-contained
+// in the address bar (security — see step_bootstrap.php for the rationale).
+
+$customerToken = $renewalSession->token;
 
 switch ($renewalSession->status) {
     case RenewalSession::STATUS_DRAFT:
         // Resume at the furthest step reached (or step 1 for new sessions).
         // Cap at 6 (Review) — payment/confirmation are post-submit states.
         $step = max(1, min(6, $renewalSession->currentStep));
-        header('Location: ' . stepUrl($step));
+        header('Location: ' . stepUrl($step, $customerToken));
         exit;
 
     case RenewalSession::STATUS_SUBMITTED:
     case RenewalSession::STATUS_AWAITING_PAYMENT:
         // Submitted but not yet paid — send to payment step
-        header('Location: ' . stepUrl(7));
+        header('Location: ' . stepUrl(7, $customerToken));
         exit;
 
     case RenewalSession::STATUS_AWAITING_REVIEW:
     case RenewalSession::STATUS_COMPLETED:
         // Paid — send to confirmation page
-        header('Location: ' . stepUrl(8));
+        header('Location: ' . stepUrl(8, $customerToken));
         exit;
 
     case RenewalSession::STATUS_CANCELLED:
@@ -107,9 +111,13 @@ switch ($renewalSession->status) {
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
-function stepUrl(int $step): string
+function stepUrl(int $step, string $token = ''): string
 {
-    return '/renewal_v2/public/steps/' . $step . '-' . stepSlug($step) . '.php';
+    $url = '/renewal_v2/public/steps/' . $step . '-' . stepSlug($step) . '.php';
+    if ($token !== '') {
+        $url .= '?token=' . rawurlencode($token);
+    }
+    return $url;
 }
 
 function stepSlug(int $step): string
