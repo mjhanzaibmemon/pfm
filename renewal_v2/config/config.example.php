@@ -94,22 +94,25 @@ define('PFM_RNW_SUPPORT_EMAIL', 'info@pfm-app.com');
 // Comma-separated list of staff inboxes that should receive a notification
 // email when a customer payment is received and is awaiting review.
 //
-// Environment-aware: production goes to the real PFM staff inboxes
-// (sourced from the legacy code — portlandflowermarketinfo@gmail.com
-// appears as the contact-PFM mailto in form_clients_steps_appn_* and is
-// the main_contact_email for several staff-managed clients; OFGA.FMA.GM
-// is the OFGA Floral Market Association inbox). Non-production
-// environments default to a single developer inbox so PFM staff are not
-// flooded with "[STAGING TEST]" emails during QA — change the staging
-// fallback to your own address when standing up a new env.
-if ($ENV === 'production') {
-    define(
-        'PFM_RNW_STAFF_NOTIFY_EMAILS',
-        'portlandflowermarketinfo@gmail.com, OFGA.FMA.GM@gmail.com'
-    );
-} else {
-    define('PFM_RNW_STAFF_NOTIFY_EMAILS', 'your-dev-inbox@example.com');
-}
+// Recipients (sourced from the legacy code on 2026-06-10):
+//   - portlandflowermarketinfo@gmail.com — the contact-PFM mailto in
+//     form_clients_steps_appn_*, and the main_contact_email on
+//     staff-managed records (Oregon Flower Growers Assoc., Day Pass, etc.)
+//   - OFGA.FMA.GM@gmail.com — OFGA (parent org) Floral Market
+//     Association General Manager inbox.
+//
+// Staging used to point at a single dev inbox during Phase 3 build-out;
+// since 2026-06-10 staging mirrors production so Larissa's QA matches
+// what real PFM staff will see. The "[STAGING TEST]" subject prefix
+// (see PFM_RNW_NOTIFY_SUBJECT_PREFIX below) is still applied on
+// non-production envs so test traffic is unambiguous in the inbox.
+//
+// To temporarily route to a different inbox (e.g. a dev debug session),
+// replace the recipients with your own address and re-deploy this file.
+define(
+    'PFM_RNW_STAFF_NOTIFY_EMAILS',
+    'portlandflowermarketinfo@gmail.com, OFGA.FMA.GM@gmail.com'
+);
 
 // "From" address used by mail() for staff notifications. Use a domain
 // that the server is allowed to send for (Gmail accepts mail from any
