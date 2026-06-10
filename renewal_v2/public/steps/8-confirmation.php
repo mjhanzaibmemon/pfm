@@ -153,9 +153,10 @@ $retryCount = max(0, (int) ($_GET['retry'] ?? 0));
 $maxRetries = 6; // ~30 seconds of polling
 $showAutoRefresh = $retryCount < $maxRetries;
 if ($showAutoRefresh) {
-    $nextUrl = pfm_step_url(8)
-        . '?session_id=' . rawurlencode($stripeSessionId)
-        . '&retry=' . ($retryCount + 1);
+    $nextUrl = pfm_step_url(8, [
+        'session_id' => $stripeSessionId,
+        'retry'      => $retryCount + 1,
+    ]);
     echo '<meta http-equiv="refresh" content="5;url=' . htmlspecialchars($nextUrl, ENT_QUOTES) . '">';
 }
 ?>
@@ -180,7 +181,7 @@ if ($showAutoRefresh) {
             renewal — there's nothing to worry about. You can safely close this
             page.
         </div>
-        <a href="<?= htmlspecialchars(pfm_step_url(8)) . '?session_id=' . rawurlencode($stripeSessionId) ?>"
+        <a href="<?= htmlspecialchars(pfm_step_url(8, ['session_id' => $stripeSessionId])) ?>"
            class="pfm-btn pfm-btn--primary pfm-mt-2">
             Try again
         </a>

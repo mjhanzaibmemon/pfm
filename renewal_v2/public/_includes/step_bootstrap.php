@@ -45,7 +45,22 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // ── Token resolution ────────────────────────────────────────────────
-$token = (string) ($_SESSION['renewal_token'] ?? $_GET['token'] ?? '');
+// URL token wins over session token. This is the security defence
+// against cross-session leak: if the URL says "load customer A", we
+// load A even if the PHP session cookie was holding a stale "customer
+// B" token from earlier (different browser sharing cookies, link
+// pasted across browsers, etc.). If the URL token differs from the
+// session token, we drop the session so the new session is clean.
+$urlToken     = (string) ($_GET['token'] ?? '');
+$sessionToken = (string) ($_SESSION['renewal_token'] ?? '');
+
+if ($urlToken !== '' && $urlToken !== $sessionToken) {
+    // Different customer in the URL — wipe stale session state.
+    unset($_SESSION['renewal_token']);
+    $sessionToken = '';
+}
+
+$token = $urlToken !== '' ? $urlToken : $sessionToken;
 if ($token === '') {
     header('Location: /renewal_v2/public/index.php');
     exit;
@@ -68,12 +83,41 @@ if (empty($_SESSION['csrf_token'])) {
 $requires = $PFM_REQUIRES ?? 'any';
 $status   = $session->status;
 
-function pfm_step_url(int $step): string {
+/**
+ * Build the URL for a wizard step, always including the current renewal
+ * token as a query parameter so URLs are self-contained — the token
+ * stays in the address bar across all 8 steps, copy/paste between
+ * browsers works, and bookmarking the wizard mid-flow works as long
+ * as the token is still inside its 30-day expiry window.
+ *
+ * Optional $extra lets callers attach additional query params (e.g.
+ * 8-confirmation.php's session_id from Stripe, retry counter, etc.)
+ * without having to know whether the URL already has a "?" or not.
+ *
+ * Returns just the path slug if no token is in scope (defensive
+ * fallback — should never trigger because step_bootstrap loads $session
+ * before this function is callable from any step page).
+ */
+function pfm_step_url(int $step, array $extra = []): string {
+    global $session;
+
     $slugs = [
         1 => 'welcome', 2 => 'organization', 3 => 'main-contact', 4 => 'buyers',
         5 => 'documents', 6 => 'review', 7 => 'payment', 8 => 'confirmation',
     ];
-    return '/renewal_v2/public/steps/' . $step . '-' . ($slugs[$step] ?? 'welcome') . '.php';
+    $path = '/renewal_v2/public/steps/' . $step . '-' . ($slugs[$step] ?? 'welcome') . '.php';
+
+    $params = [];
+    if (isset($session) && $session instanceof RenewalSession && $session->token !== '') {
+        $params['token'] = $session->token;
+    }
+    foreach ($extra as $k => $v) {
+        if ($v !== null && $v !== '') {
+            $params[$k] = $v;
+        }
+    }
+
+    return empty($params) ? $path : ($path . '?' . http_build_query($params));
 }
 
 if ($requires === 'draft' && $status !== RenewalSession::STATUS_DRAFT) {
