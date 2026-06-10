@@ -5234,7 +5234,7 @@ $sql =  "SELECT token ".
 
 $token = $this->rs[0][0];
 
-$renewal_link = "?token=$token"; 
+$renewal_link = "https://" . $_SERVER['HTTP_HOST'] . "/blank_renewal_link/?token=$token"; 
 
 $sql = "UPDATE clients SET memb_status_id = (SELECT memb_status_id FROM members_status WHERE status = 'Renewing Active') WHERE client_id = " . $cust_id;
 
