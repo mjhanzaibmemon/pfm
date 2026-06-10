@@ -166,6 +166,146 @@ if ($client === null) {
     exit;
 }
 
+// ── Staff-side setup validation (early friendly error) ──────────────
+// If PFM staff added a member but forgot to set the Membership Level
+// dropdown in the admin form, pricing_level_id stays at 0 / NULL. The
+// customer would then go through 6 forms and hit a raw technical error
+// at Step 7 ("Client X has no pricing_level_id set"). Catch it HERE on
+// step 1 with a friendly call-PFM message instead, so staff can fix
+// the record and the customer can retry without losing draft data.
+//
+// Only fires while the customer is still in draft — after they've
+// submitted, the wizard's payment flow won't be re-triggered, so
+// there's no benefit to blocking later steps.
+if (($PFM_STEP ?? 1) === 1
+    && $session->status === RenewalSession::STATUS_DRAFT
+    && (empty($client['pricing_level_id']) || (int) $client['pricing_level_id'] === 0)) {
+    pfm_show_setup_incomplete_error($client, $session, 'membership_level');
+    // function exits
+}
+
+/**
+ * Render a friendly "we're not quite ready" page when staff have left
+ * a mandatory field blank on the customer's client record. Includes the
+ * company name, member ID, and PFM contact info so the customer can call
+ * and staff can find + fix the record fast.
+ *
+ * @param  array            $client    clients row (must have co_name, client_id)
+ * @param  RenewalSession   $session   for reference number + token preservation on retry
+ * @param  string           $field     which field is missing — drives the body wording
+ */
+function pfm_show_setup_incomplete_error(array $client, RenewalSession $session, string $field): void
+{
+    http_response_code(400);
+
+    $companyName = htmlspecialchars((string) ($client['co_name'] ?? 'Customer'), ENT_QUOTES, 'UTF-8');
+    $memberId    = (int) ($client['client_id'] ?? 0);
+    $reference   = htmlspecialchars($session->getReferenceNumber(), ENT_QUOTES, 'UTF-8');
+
+    // Field-specific wording. Easy to extend if other staff-set fields
+    // cause similar early errors later.
+    $whatStaffMustFix = [
+        'membership_level' => 'Set the "Membership Level" dropdown on the member\'s record.',
+    ][$field] ?? 'Complete the member\'s record.';
+
+    error_log(sprintf(
+        '[renewal_v2] Setup-incomplete error shown for client %d (%s): missing %s',
+        $memberId, (string) ($client['co_name'] ?? ''), $field
+    ));
+
+    ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>One moment please — Portland Flower Market Renewal</title>
+    <link rel="icon" href="/renewal_v2/public/assets/img/pfm_logo_small.png" type="image/png">
+    <link rel="stylesheet" href="/renewal_v2/public/assets/css/wizard.css">
+    <style>
+        .pfm-staff-note {
+            background: #fff9e6;
+            border-left: 4px solid #ffbc00;
+            padding: 14px 18px;
+            margin-top: 24px;
+            font-size: 0.88rem;
+            color: #6c757d;
+        }
+        .pfm-staff-note strong { color: #313a46; }
+    </style>
+</head>
+<body>
+<div class="pfm-shell">
+    <header class="pfm-header" role="banner">
+        <div class="pfm-container">
+            <img src="/renewal_v2/public/assets/img/pfm_logo_small.png"
+                 alt="Portland Flower Market"
+                 class="pfm-header__logo">
+            <div>
+                <h1 class="pfm-header__title">Portland Flower Market</h1>
+                <div class="pfm-header__subtitle">Annual Membership Renewal</div>
+            </div>
+        </div>
+    </header>
+    <main class="pfm-main" role="main">
+        <div class="pfm-container">
+            <div class="pfm-card" style="max-width: 640px; margin: 24px auto;">
+                <h2 class="pfm-card__title pfm-mt-0">We&rsquo;re not quite ready for your renewal yet</h2>
+                <p class="pfm-text-muted pfm-mt-0">
+                    Hi <?= $companyName ?>, thank you for starting your Portland Flower
+                    Market Buyer&rsquo;s Pass renewal. Before you can continue, our
+                    team needs to finish setting up a small detail on your membership
+                    record.
+                </p>
+
+                <div class="pfm-alert pfm-alert--info pfm-mt-2">
+                    <strong>Please give us a quick call so we can sort this out:</strong>
+                    <p class="pfm-mt-0" style="margin-bottom: 0;">
+                        <strong>&#9742; 503-289-1500</strong><br>
+                        <strong>&#9993;</strong>
+                        <a href="mailto:info@ofgaflowers.com">info@ofgaflowers.com</a>
+                    </p>
+                </div>
+
+                <p style="margin-top: 20px;">
+                    When you call or email, please mention your <strong>Membership
+                    Number</strong> so we can find your record right away:
+                </p>
+
+                <div style="background: #fafbfe; border: 1px solid #eef2f7; border-radius: 6px; padding: 14px 18px; font-family: monospace; font-size: 1.05rem; text-align: center;">
+                    <strong><?= (int) $memberId ?></strong>
+                </div>
+
+                <p class="pfm-text-muted" style="margin-top: 20px; font-size: 0.92rem;">
+                    Once our team has updated your record, please refresh this page
+                    using the link in your renewal email and your application will
+                    continue right where you left off &mdash; no information will
+                    be lost.
+                </p>
+
+                <div class="pfm-staff-note">
+                    <strong>For PFM staff (internal note):</strong>
+                    <?= $whatStaffMustFix ?>
+                    Reference: <code>client_id <?= (int) $memberId ?></code>
+                    &middot; renewal <code><?= $reference ?></code>.
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer class="pfm-footer" role="contentinfo">
+        <div class="pfm-container">
+            <small class="pfm-text-muted">
+                &copy; <?= date('Y') ?> Portland Flower Market
+            </small>
+        </div>
+    </footer>
+</div>
+</body>
+</html>
+    <?php
+    exit;
+}
+
 // ── Defaults for header / progress-bar ─────────────────────────────
 $PFM_STEP        = $PFM_STEP        ?? 1;
 $PFM_STEP_TITLE  = $PFM_STEP_TITLE  ?? 'Renewal';
