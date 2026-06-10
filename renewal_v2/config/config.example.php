@@ -93,7 +93,23 @@ define('PFM_RNW_SUPPORT_EMAIL', 'info@pfm-app.com');
 // ---------- Staff Notifications (Phase 4) ----------
 // Comma-separated list of staff inboxes that should receive a notification
 // email when a customer payment is received and is awaiting review.
-define('PFM_RNW_STAFF_NOTIFY_EMAILS', 'portlandflowermarketinfo@gmail.com,OFGA.FMA.GM@gmail.com');
+//
+// Environment-aware: production goes to the real PFM staff inboxes
+// (sourced from the legacy code — portlandflowermarketinfo@gmail.com
+// appears as the contact-PFM mailto in form_clients_steps_appn_* and is
+// the main_contact_email for several staff-managed clients; OFGA.FMA.GM
+// is the OFGA Floral Market Association inbox). Non-production
+// environments default to a single developer inbox so PFM staff are not
+// flooded with "[STAGING TEST]" emails during QA — change the staging
+// fallback to your own address when standing up a new env.
+if ($ENV === 'production') {
+    define(
+        'PFM_RNW_STAFF_NOTIFY_EMAILS',
+        'portlandflowermarketinfo@gmail.com, OFGA.FMA.GM@gmail.com'
+    );
+} else {
+    define('PFM_RNW_STAFF_NOTIFY_EMAILS', 'your-dev-inbox@example.com');
+}
 
 // "From" address used by mail() for staff notifications. Use a domain
 // that the server is allowed to send for (Gmail accepts mail from any
