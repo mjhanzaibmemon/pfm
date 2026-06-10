@@ -766,6 +766,139 @@ class StripeClient
         return $ok;
     }
 
+    // ===== CUSTOMER RENEWAL-CONFIRMED EMAIL (Phase 4 polish) =====
+
+    /**
+     * Send the customer a "your renewal is approved and active" email AFTER
+     * staff click "Confirm Receipt" in admin/review.php. Closes the loop on
+     * the renewal flow:
+     *
+     *   1. Customer pays               → "Application received" email (sendCustomerConfirmationEmail)
+     *   2. Staff reviews + confirms    → "Renewal approved / active" email (THIS method)
+     *
+     * Hardcoded body (not from members_status) — there is no existing
+     * approval-email template in the legacy PFM data, and adding a new
+     * memb_status_id row would risk affecting other existing PFM admin
+     * workflows that read from members_status. Larissa can adjust the
+     * copy later by editing this method or moving it to a config.
+     *
+     * Recipient:  clients.main_contact_email (fallback to clients.email)
+     * From:       PFM_RNW_NOTIFY_FROM (MailerSend-verified domain)
+     * Subject:    "Your Portland Flower Market Buyer's Pass renewal is confirmed"
+     *             (prefixed with [STAGING TEST] on staging only)
+     * Body:       HTML, includes reference number, amount, payment date,
+     *             approval date, contact info, brand-matched purple accents
+     *
+     * Non-fatal: caller wraps in try/catch so payment confirmation in
+     * confirm-receipt.php is never blocked by an email-send failure.
+     *
+     * @param  RenewalSession $session  Must have admin_confirmed_at set
+     * @return bool  true if SMTP relay accepted the message, false otherwise
+     */
+    public static function sendCustomerRenewalConfirmedEmail(RenewalSession $session): bool
+    {
+        // ── 1. Look up the customer's company + email ─────────────────────
+        $client = Db::one(
+            'SELECT co_name, main_contact_email, email AS company_email
+               FROM clients
+              WHERE client_id = ?',
+            [$session->clientId]
+        );
+        if (!$client) {
+            error_log(sprintf(
+                '[renewal_v2] Customer renewal-confirmed email skipped for session %d: '
+                . 'client_id %d not found.',
+                $session->id, $session->clientId
+            ));
+            return false;
+        }
+
+        $toEmail = trim((string) ($client['main_contact_email'] ?? ''));
+        if ($toEmail === '') {
+            $toEmail = trim((string) ($client['company_email'] ?? ''));
+        }
+        if ($toEmail === '') {
+            error_log(sprintf(
+                '[renewal_v2] Customer renewal-confirmed email skipped for session %d: '
+                . 'no email on client %d.',
+                $session->id, $session->clientId
+            ));
+            return false;
+        }
+
+        $companyName = trim((string) ($client['co_name'] ?? '')) ?: 'Customer';
+
+        // ── 2. Build display values ───────────────────────────────────────
+        $reference   = $session->getReferenceNumber();
+        $amount      = $session->amountCharged !== null
+            ? '$' . number_format((float) $session->amountCharged, 2)
+            : '(amount unknown)';
+        $paymentDate = $session->paidAt
+            ? date('F j, Y', strtotime((string) $session->paidAt))
+            : '—';
+        $approvedDate = $session->adminConfirmedAt
+            ? date('F j, Y', strtotime((string) $session->adminConfirmedAt))
+            : date('F j, Y');
+
+        // ── 3. Subject (with staging prefix) ──────────────────────────────
+        $subject = "Your Portland Flower Market Buyer's Pass renewal is confirmed";
+        if (defined('PFM_RNW_NOTIFY_SUBJECT_PREFIX') && PFM_RNW_NOTIFY_SUBJECT_PREFIX !== '') {
+            $subject = PFM_RNW_NOTIFY_SUBJECT_PREFIX . $subject;
+        }
+
+        // ── 4. HTML body (brand-matched purple #727cf5 accents) ──────────
+        $companyEsc   = htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8');
+        $referenceEsc = htmlspecialchars($reference,   ENT_QUOTES, 'UTF-8');
+        $amountEsc    = htmlspecialchars($amount,      ENT_QUOTES, 'UTF-8');
+        $payDateEsc   = htmlspecialchars($paymentDate, ENT_QUOTES, 'UTF-8');
+        $apvDateEsc   = htmlspecialchars($approvedDate, ENT_QUOTES, 'UTF-8');
+
+        $body = '<html><body style="font-family: Roboto, Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #313a46; max-width: 600px; margin: 0 auto; padding: 20px;">'
+              . '<p>Dear ' . $companyEsc . ',</p>'
+              . '<p>Great news — your Portland Flower Market Buyer&rsquo;s Pass renewal has '
+              . 'been reviewed and approved by our team.</p>'
+              . '<p style="background: #f0f4ff; border-left: 4px solid #727cf5; padding: 14px 18px; margin: 20px 0; font-size: 15px;">'
+              . '<strong style="color: #727cf5;">Your membership is now active.</strong>'
+              . '</p>'
+              . '<table cellpadding="6" cellspacing="0" style="margin: 16px 0; border-collapse: collapse;">'
+              . '<tr><td style="color: #6c757d; padding-right: 16px;">Renewal reference</td>'
+              . '<td style="font-family: monospace; font-weight: 600;">' . $referenceEsc . '</td></tr>'
+              . '<tr><td style="color: #6c757d; padding-right: 16px;">Amount paid</td>'
+              . '<td>' . $amountEsc . '</td></tr>'
+              . '<tr><td style="color: #6c757d; padding-right: 16px;">Payment date</td>'
+              . '<td>' . $payDateEsc . '</td></tr>'
+              . '<tr><td style="color: #6c757d; padding-right: 16px;">Approved on</td>'
+              . '<td>' . $apvDateEsc . '</td></tr>'
+              . '</table>'
+              . '<p>Your new membership card and buyer passes will be ready for pickup or '
+              . 'shipping per your usual arrangement.</p>'
+              . '<p>If you have any questions, please reach out to us at '
+              . '<strong>503-289-1500</strong> or '
+              . '<a href="mailto:info@ofgaflowers.com" style="color: #727cf5;">info@ofgaflowers.com</a>.</p>'
+              . '<p style="margin-top: 24px;">Welcome back to the Portland Flower Market community!</p>'
+              . '<p style="margin-top: 24px;">Best regards,<br>'
+              . 'Buyers Pass Team<br>'
+              . 'Portland Flower Market</p>'
+              . '</body></html>';
+
+        // ── 5. Send via MailerSend SMTP ───────────────────────────────────
+        require_once __DIR__ . '/Mailer.php';
+        [$ok, $detail] = Mailer::send($toEmail, $subject, $body, /* isHtml */ true);
+
+        error_log(sprintf(
+            '[renewal_v2] Customer renewal-confirmed email %s for session %d to %s: '
+            . 'company="%s" reference=%s detail=%s',
+            $ok ? 'sent' : 'FAILED',
+            $session->id,
+            $toEmail,
+            $companyName,
+            $reference,
+            $detail
+        ));
+
+        return $ok;
+    }
+
     /**
      * Build a return URL by appending query parameters, handling whether the
      * base URL already has a '?' query string or not.

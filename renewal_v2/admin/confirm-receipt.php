@@ -186,6 +186,22 @@ try {
 
     // Refresh local object so terminal screen shows the new state
     $session = RenewalSession::loadByAdminToken($adminToken);
+
+    // 5d. Close the loop with the customer — send the "renewal approved /
+    //     membership active" email. Non-fatal: payment confirmation is
+    //     already committed above, so an email failure here must NOT
+    //     undo the DB writes. The earlier sendCustomerConfirmationEmail
+    //     (at payment time) told the customer "application received";
+    //     this one tells them "you're approved and active."
+    try {
+        StripeClient::sendCustomerRenewalConfirmedEmail($session);
+    } catch (\Throwable $e) {
+        error_log(sprintf(
+            '[renewal_v2] Customer renewal-confirmed email send failed for '
+            . 'session %d: %s',
+            $session->id, $e->getMessage()
+        ));
+    }
 } catch (\Throwable $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
