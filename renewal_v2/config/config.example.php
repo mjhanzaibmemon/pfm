@@ -43,16 +43,22 @@ define('PFM_RNW_DB_CHARSET', 'utf8mb4');
 define('PFM_RNW_STRIPE_DB_NAME', 'stripe');
 
 // ---------- Stripe Configuration ----------
-// Use TEST keys on staging and during early production rollout.
-// Switch to LIVE keys (sk_live_*, pk_live_*) when ready to accept real payments.
+// Use the keys for PFM's own Stripe account, display name "Pdxflowermarket".
+// The TEST keys can be copied from the existing legacy PFM file at
+// _lib/libraries/grp/stripe_qb_old/config.php (look for the active
+// uncommented define labelled "test pfm@gm"). LIVE keys must be pulled
+// from the Pdxflowermarket Stripe Dashboard at deploy time — do NOT
+// reuse a developer's personal Stripe account, otherwise the
+// customer-facing Stripe checkout page will display that developer's
+// name instead of "Pdxflowermarket".
 
 if ($ENV === 'production') {
-    define('PFM_RNW_STRIPE_API_KEY',         'REPLACE_ME_STRIPE_API_KEY');
-    define('PFM_RNW_STRIPE_PUBLISHABLE_KEY', 'REPLACE_ME_STRIPE_PUBLISHABLE_KEY');
-    define('PFM_RNW_STRIPE_WEBHOOK_SECRET',  'REPLACE_ME_WHSEC');  // From Stripe webhook config
+    define('PFM_RNW_STRIPE_API_KEY',         'REPLACE_ME_PDXFLOWERMARKET_LIVE_SK');
+    define('PFM_RNW_STRIPE_PUBLISHABLE_KEY', 'REPLACE_ME_PDXFLOWERMARKET_LIVE_PK');
+    define('PFM_RNW_STRIPE_WEBHOOK_SECRET',  'REPLACE_ME_WHSEC');
 } else {
-    define('PFM_RNW_STRIPE_API_KEY',         'REPLACE_ME_STRIPE_API_KEY');
-    define('PFM_RNW_STRIPE_PUBLISHABLE_KEY', 'REPLACE_ME_STRIPE_PUBLISHABLE_KEY');
+    define('PFM_RNW_STRIPE_API_KEY',         'REPLACE_ME_PDXFLOWERMARKET_TEST_SK');
+    define('PFM_RNW_STRIPE_PUBLISHABLE_KEY', 'REPLACE_ME_PDXFLOWERMARKET_TEST_PK');
     define('PFM_RNW_STRIPE_WEBHOOK_SECRET',  'REPLACE_ME_WHSEC');
 }
 
