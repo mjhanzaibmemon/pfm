@@ -28,7 +28,18 @@ api_require_csrf();
 $session = api_require_session();
 api_require_draft($session);
 
+// Customer's optional Step-5 note. Prefer the explicit POST value when the
+// caller supplies one (lets a future client-side change push an edited note
+// at submit time), but fall back to whatever Step 5's auto-save persisted
+// into draft_data. Without the fallback, the Step 6 Submit button — which
+// posts an empty body — would always overwrite the saved note with NULL.
+// Bug surfaced during Larissa's Phase 6 QA on session 37: her typed note
+// "This is my renewal test comment" was correctly in draft_data but the
+// renewal_sessions.customer_note column ended up NULL after submit.
 $customerNote = api_optional_post('customer_note');
+if ($customerNote === null || $customerNote === '') {
+    $customerNote = $session->draftData['customer_note'] ?? null;
+}
 
 // ───────────────────────────────────────────────────────────────────
 // Step 1: Validate required draft_data fields
