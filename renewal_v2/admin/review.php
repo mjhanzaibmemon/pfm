@@ -27,6 +27,7 @@ require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../lib/Db.php';
 require_once __DIR__ . '/../lib/RenewalSession.php';
 require_once __DIR__ . '/../lib/PhoneFormat.php';
+require_once __DIR__ . '/../lib/DocumentUpload.php';
 require_once __DIR__ . '/_includes/admin_layout.php';
 
 // PHP session is needed for CSRF token used by the confirm form below
@@ -389,6 +390,96 @@ $alreadyConfirmed = ($session->adminConfirmedAt !== null);
                         <?= htmlspecialchars(date('M j, Y g:ia', strtotime($c['at']))) ?>
                     </div>
                 <?php endif; ?>
+            </li>
+        <?php endforeach; ?>
+        </ul>
+    <?php endif; ?>
+</div>
+
+<!-- ── Uploaded documents (added 2026-06-14 per Larissa's Phase 6 video) ── -->
+<?php
+// Friendly display labels for the well-known document keys plus a fallback
+// for any additional documents the customer may have uploaded. Larissa
+// specifically asked staff to verify the ID, Secretary of State /
+// business registration, and any additional documents BEFORE clicking
+// Confirm Receipt — this panel exists for exactly that.
+$documents = DocumentUpload::getAll($session);
+
+$docLabels = [
+    'main_contact_id'  => 'Main Contact ID',
+    'business_license' => 'Business Registry',
+];
+$humaniseDocKey = static function (string $key) use ($docLabels): string {
+    if (isset($docLabels[$key])) {
+        return $docLabels[$key];
+    }
+    $clean = preg_replace('/[_\\-]+/', ' ', $key);
+    $clean = ucwords((string) $clean);
+    return $clean;
+};
+$humaniseSize = static function (int $bytes): string {
+    if ($bytes >= 1048576) {
+        return number_format($bytes / 1048576, 1) . ' MB';
+    }
+    if ($bytes >= 1024) {
+        return number_format($bytes / 1024, 0) . ' KB';
+    }
+    return $bytes . ' B';
+};
+$adminTok = htmlspecialchars($session->adminReviewToken ?? '', ENT_QUOTES);
+?>
+<div class="pfm-card pfm-mt-2">
+    <h2 class="pfm-card__title pfm-mt-0">Uploaded Documents (<?= count($documents) ?>)</h2>
+    <p class="pfm-text-muted pfm-mt-0">
+        Open each file in a new tab and verify the ID, the business
+        registration with the Secretary of State, and any additional
+        documents the customer attached. Confirm Receipt should only be
+        clicked once every required document checks out.
+    </p>
+
+    <?php if (empty($documents)): ?>
+        <div class="pfm-alert pfm-alert--warning">
+            <strong>No documents are attached to this renewal.</strong>
+            This is unusual — the wizard requires the customer's ID on
+            Step 3 and a business document on Step 5. Please verify with
+            the customer before proceeding.
+        </div>
+    <?php else: ?>
+        <ul style="list-style: none; padding: 0; margin: 0;">
+        <?php foreach ($documents as $key => $doc): ?>
+            <?php
+                $keyEsc      = htmlspecialchars((string) $key, ENT_QUOTES);
+                $labelEsc    = htmlspecialchars($humaniseDocKey((string) $key), ENT_QUOTES);
+                $origEsc     = htmlspecialchars((string) ($doc['original_name'] ?? ''), ENT_QUOTES);
+                $mime        = (string) ($doc['mime_type'] ?? '');
+                $bytes       = (int) ($doc['size'] ?? 0);
+                $isImage     = str_starts_with($mime, 'image/');
+                $viewUrl     = '/renewal_v2/admin/view-document.php?token=' . $adminTok . '&key=' . $keyEsc;
+            ?>
+            <li style="display:flex; gap:14px; align-items:center; padding:12px 0; border-bottom:1px solid #eef2f7;">
+                <?php if ($isImage): ?>
+                    <a href="<?= $viewUrl ?>" target="_blank" rel="noopener" title="Open <?= $labelEsc ?>">
+                        <img src="<?= $viewUrl ?>" alt="<?= $labelEsc ?>"
+                             style="width:72px; height:72px; object-fit:cover; border-radius:4px; border:1px solid #eef2f7; background:#fafbfe;">
+                    </a>
+                <?php else: ?>
+                    <div style="width:72px; height:72px; display:flex; align-items:center; justify-content:center; border-radius:4px; border:1px solid #eef2f7; background:#fafbfe; font-size:0.75rem; color:#6c757d;">
+                        PDF
+                    </div>
+                <?php endif; ?>
+                <div style="flex:1; min-width:0;">
+                    <div><strong><?= $labelEsc ?></strong></div>
+                    <div class="pfm-text-muted" style="font-size:0.85rem; word-break:break-all;">
+                        <?= $origEsc ?>
+                        <?php if ($bytes > 0): ?>
+                            &middot; <?= htmlspecialchars($humaniseSize($bytes)) ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <a class="pfm-btn pfm-btn--ghost pfm-btn--sm"
+                   href="<?= $viewUrl ?>" target="_blank" rel="noopener">
+                    View &nearr;
+                </a>
             </li>
         <?php endforeach; ?>
         </ul>
