@@ -120,6 +120,19 @@ define(
     'portlandflowermarketinfo@gmail.com, OFGA.FMA.GM@gmail.com'
 );
 
+// Master feature flag controlling whether the staff notification email
+// fires at all. Larissa's instruction in Phase 6 round-1 (2026-06-11):
+// "do not add staff notification emails unless there is a specific
+// reason they are needed for the new process." PFM staff discover
+// pending renewals via the Requests area of the existing admin
+// instead, so this flag is `false` by default.
+//
+// To re-enable in any environment, set this to `true` and the recipients
+// in PFM_RNW_STAFF_NOTIFY_EMAILS above will receive the same email as
+// before. The flag is checked at the call site in StripeClient.php
+// step 3 of syncStripePaymentInto().
+define('PFM_RNW_SEND_STAFF_EMAIL', false);
+
 // "From" address used by mail() for staff notifications. Use a domain
 // that the server is allowed to send for (Gmail accepts mail from any
 // configured sender; for production you may want a real noreply@pfm-app.com).

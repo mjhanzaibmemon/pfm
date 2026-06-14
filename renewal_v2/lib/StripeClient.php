@@ -535,14 +535,29 @@ class StripeClient
         // 2. Generate admin review token (used in the staff email link)
         $session->ensureAdminReviewToken();
 
-        // 3. Notify staff via email (non-fatal — logs but does not throw if
-        //    mail() fails, so payment processing isn't blocked by mail issues).
-        try {
-            self::sendStaffReviewEmail($session);
-        } catch (Throwable $e) {
+        // 3. Notify staff via email — feature-flag gated.
+        //    Larissa requested in Phase 6 round-1 feedback (2026-06-11):
+        //      "do not add staff notification emails unless there is a
+        //       specific reason they are needed for the new process."
+        //    PFM staff discover pending renewals through the Requests area
+        //    of the existing admin instead. Set PFM_RNW_SEND_STAFF_EMAIL = true
+        //    in config.php to re-enable.
+        //    Non-fatal — logs but does not throw if mail() fails, so
+        //    payment processing isn't blocked by mail issues.
+        if (defined('PFM_RNW_SEND_STAFF_EMAIL') && PFM_RNW_SEND_STAFF_EMAIL) {
+            try {
+                self::sendStaffReviewEmail($session);
+            } catch (Throwable $e) {
+                error_log(sprintf(
+                    '[renewal_v2] Staff email send failed for session %d: %s',
+                    $session->id, $e->getMessage()
+                ));
+            }
+        } else {
             error_log(sprintf(
-                '[renewal_v2] Staff email send failed for session %d: %s',
-                $session->id, $e->getMessage()
+                '[renewal_v2] Staff email skipped for session %d '
+                . '(PFM_RNW_SEND_STAFF_EMAIL is off — Larissa\'s Phase 6 instruction).',
+                $session->id
             ));
         }
 
