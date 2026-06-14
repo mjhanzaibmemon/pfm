@@ -72,9 +72,15 @@ if ($buyerCount < 1) {
 Db::transaction(function () use ($session, $draft, $customerNote): void {
 
     // Persist org info changes if present.
-    // Per v3 spec (Section 2): Step 2 only collects co_name, business_type,
-    // and business_license. Optional address/phone fields were removed.
-    // We still UPDATE only the fields the form submitted (others left untouched).
+    // Step 2 fields (as of Phase 6 fix, 2026-06-14):
+    //   - co_name, business_type, business_license (last kept for back-compat
+    //     even though the input field was removed — see 2-organization.php)
+    //   - mailing_address, city, state, zip_code (re-added after Larissa's
+    //     Phase 6 budget-reply on 2026-06-12 caught they were missing from
+    //     Step 2; only Store Front + Home Base were meant to go per
+    //     Decision 3, mailing was meant to stay)
+    // We still UPDATE only the fields the form submitted (others left
+    // untouched), so partial Step 2 saves never overwrite unrelated columns.
     if (!empty($draft['org'])) {
         $org     = $draft['org'];
         $updates = [];
@@ -84,11 +90,16 @@ Db::transaction(function () use ($session, $draft, $customerNote): void {
             'co_name'          => 'co_name',
             'business_type'    => 'business_type',
             'business_license' => 'business_license',
+            'mailing_address'  => 'mailing_address',
+            'city'             => 'city',
+            'state'            => 'state',
+            'zip_code'         => 'zip_code',
         ];
 
         // Get current values to detect changes
         $current = Db::one(
-            'SELECT co_name, business_type, business_license
+            'SELECT co_name, business_type, business_license,
+                    mailing_address, city, state, zip_code
                FROM clients WHERE client_id = ?',
             [$session->clientId]
         );
