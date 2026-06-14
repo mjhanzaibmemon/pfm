@@ -40,26 +40,40 @@ class BuyerManager
     // ===== READ =====
 
     /**
-     * Return all active buyers for a client (excludes main contact and soft-deleted).
+     * Return all active buyers for a client (excludes main contact and
+     * wizard-removed entries).
      *
-     * "Active" = include IS NULL OR include = 1 (bit)
+     * "Active" = wizard_removed_at IS NULL
      * "Buyer"  = main_contact = 0
      *
-     * Results are ordered by member_id ASC (stable, matches the order they were added).
+     * NOTE: this filter intentionally does NOT touch the legacy `include`
+     * BIT column. The existing PFM admin "Add Buyer" form inserts new
+     * buyers with include = b'0' by default, so a filter on `include`
+     * would hide every buyer staff added before the customer started
+     * the wizard — surfaced by Larissa's Phase 6 round-1 QA (2026-06-11),
+     * which resulted in duplicate buyers in the customer profile.
+     * Wizard-side soft-delete now uses the new wizard_removed_at column
+     * added by migration 006, leaving `include` alone for any other
+     * system that reads it.
      *
-     * @return array[]  Each row: member_id, member_name, email, phone1, note, include (as int)
+     * Results are ordered by member_id ASC (stable, matches the order
+     * they were added).
+     *
+     * @return array[]  Each row: member_id, member_name, email, phone1,
+     *                  note, include (as int), main_contact, is_active
      */
     public static function getActive(int $clientId): array
     {
-        // is_active matches the WHERE filter logic: NULL or b'1' = active, b'0' = removed
+        // is_active flag is always true here (we only return active rows).
+        // We still surface `include` in the row for callers that want it.
         $rows = Db::all(
             "SELECT member_id, member_name, email, phone1, note,
                     include, main_contact,
-                    (include IS NULL OR include != b'0') AS is_active
+                    1 AS is_active
                FROM members
               WHERE client_id = ?
                 AND main_contact = b'0'
-                AND (include IS NULL OR include != b'0')
+                AND wizard_removed_at IS NULL
               ORDER BY member_id ASC",
             [$clientId]
         );
@@ -69,18 +83,17 @@ class BuyerManager
     }
 
     /**
-     * Return all buyers for a client including soft-deleted ones.
+     * Return all buyers for a client including wizard-removed ones.
      * Used by the admin Changes Summary panel to show what was removed.
      *
      * @return array[]
      */
     public static function getAll(int $clientId): array
     {
-        // is_active: NULL or b'1' = active, b'0' = soft-removed (matches the WHERE logic in getActive)
         $rows = Db::all(
             "SELECT member_id, member_name, email, phone1, note,
-                    include, main_contact,
-                    (include IS NULL OR include != b'0') AS is_active
+                    include, main_contact, wizard_removed_at,
+                    (wizard_removed_at IS NULL) AS is_active
                FROM members
               WHERE client_id = ?
                 AND main_contact = b'0'
@@ -91,7 +104,8 @@ class BuyerManager
     }
 
     /**
-     * Count active buyers for a client (excludes main contact and removed).
+     * Count active buyers for a client (excludes main contact and
+     * wizard-removed buyers).
      */
     public static function countActive(int $clientId): int
     {
@@ -99,7 +113,7 @@ class BuyerManager
             "SELECT COUNT(*) FROM members
               WHERE client_id = ?
                 AND main_contact = b'0'
-                AND (include IS NULL OR include != b'0')",
+                AND wizard_removed_at IS NULL",
             [$clientId]
         );
     }
@@ -112,7 +126,7 @@ class BuyerManager
     {
         $row = Db::one(
             'SELECT member_id, member_name, email, phone1, note, client_id,
-                    main_contact, include
+                    main_contact, include, wizard_removed_at
                FROM members
               WHERE member_id = ?',
             [$memberId]
@@ -202,13 +216,19 @@ class BuyerManager
     }
 
     /**
-     * Soft-remove a buyer by setting include = 0.
+     * Soft-remove a buyer by stamping wizard_removed_at = NOW().
+     *
+     * Migration 006 added this column specifically so the wizard's
+     * soft-delete doesn't collide with the legacy `include` BIT field,
+     * which the existing PFM admin "Add Buyer" form sets to b'0' for
+     * every new buyer by default. See migration 006 / getActive() for
+     * the full rationale.
      *
      * Validates:
      *  - Session must be in draft state
      *  - Buyer must belong to session's client (prevents cross-client tampering)
      *  - Cannot remove the main contact via this method
-     *  - Buyer must currently be active (idempotent removal is allowed — just logs once)
+     *  - Idempotent: already-removed buyer is a no-op
      *
      * Logs: CHANGE_BUYER_REMOVED
      *
@@ -228,12 +248,12 @@ class BuyerManager
         }
 
         // If already removed, nothing to do (idempotent)
-        if (!$buyer['include']) {
+        if (!empty($buyer['wizard_removed_at'])) {
             return;
         }
 
         Db::exec(
-            "UPDATE members SET include = b'0' WHERE member_id = ?",
+            "UPDATE members SET wizard_removed_at = NOW() WHERE member_id = ?",
             [$memberId]
         );
 
@@ -247,7 +267,8 @@ class BuyerManager
     }
 
     /**
-     * Re-include a previously soft-removed buyer.
+     * Restore a previously wizard-removed buyer by clearing
+     * wizard_removed_at back to NULL.
      *
      * Validates:
      *  - Session must be in draft state
@@ -272,7 +293,7 @@ class BuyerManager
 
             $buyer = self::assertBelongsToClient($memberId, $session->clientId);
 
-            if ($buyer['include']) {
+            if (empty($buyer['wizard_removed_at'])) {
                 return; // already active — nothing to do
             }
 
@@ -285,7 +306,7 @@ class BuyerManager
             }
 
             Db::exec(
-                "UPDATE members SET include = b'1' WHERE member_id = ?",
+                "UPDATE members SET wizard_removed_at = NULL WHERE member_id = ?",
                 [$memberId]
             );
 
@@ -415,7 +436,7 @@ class BuyerManager
     {
         $row = Db::one(
             'SELECT member_id, client_id, member_name, email, phone1, note,
-                    main_contact, include
+                    main_contact, include, wizard_removed_at
                FROM members
               WHERE member_id = ?',
             [$memberId]
