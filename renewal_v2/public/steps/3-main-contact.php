@@ -47,6 +47,13 @@ require __DIR__ . '/../_includes/progress-bar.php';
         <p class="pfm-card__subtitle">Please confirm or update the primary contact for your membership.</p>
     </div>
 
+    <div class="pfm-alert pfm-alert--info">
+        <strong>Review and update your information.</strong>
+        If the main contact&rsquo;s name, email, or phone has changed since
+        your last renewal, please update them here. You can also upload a
+        new ID below if needed.
+    </div>
+
     <form id="pfm-form-contact" autocomplete="off" novalidate>
         <div class="pfm-field">
             <label for="contact_name" class="pfm-field__label">

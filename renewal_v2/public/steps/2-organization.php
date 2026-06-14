@@ -75,6 +75,13 @@ require __DIR__ . '/../_includes/progress-bar.php';
         <p class="pfm-card__subtitle">Please confirm or update your company details below.</p>
     </div>
 
+    <div class="pfm-alert pfm-alert--info">
+        <strong>Review and update your information.</strong>
+        If anything below has changed since your last renewal — company name,
+        business type, or mailing address — please update it now. The changes
+        you save here are sent to staff for review along with your renewal.
+    </div>
+
     <form id="pfm-form-org" autocomplete="off" novalidate>
         <div class="pfm-field">
             <label for="co_name" class="pfm-field__label">
