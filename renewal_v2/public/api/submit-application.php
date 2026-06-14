@@ -90,6 +90,8 @@ Db::transaction(function () use ($session, $draft, $customerNote): void {
             'co_name'          => 'co_name',
             'business_type'    => 'business_type',
             'business_license' => 'business_license',
+            'bus_cat_id'       => 'bus_cat_id',
+            'bus_subcat_id'    => 'bus_subcat_id',
             'mailing_address'  => 'mailing_address',
             'city'             => 'city',
             'state'            => 'state',
@@ -99,6 +101,7 @@ Db::transaction(function () use ($session, $draft, $customerNote): void {
         // Get current values to detect changes
         $current = Db::one(
             'SELECT co_name, business_type, business_license,
+                    bus_cat_id, bus_subcat_id,
                     mailing_address, city, state, zip_code
                FROM clients WHERE client_id = ?',
             [$session->clientId]

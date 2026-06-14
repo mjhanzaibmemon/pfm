@@ -4,10 +4,18 @@
  *
  * Collects:
  *   - company name
- *   - business type
+ *   - business category + subcategory (cascading dropdowns matching the
+ *     existing PFM admin's bus_categories / bus_subcats tables)
  *   - mailing address (mailing_address + city + state + zip_code)
  *
  * Decision history:
+ *   - Business Type free-text field replaced with the category /
+ *     subcategory dropdowns after Larissa's Phase 6 round-1 QA on
+ *     2026-06-11. Her video showed the truncation issue (the
+ *     business_type column is VARCHAR(14) — too short to type
+ *     "homebased floral") and she noted the wizard "did not show
+ *     dropdowns for business type/category/subcategory like the
+ *     original new member/customer section does."
  *   - Business License # text field removed after Larissa's Phase 6
  *     video — "we don't need business license number." The Business
  *     Registry document upload is in Step 5; the existing
@@ -36,12 +44,40 @@ require __DIR__ . '/../_includes/step_bootstrap.php';
 $draftOrg = $session->draftData['org'] ?? [];
 $values = [
     'co_name'         => $draftOrg['co_name']         ?? $client['co_name']         ?? '',
-    'business_type'   => $draftOrg['business_type']   ?? $client['business_type']   ?? '',
+    'bus_cat_id'      => (int) ($draftOrg['bus_cat_id']    ?? $client['bus_cat_id']    ?? 0),
+    'bus_subcat_id'   => (int) ($draftOrg['bus_subcat_id'] ?? $client['bus_subcat_id'] ?? 0),
     'mailing_address' => $draftOrg['mailing_address'] ?? $client['mailing_address'] ?? '',
     'city'            => $draftOrg['city']            ?? $client['city']            ?? '',
     'state'           => $draftOrg['state']           ?? $client['state']           ?? '',
     'zip_code'        => $draftOrg['zip_code']        ?? $client['zip_code']        ?? '',
 ];
+
+// Business category + subcategory dropdowns — match the existing admin
+// form so the wizard saves the same canonical bus_cat_id / bus_subcat_id
+// values staff use everywhere else. Pulled live so any future admin-side
+// additions to either table appear here automatically.
+$busCategories = Db::all(
+    "SELECT bus_cat_id, bus_cat
+       FROM bus_categories
+      WHERE (active IS NULL OR active = b'1')
+        AND bus_cat IS NOT NULL AND bus_cat <> ''
+      ORDER BY bus_cat ASC"
+);
+$busSubcatsRaw = Db::all(
+    "SELECT bus_subcat_id, bus_cat_id, bus_subcategory, sort_by
+       FROM bus_subcats
+      WHERE (active IS NULL OR active = b'1')
+        AND bus_subcategory IS NOT NULL AND bus_subcategory <> ''
+      ORDER BY bus_cat_id, sort_by, bus_subcategory"
+);
+// Group subcategories by their parent category for the JS dropdown wiring.
+$busSubcatsByCat = [];
+foreach ($busSubcatsRaw as $sc) {
+    $busSubcatsByCat[(int) $sc['bus_cat_id']][] = [
+        'id'   => (int) $sc['bus_subcat_id'],
+        'name' => (string) $sc['bus_subcategory'],
+    ];
+}
 
 // US states + DC + Pacific territories for the State dropdown.
 // Order: 50 states alphabetical, then DC, then PR/VI/GU/AS/MP — matches
@@ -93,16 +129,32 @@ require __DIR__ . '/../_includes/progress-bar.php';
             <div class="pfm-field__error">Please enter your company name.</div>
         </div>
 
-        <div class="pfm-field">
-            <label for="business_type" class="pfm-field__label">
-                Business Type <span class="pfm-required">*</span>
-            </label>
-            <input type="text" id="business_type" name="business_type"
-                   class="pfm-input" data-pfm-required maxlength="14"
-                   placeholder="e.g. RETAIL, WHOLESALE, HOME/SHOP"
-                   value="<?= htmlspecialchars($values['business_type'], ENT_QUOTES) ?>">
-            <div class="pfm-field__hint">Short description of how your business operates.</div>
-            <div class="pfm-field__error">Please enter your business type.</div>
+        <div class="pfm-grid pfm-grid--2">
+            <div class="pfm-field">
+                <label for="bus_cat_id" class="pfm-field__label">
+                    Business Category <span class="pfm-required">*</span>
+                </label>
+                <select id="bus_cat_id" name="bus_cat_id" class="pfm-input" data-pfm-required>
+                    <option value="">— Select —</option>
+                    <?php foreach ($busCategories as $cat): ?>
+                        <option value="<?= (int) $cat['bus_cat_id'] ?>"
+                            <?= $values['bus_cat_id'] === (int) $cat['bus_cat_id'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars((string) $cat['bus_cat'], ENT_QUOTES) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <div class="pfm-field__error">Please select a business category.</div>
+            </div>
+
+            <div class="pfm-field">
+                <label for="bus_subcat_id" class="pfm-field__label">
+                    Business Subcategory <span class="pfm-required">*</span>
+                </label>
+                <select id="bus_subcat_id" name="bus_subcat_id" class="pfm-input" data-pfm-required>
+                    <option value="">— Select a category first —</option>
+                </select>
+                <div class="pfm-field__error">Please select a business subcategory.</div>
+            </div>
         </div>
 
         <!-- ── Mailing address ──────────────────────────────────────── -->
@@ -180,6 +232,48 @@ require __DIR__ . '/../_includes/progress-bar.php';
 (function () {
     var form = document.getElementById('pfm-form-org');
     var nextBtn = document.getElementById('pfm-next');
+
+    // Subcategory map: { catId: [{id, name}, ...], ... }
+    var SUBCATS = <?= json_encode($busSubcatsByCat, JSON_UNESCAPED_UNICODE) ?>;
+    var SAVED_SUBCAT_ID = <?= (int) $values['bus_subcat_id'] ?>;
+
+    var catSelect    = document.getElementById('bus_cat_id');
+    var subcatSelect = document.getElementById('bus_subcat_id');
+
+    // Populate the subcategory dropdown for the currently-selected category.
+    // Restores the saved selection on first load so the user's previous
+    // subcategory survives a refresh / step navigation.
+    function populateSubcats(preselectId) {
+        var catId = parseInt(catSelect.value, 10) || 0;
+        var list  = SUBCATS[catId] || [];
+        subcatSelect.innerHTML = '';
+        if (!catId) {
+            subcatSelect.innerHTML = '<option value="">— Select a category first —</option>';
+            return;
+        }
+        if (!list.length) {
+            subcatSelect.innerHTML = '<option value="">— No subcategories on file —</option>';
+            return;
+        }
+        subcatSelect.appendChild(new Option('— Select —', ''));
+        list.forEach(function (sc) {
+            var opt = new Option(sc.name, String(sc.id));
+            if (preselectId && parseInt(preselectId, 10) === sc.id) {
+                opt.selected = true;
+            }
+            subcatSelect.appendChild(opt);
+        });
+    }
+
+    // Initial render — restore saved subcat if the saved category matches.
+    populateSubcats(SAVED_SUBCAT_ID);
+
+    // When the category changes, repopulate without a preselection and fire
+    // a synthetic event so the auto-save picks up both changed fields.
+    catSelect.addEventListener('change', function () {
+        populateSubcats(null);
+        subcatSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    });
 
     // Debounced auto-save → draft_data.org.*
     var saver = PFM.autosave.attach(form, { section: 'org', step: 2 });
