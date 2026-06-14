@@ -146,7 +146,7 @@ require __DIR__ . '/../_includes/progress-bar.php';
             </div>
         </div>
         <div class="pfm-mt-1">
-            <button type="button" id="pfm-add-btn" class="pfm-btn pfm-btn--primary pfm-btn--sm">+ Add buyer</button>
+            <button type="button" id="pfm-add-btn" class="pfm-btn pfm-btn--primary pfm-btn--sm">+ Save buyer</button>
         </div>
     </div>
 
@@ -371,7 +371,7 @@ require __DIR__ . '/../_includes/progress-bar.php';
 
     // Continue button — guard against two common UX mistakes:
     //   1. No active buyers at all
-    //   2. Customer typed buyer info but forgot to click "+ Add buyer"
+    //   2. Customer typed buyer info but forgot to click "+ Save buyer"
     //      (we'd skip Step 4 with that buyer never saved to the DB)
     nextBtn.addEventListener('click', function () {
         // (a) Unsaved buyer info in the form?
@@ -381,7 +381,7 @@ require __DIR__ . '/../_includes/progress-bar.php';
         var typedNote  = noteIn.value.trim();
         if (typedName || typedEmail || typedPhone || typedNote) {
             PFM.toast.show(
-                'You\'ve typed a buyer but haven\'t added them yet. Click "+ Add buyer" first, ' +
+                'You\'ve typed a buyer but haven\'t saved them yet. Click "+ Save buyer" first, ' +
                 'or clear the form fields to continue.',
                 'warning',
                 7000

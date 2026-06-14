@@ -40,7 +40,7 @@ require __DIR__ . '/../_includes/progress-bar.php';
     <div class="pfm-card__header">
         <h2 class="pfm-card__title">Supporting Documents</h2>
         <p class="pfm-card__subtitle">
-            Upload your business license and any additional documents that support your membership.
+            Upload your business registry and any additional documents that support your membership.
             Accepted formats: PDF, JPG, PNG (max 10&nbsp;MB each, up to 10 files total).
         </p>
     </div>
@@ -62,9 +62,12 @@ require __DIR__ . '/../_includes/progress-bar.php';
         </div>
     <?php endif; ?>
 
-    <!-- ── 2. Business license ───────────────────────────────────── -->
-    <h3 class="pfm-mt-2">Business License</h3>
-    <p class="pfm-text-muted pfm-mb-1">A clear photo or scan of your current business license.</p>
+    <!-- ── 2. Business registry ──────────────────────────────────── -->
+    <!-- Note: internal $businessKey stays as 'business_license' so files
+         already uploaded under this slot remain retrievable. Only the
+         customer-facing label is changed (per Larissa's Phase 6 video). -->
+    <h3 class="pfm-mt-2">Business Registry</h3>
+    <p class="pfm-text-muted pfm-mb-1">A clear photo or scan of your current business registry.</p>
 
     <label class="pfm-upload" id="pfm-upload-license">
         <input type="file" id="pfm-license-file" accept="application/pdf,image/jpeg,image/png">
