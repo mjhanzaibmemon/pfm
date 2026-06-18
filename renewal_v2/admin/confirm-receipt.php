@@ -31,6 +31,7 @@ require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../lib/Db.php';
 require_once __DIR__ . '/../lib/RenewalSession.php';
 require_once __DIR__ . '/../lib/StripeClient.php';
+require_once __DIR__ . '/../lib/DocumentUpload.php';
 require_once __DIR__ . '/../lib/RenewalHistoryNote.php';
 require_once __DIR__ . '/_includes/admin_layout.php';
 
@@ -253,6 +254,103 @@ try {
     } catch (\Throwable $e) {
         error_log(sprintf(
             '[renewal_v2] Renewal history note append FAILED for session %d: %s',
+            $session->id, $e->getMessage()
+        ));
+    }
+
+    // 5g. Copy any wizard-uploaded ID / business registry into the legacy
+    //     clients BLOB columns so future renewals see them as "on file"
+    //     and let the customer carry them over instead of re-uploading
+    //     every year. Without this step, the carry-over only worked for
+    //     customers whose IDs were originally uploaded via the legacy
+    //     admin form — anyone who only renews via the wizard would face
+    //     a forced re-upload every year, defeating Larissa's "we don't
+    //     make customers re-upload ID every year" ask (2026-06-17).
+    //
+    //     Mapping:
+    //       wizard key 'main_contact_id'  → clients.main_contact_img_id (BLOB)
+    //                                       + main_contact_img_file (filename)
+    //                                       + main_contact_img_size (bytes)
+    //       wizard key 'business_license' → clients.doc_sec_of_state (BLOB)
+    //         (the existing PFM admin reference table treats the
+    //          Secretary-of-State / business registration as the same
+    //          doc slot Larissa wants the customer to upload here)
+    //
+    //     Skip-conditions:
+    //       - No fresh upload for that key in this session — the customer
+    //         used the carry-over, the legacy column already holds the
+    //         right bytes, leave it alone.
+    //       - File is missing on disk somehow — log and move on, don't
+    //         clobber the existing legacy value with NULL.
+    //
+    //     Non-fatal: payment commit already happened; a failure here just
+    //     means next year the customer re-uploads, no permanent damage.
+    try {
+        $copyMap = [
+            'main_contact_id' => [
+                'blob_col' => 'main_contact_img_id',
+                'name_col' => 'main_contact_img_file',
+                'size_col' => 'main_contact_img_size',
+            ],
+            'business_license' => [
+                'blob_col' => 'doc_sec_of_state',
+                'name_col' => null, // legacy doc_sec_of_state has no name/size siblings
+                'size_col' => null,
+            ],
+        ];
+
+        foreach ($copyMap as $docKey => $cols) {
+            $doc = DocumentUpload::getByKey($session, $docKey);
+            if (!$doc) {
+                continue; // customer used carry-over, no fresh upload to mirror
+            }
+            try {
+                $absPath = DocumentUpload::getAbsolutePath($session, $docKey);
+            } catch (\Throwable $e) {
+                error_log(sprintf(
+                    '[renewal_v2] Could not resolve %s path for legacy copy: %s',
+                    $docKey, $e->getMessage()
+                ));
+                continue;
+            }
+            if (!is_file($absPath) || !is_readable($absPath)) {
+                continue;
+            }
+            $bytes = file_get_contents($absPath);
+            if ($bytes === false || $bytes === '') {
+                continue;
+            }
+
+            // Build the SET clause based on which sibling columns exist
+            // for this slot.
+            $assigns = [$cols['blob_col'] . ' = ?'];
+            $params  = [$bytes];
+            if ($cols['name_col'] !== null) {
+                $assigns[] = $cols['name_col'] . ' = ?';
+                $params[]  = (string) ($doc['original_name'] ?? 'document');
+            }
+            if ($cols['size_col'] !== null) {
+                $assigns[] = $cols['size_col'] . ' = ?';
+                // legacy main_contact_img_size is varchar in the schema,
+                // so cast to string so PDO doesn't reject the integer.
+                $params[]  = (string) ((int) ($doc['size'] ?? strlen($bytes)));
+            }
+            $params[] = $session->clientId;
+
+            Db::exec(
+                'UPDATE clients SET ' . implode(', ', $assigns) . ' WHERE client_id = ?',
+                $params
+            );
+            error_log(sprintf(
+                '[renewal_v2] Copied wizard %s into clients.%s for client %d '
+                . '(session %d, %d bytes).',
+                $docKey, $cols['blob_col'], $session->clientId, $session->id,
+                strlen($bytes)
+            ));
+        }
+    } catch (\Throwable $e) {
+        error_log(sprintf(
+            '[renewal_v2] Legacy-column copy FAILED for session %d: %s',
             $session->id, $e->getMessage()
         ));
     }
