@@ -31,6 +31,7 @@ require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../lib/Db.php';
 require_once __DIR__ . '/../lib/RenewalSession.php';
 require_once __DIR__ . '/../lib/StripeClient.php';
+require_once __DIR__ . '/../lib/RenewalHistoryNote.php';
 require_once __DIR__ . '/_includes/admin_layout.php';
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -227,6 +228,31 @@ try {
         error_log(sprintf(
             '[renewal_v2] Customer renewal-confirmed email send failed for '
             . 'session %d: %s',
+            $session->id, $e->getMessage()
+        ));
+    }
+
+    // 5f. Append a structured renewal-history entry to the existing PFM
+    //     client_notes table — B1-a per Larissa's 2026-06-17 reply
+    //     ("use the existing Notes area for renewal change history…
+    //     the Notes section is already where staff look for customer/
+    //     member history"). One dated row covers her eight items:
+    //     buyer additions, buyer removals, contact info changes, address
+    //     changes, document uploads, the customer's Step 5 comment,
+    //     payment confirmation, approval date.
+    //     Non-fatal — payment commit must not roll back if a note write
+    //     fails (e.g. DB locked, RenewalHistoryNote bug). On failure we
+    //     log so it can be backfilled later.
+    try {
+        $notesId = RenewalHistoryNote::buildAndStore($session, $clientPmtId);
+        error_log(sprintf(
+            '[renewal_v2] Renewal history note appended for session %d '
+            . '(client_notes #%d).',
+            $session->id, $notesId
+        ));
+    } catch (\Throwable $e) {
+        error_log(sprintf(
+            '[renewal_v2] Renewal history note append FAILED for session %d: %s',
             $session->id, $e->getMessage()
         ));
     }
