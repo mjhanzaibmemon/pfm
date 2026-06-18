@@ -31,8 +31,42 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-/* ─── Auth: shared-password gate ─────────────────────────────────────── */
+/* ─── Auth: PFM-admin session OR shared-password fallback ──────────────
+ *
+ * B2-a per Larissa's 2026-06-17 approval: when staff are already
+ * logged into the existing PFM admin (which sets ScriptCase session
+ * keys under $_SESSION['scriptcase']['sc_apl_seg']), they shouldn't
+ * have to type another password to reach the renewal-review listing.
+ * The "Renewal Reviews" menu item under the Requests group opens
+ * this page in a new tab — and from there staff click into a review
+ * and the per-renewal admin_review_token in the URL takes over auth.
+ *
+ * The legacy password gate stays as a fallback for two cases:
+ *   1. Direct URL access without a PFM admin login (e.g. dev
+ *      walkthroughs, support sessions, link sharing during testing).
+ *   2. Production fallback if the menu item is ever broken.
+ *
+ * Both paths end up setting the same $_SESSION[$DASHBOARD_AUTH_KEY]
+ * flag so the rest of the page logic doesn't care which way the
+ * user got in.
+ */
 $DASHBOARD_AUTH_KEY = 'pfm_admin_dashboard_authed';
+
+// Auto-auth: any PFM admin session that has at least one ScriptCase
+// app marked "on" (the legacy admin sets these the moment the user
+// logs in to PFM admin's main menu). We don't whitelist specific
+// apps because the renewal-review listing is appropriate for the
+// same audience that can already see the Requests grid.
+if (empty($_SESSION[$DASHBOARD_AUTH_KEY])
+    && !empty($_SESSION['scriptcase']['sc_apl_seg'])
+    && is_array($_SESSION['scriptcase']['sc_apl_seg'])
+    && in_array('on', $_SESSION['scriptcase']['sc_apl_seg'], true)) {
+    $_SESSION[$DASHBOARD_AUTH_KEY] = true;
+    error_log(sprintf(
+        '[renewal_v2] Dashboard auto-auth via PFM admin session (%d apps active).',
+        count($_SESSION['scriptcase']['sc_apl_seg'])
+    ));
+}
 
 // Handle logout
 if (isset($_GET['logout'])) {
@@ -74,10 +108,15 @@ if (empty($_SESSION[$DASHBOARD_AUTH_KEY])) {
     <div class="pfm-card" style="max-width:480px; margin: 0 auto;">
         <h2 class="pfm-card__title pfm-mt-0">Staff sign-in</h2>
         <p class="pfm-text-muted pfm-mt-0">
-            This is the pending-reviews dashboard. Enter the shared admin
-            password to continue. (Individual review pages use their own
-            per-renewal token from the email link — this gate only protects
-            the listing.)
+            <strong>Easier path:</strong> open this page from the
+            &ldquo;Renewal Reviews&rdquo; item in the PFM admin&rsquo;s
+            Requests menu &mdash; if you&rsquo;re already signed in there,
+            you&rsquo;ll be let through automatically.
+        </p>
+        <p class="pfm-text-muted pfm-mt-0">
+            Otherwise, enter the shared admin password below to continue.
+            (Individual review pages use their own per-renewal token from
+            the email link, so this gate only protects the listing page.)
         </p>
 
         <?php if ($loginError !== null): ?>
