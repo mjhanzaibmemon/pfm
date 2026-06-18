@@ -50,6 +50,9 @@ $values = [
     'city'            => $draftOrg['city']            ?? $client['city']            ?? '',
     'state'           => $draftOrg['state']           ?? $client['state']           ?? '',
     'zip_code'        => $draftOrg['zip_code']        ?? $client['zip_code']        ?? '',
+    'website_url'     => $draftOrg['website_url']     ?? $client['website_url']     ?? '',
+    'acct_instagram'  => $draftOrg['acct_instagram']  ?? $client['acct_instagram']  ?? '',
+    'acct_facebook'   => $draftOrg['acct_facebook']   ?? $client['acct_facebook']   ?? '',
 ];
 
 // Business category + subcategory dropdowns — match the existing admin
@@ -213,6 +216,45 @@ require __DIR__ . '/../_includes/progress-bar.php';
                        value="<?= htmlspecialchars($values['zip_code'], ENT_QUOTES) ?>">
                 <div class="pfm-field__hint">5 digits (or ZIP+4: 97201-1234).</div>
                 <div class="pfm-field__error">Please enter a valid ZIP code.</div>
+            </div>
+        </div>
+
+        <!-- ── Online presence (added 2026-06-17 per Larissa's request) ── -->
+        <h3 class="pfm-card__subtitle pfm-mt-2">Online Presence</h3>
+        <p class="pfm-text-muted pfm-mb-1">
+            All three are optional &mdash; fill in any that apply so we can
+            keep your member profile up to date.
+        </p>
+
+        <div class="pfm-field">
+            <label for="website_url" class="pfm-field__label">
+                Company Website
+            </label>
+            <input type="url" id="website_url" name="website_url"
+                   class="pfm-input" maxlength="500"
+                   placeholder="https://www.example.com"
+                   value="<?= htmlspecialchars($values['website_url'], ENT_QUOTES) ?>">
+        </div>
+
+        <div class="pfm-grid pfm-grid--2">
+            <div class="pfm-field">
+                <label for="acct_instagram" class="pfm-field__label">
+                    Instagram
+                </label>
+                <input type="text" id="acct_instagram" name="acct_instagram"
+                       class="pfm-input" maxlength="500"
+                       placeholder="@yourhandle or full URL"
+                       value="<?= htmlspecialchars($values['acct_instagram'], ENT_QUOTES) ?>">
+            </div>
+
+            <div class="pfm-field">
+                <label for="acct_facebook" class="pfm-field__label">
+                    Facebook
+                </label>
+                <input type="text" id="acct_facebook" name="acct_facebook"
+                       class="pfm-input" maxlength="500"
+                       placeholder="page name or full URL"
+                       value="<?= htmlspecialchars($values['acct_facebook'], ENT_QUOTES) ?>">
             </div>
         </div>
     </form>

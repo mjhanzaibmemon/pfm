@@ -153,9 +153,18 @@ if ($requires === 'paid' && !$session->isPaid()) {
 }
 
 // ── Load client row for prefill ─────────────────────────────────────
+// website_url + acct_instagram + acct_facebook + bus_cat_id + bus_subcat_id
+// + main_contact_title added 2026-06-17 per Larissa's request to capture
+// these on the renewal wizard. main_contact_name / email / phone are used
+// by Step 3's pre-fill (the wizard prefers the members.main_contact row but
+// falls back to these clients columns when there's no main-contact buyer).
 $client = Db::one(
-    'SELECT client_id, co_name, business_type, business_license, pricing_level_id,
-            mailing_address, city, state, zip_code, phone_number
+    'SELECT client_id, co_name, business_type, business_license,
+            pricing_level_id, bus_cat_id, bus_subcat_id,
+            mailing_address, city, state, zip_code, phone_number,
+            website_url, acct_instagram, acct_facebook,
+            main_contact_name, main_contact_email, main_contact_phone,
+            main_contact_title
        FROM clients WHERE client_id = ?',
     [$session->clientId]
 );

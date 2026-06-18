@@ -96,13 +96,17 @@ Db::transaction(function () use ($session, $draft, $customerNote): void {
             'city'             => 'city',
             'state'            => 'state',
             'zip_code'         => 'zip_code',
+            'website_url'      => 'website_url',
+            'acct_instagram'   => 'acct_instagram',
+            'acct_facebook'    => 'acct_facebook',
         ];
 
         // Get current values to detect changes
         $current = Db::one(
             'SELECT co_name, business_type, business_license,
                     bus_cat_id, bus_subcat_id,
-                    mailing_address, city, state, zip_code
+                    mailing_address, city, state, zip_code,
+                    website_url, acct_instagram, acct_facebook
                FROM clients WHERE client_id = ?',
             [$session->clientId]
         );
