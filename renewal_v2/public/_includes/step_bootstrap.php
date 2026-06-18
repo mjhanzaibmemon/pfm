@@ -164,7 +164,8 @@ $client = Db::one(
             mailing_address, city, state, zip_code, phone_number,
             website_url, acct_instagram, acct_facebook,
             main_contact_name, main_contact_email, main_contact_phone,
-            main_contact_title
+            main_contact_title,
+            main_contact_img_file, main_contact_img_size
        FROM clients WHERE client_id = ?',
     [$session->clientId]
 );

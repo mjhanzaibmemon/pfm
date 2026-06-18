@@ -39,9 +39,27 @@ $values = [
     'title' => $draftContact['title'] ?? $client['main_contact_title'] ?? '',
 ];
 
-// Check whether an ID document has already been uploaded for this session
-$idKey   = 'main_contact_id';
-$uploaded = $session->draftData['documents'][$idKey] ?? null;
+// ── ID document state — three possible cases ───────────────────────
+//
+//   1. Uploaded fresh in THIS session  → $uploaded is set
+//   2. Has a legacy ID on file from a previous renewal / admin entry
+//      → $legacyIdName has the filename (clients.main_contact_img_file)
+//   3. No ID at all                    → both null
+//
+// Larissa requested 2026-06-17: "if an existing ID is already on file,
+// the customer should be able to see that it exists and have the
+// option to upload a replacement, rather than being required to
+// re-upload it every year." Case 2 is what makes that possible. The
+// legacy ID is stored as a BLOB in clients.main_contact_img_id and
+// can't be previewed inline, so we display its filename + size as a
+// "ID on file" badge and let the customer skip the upload unless
+// they want to replace it.
+$idKey      = 'main_contact_id';
+$uploaded   = $session->draftData['documents'][$idKey] ?? null;
+$legacyIdName = (string) ($client['main_contact_img_file'] ?? '');
+$legacyIdSize = (int)    ($client['main_contact_img_size'] ?? 0);
+$hasLegacyId  = ($legacyIdName !== '' && $legacyIdSize > 0);
+$idRequired   = !$uploaded && !$hasLegacyId;
 
 require __DIR__ . '/../_includes/header.php';
 require __DIR__ . '/../_includes/progress-bar.php';
@@ -109,16 +127,40 @@ require __DIR__ . '/../_includes/progress-bar.php';
         </div>
     </form>
 
-    <!-- ── REQUIRED ID upload (per v3 spec Step 3) ───────────────── -->
-    <h3 class="pfm-mt-2">Driver's License or Photo ID <span class="pfm-required">*</span></h3>
-    <p class="pfm-text-muted pfm-mb-1">
-        We require a photo of your driver's license or government-issued ID for the main contact.
-        Accepted formats: PDF, JPG, PNG (max 10&nbsp;MB).
-    </p>
+    <!-- ── ID upload (required only when there's no ID on file yet) ── -->
+    <h3 class="pfm-mt-2">
+        Driver's License or Photo ID
+        <?php if ($idRequired): ?>
+            <span class="pfm-required">*</span>
+        <?php endif; ?>
+    </h3>
+
+    <?php if ($hasLegacyId && !$uploaded): ?>
+        <!-- Case 2: legacy ID on file — show as a carry-over badge -->
+        <div class="pfm-alert pfm-alert--success">
+            <strong>ID on file:</strong>
+            <span style="font-family:monospace;"><?= htmlspecialchars($legacyIdName) ?></span>
+            <?php if ($legacyIdSize > 0): ?>
+                <span class="pfm-text-muted">(<?= number_format($legacyIdSize / 1024, 0) ?>&nbsp;KB)</span>
+            <?php endif; ?>
+            <p class="pfm-mt-0" style="margin-bottom:0;">
+                You don't need to re-upload your ID unless it has changed since your
+                last renewal. To replace it, drop a new file below.
+            </p>
+        </div>
+    <?php else: ?>
+        <p class="pfm-text-muted pfm-mb-1">
+            We require a photo of your driver's license or government-issued
+            ID for the main contact. Accepted formats: PDF, JPG, PNG
+            (max 10&nbsp;MB).
+        </p>
+    <?php endif; ?>
 
     <label class="pfm-upload" id="pfm-upload-id">
         <input type="file" id="pfm-id-file" accept="application/pdf,image/jpeg,image/png">
-        <strong>Click or drop a file here to upload</strong>
+        <strong>
+            <?= $hasLegacyId && !$uploaded ? 'Upload a replacement ID' : 'Click or drop a file here to upload' ?>
+        </strong>
         <div class="pfm-upload__hint">Your ID image is stored securely and only used to verify your membership.</div>
     </label>
 
@@ -154,6 +196,11 @@ require __DIR__ . '/../_includes/progress-bar.php';
     var idKey    = <?= json_encode($idKey) ?>;
 
     var hasIdUploaded = <?= $uploaded ? 'true' : 'false' ?>;
+    // If the customer already has a legacy ID on file we treat the slot as
+    // satisfied — Next is allowed without a fresh upload, matching Larissa's
+    // 2026-06-17 ask. A fresh upload still works and replaces the legacy
+    // image when stored.
+    var hasLegacyId   = <?= $hasLegacyId ? 'true' : 'false' ?>;
 
     // Auto-save contact fields → draft_data.contact.*
     var saver = PFM.autosave.attach(form, { section: 'contact', step: 3 });
@@ -245,7 +292,12 @@ require __DIR__ . '/../_includes/progress-bar.php';
             PFM.toast.show('Please enter a valid email address.', 'danger');
             return;
         }
-        if (!hasIdUploaded) {
+        // ID slot is satisfied if EITHER a fresh upload exists for this
+        // session OR the customer already has a legacy ID on file from a
+        // previous renewal. The "Remove" action on a fresh upload clears
+        // hasIdUploaded but the legacy fallback remains, so the customer
+        // can still proceed without re-uploading.
+        if (!hasIdUploaded && !hasLegacyId) {
             PFM.toast.show('Please upload a photo of the main contact\'s driver\'s license or ID before continuing.', 'danger');
             return;
         }
