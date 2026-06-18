@@ -26,11 +26,17 @@ $mainContact = Db::one(
 );
 
 // Prefill priority: draft_data > existing DB row > empty
+//
+// title comes from clients.main_contact_title (not from the members
+// row — that table doesn't have a title column). Added 2026-06-17
+// per Larissa's request to capture the main contact's title (Owner,
+// Administrator, etc.) during renewal.
 $draftContact = $session->draftData['contact'] ?? [];
 $values = [
-    'name'  => $draftContact['name']  ?? $mainContact['member_name'] ?? '',
-    'email' => $draftContact['email'] ?? $mainContact['email']       ?? '',
-    'phone' => $draftContact['phone'] ?? $mainContact['phone1']      ?? '',
+    'name'  => $draftContact['name']  ?? $mainContact['member_name']  ?? '',
+    'email' => $draftContact['email'] ?? $mainContact['email']        ?? '',
+    'phone' => $draftContact['phone'] ?? $mainContact['phone1']       ?? '',
+    'title' => $draftContact['title'] ?? $client['main_contact_title'] ?? '',
 ];
 
 // Check whether an ID document has already been uploaded for this session
@@ -85,6 +91,21 @@ require __DIR__ . '/../_includes/progress-bar.php';
                        value="<?= htmlspecialchars($values['phone'], ENT_QUOTES) ?>">
                 <div class="pfm-field__error">Please enter a phone number.</div>
             </div>
+        </div>
+
+        <div class="pfm-field">
+            <label for="contact_title" class="pfm-field__label">
+                Title <span class="pfm-required">*</span>
+            </label>
+            <input type="text" id="contact_title" name="title"
+                   class="pfm-input" data-pfm-required maxlength="100"
+                   placeholder="Owner"
+                   value="<?= htmlspecialchars($values['title'], ENT_QUOTES) ?>">
+            <div class="pfm-field__hint">
+                The contact&rsquo;s role at the company &mdash; usually Owner, sometimes
+                Administrator or similar.
+            </div>
+            <div class="pfm-field__error">Please enter the contact's title.</div>
         </div>
     </form>
 

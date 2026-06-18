@@ -140,11 +140,16 @@ Db::transaction(function () use ($session, $draft, $customerNote): void {
         }
     }
 
-    // Persist main contact changes if present
+    // Persist main contact changes if present.
+    //
+    // name / email / phone live on the members row with main_contact = 1
+    // (the renewal wizard treats that row as the canonical contact). title
+    // is on the clients table (clients.main_contact_title) — the members
+    // table doesn't have a title column — so it's persisted separately.
     if (!empty($draft['contact'])) {
         $contact = $draft['contact'];
 
-        // Main contact is stored in members table (main_contact = 1)
+        // ── name / email / phone → members row ───────────────────────
         $mainContact = Db::one(
             "SELECT member_id, member_name, email, phone1
                FROM members
@@ -182,6 +187,31 @@ Db::transaction(function () use ($session, $draft, $customerNote): void {
                 Db::exec(
                     'UPDATE members SET ' . implode(', ', $updates) . ' WHERE member_id = ?',
                     $params
+                );
+            }
+        }
+
+        // ── title → clients.main_contact_title ───────────────────────
+        // Added 2026-06-17 per Larissa's request to capture the contact's
+        // title (Owner / Administrator / etc.) during renewal.
+        if (isset($contact['title'])) {
+            $newTitle = trim((string) $contact['title']);
+            $currentTitleRow = Db::one(
+                'SELECT main_contact_title FROM clients WHERE client_id = ?',
+                [$session->clientId]
+            );
+            $oldTitle = trim((string) ($currentTitleRow['main_contact_title'] ?? ''));
+            if ($newTitle !== $oldTitle) {
+                Db::exec(
+                    'UPDATE clients SET main_contact_title = ? WHERE client_id = ?',
+                    [$newTitle !== '' ? $newTitle : null, $session->clientId]
+                );
+                $session->logChange(
+                    RenewalSession::CHANGE_CONTACT_CHANGED,
+                    null,
+                    'main_contact_title',
+                    $oldTitle ?: null,
+                    $newTitle ?: null
                 );
             }
         }
