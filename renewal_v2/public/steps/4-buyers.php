@@ -97,20 +97,56 @@ require __DIR__ . '/../_includes/progress-bar.php';
         </div>
     <?php endif; ?>
 
+    <!--
+        Buyer card layout (2026-06-17 redesign per user test feedback —
+        previously only name + a "email · phone" meta line was visible,
+        which made admin-added buyers look almost empty because the
+        Add Member admin form often skips email/phone). The new card
+        surfaces every field the buyer record carries — name, email,
+        phone, note — each labelled, with subtle placeholder text for
+        empty values so the customer can tell at a glance which fields
+        need filling in.
+    -->
     <ul class="pfm-buyer-list" id="pfm-buyer-list">
         <?php foreach ($buyers as $b): ?>
+            <?php
+                $bName  = (string) ($b['member_name'] ?? '');
+                $bEmail = (string) ($b['email']       ?? '');
+                $bPhone = (string) ($b['phone1']      ?? '');
+                $bNote  = (string) ($b['note']        ?? '');
+            ?>
             <li class="pfm-buyer <?= $b['is_active'] ? '' : 'pfm-buyer--removed' ?>"
                 data-member-id="<?= (int) $b['member_id'] ?>"
-                data-active="<?= $b['is_active'] ? '1' : '0' ?>">
-                <div class="pfm-buyer__avatar"><?= strtoupper(substr((string) ($b['member_name'] ?? '?'), 0, 1)) ?></div>
+                data-active="<?= $b['is_active'] ? '1' : '0' ?>"
+                data-buyer-name="<?= htmlspecialchars($bName, ENT_QUOTES) ?>"
+                data-buyer-email="<?= htmlspecialchars($bEmail, ENT_QUOTES) ?>"
+                data-buyer-phone="<?= htmlspecialchars($bPhone, ENT_QUOTES) ?>"
+                data-buyer-note="<?= htmlspecialchars($bNote, ENT_QUOTES) ?>">
+                <div class="pfm-buyer__avatar"><?= strtoupper(substr($bName !== '' ? $bName : '?', 0, 1)) ?></div>
                 <div class="pfm-buyer__info">
-                    <p class="pfm-buyer__name"><?= htmlspecialchars((string) ($b['member_name'] ?? 'Unnamed')) ?></p>
+                    <p class="pfm-buyer__name"><?= htmlspecialchars($bName !== '' ? $bName : 'Unnamed buyer') ?></p>
                     <p class="pfm-buyer__meta">
-                        <?= htmlspecialchars((string) ($b['email'] ?? '')) ?>
-                        <?php if (!empty($b['phone1'])): ?>
-                            &middot; <?= htmlspecialchars(pfm_format_phone((string) $b['phone1'])) ?>
+                        <span class="pfm-buyer__label">Email:</span>
+                        <?php if ($bEmail !== ''): ?>
+                            <?= htmlspecialchars($bEmail) ?>
+                        <?php else: ?>
+                            <span class="pfm-text-muted"><em>not provided</em></span>
                         <?php endif; ?>
                     </p>
+                    <p class="pfm-buyer__meta">
+                        <span class="pfm-buyer__label">Phone:</span>
+                        <?php if ($bPhone !== ''): ?>
+                            <?= htmlspecialchars(pfm_format_phone($bPhone)) ?>
+                        <?php else: ?>
+                            <span class="pfm-text-muted"><em>not provided</em></span>
+                        <?php endif; ?>
+                    </p>
+                    <?php if ($bNote !== ''): ?>
+                        <p class="pfm-buyer__meta">
+                            <span class="pfm-buyer__label">Note:</span>
+                            <?= htmlspecialchars($bNote) ?>
+                        </p>
+                    <?php endif; ?>
                 </div>
                 <div class="pfm-buyer__actions">
                     <?php if ($b['is_active']): ?>
@@ -330,39 +366,123 @@ require __DIR__ . '/../_includes/progress-bar.php';
         });
     }
 
+    // Edit-in-place: swap the buyer card's info block for a 4-field form
+    // (name + email + phone + note) inline. Save POSTs to modify-buyer.php
+    // and rebuilds the display rows. Cancel restores the original markup.
+    // Replaces the older prompt()-chain UX (jarring on mobile, no note
+    // editing, didn't let staff see what they were typing in context).
     function editBuyer(li) {
-        var nameEl = li.querySelector('.pfm-buyer__name');
-        var metaEl = li.querySelector('.pfm-buyer__meta');
-        var memberId = li.getAttribute('data-member-id');
-        var currentName = nameEl.textContent;
-        var currentMeta = metaEl.textContent.split(' · ');
-        var currentEmail = (currentMeta[0] || '').trim();
-        var currentPhone = (currentMeta[1] || '').trim();
+        // Bail if this row is already showing the edit form.
+        if (li.classList.contains('pfm-buyer--editing')) return;
 
-        var newName  = prompt('Update buyer name:', currentName);
-        if (newName === null) return;
-        var newEmail = prompt('Update buyer email:', currentEmail);
-        if (newEmail === null) return;
-        var newPhone = prompt('Update buyer phone:', currentPhone);
-        if (newPhone === null) return;
+        var infoEl    = li.querySelector('.pfm-buyer__info');
+        var actionsEl = li.querySelector('.pfm-buyer__actions');
+        if (!infoEl || !actionsEl) return;
 
-        var fields = {};
-        if (newName.trim()  !== currentName)  fields.member_name = newName.trim();
-        if (newEmail.trim() !== currentEmail) fields.email       = newEmail.trim();
-        if (newPhone.trim() !== currentPhone) fields.phone1      = newPhone.trim();
+        var memberId     = li.getAttribute('data-member-id');
+        var currentName  = li.getAttribute('data-buyer-name')  || '';
+        var currentEmail = li.getAttribute('data-buyer-email') || '';
+        var currentPhone = li.getAttribute('data-buyer-phone') || '';
+        var currentNote  = li.getAttribute('data-buyer-note')  || '';
 
-        if (Object.keys(fields).length === 0) return; // no change
+        var infoSnapshot    = infoEl.innerHTML;
+        var actionsSnapshot = actionsEl.innerHTML;
 
-        PFM.api.post('modify-buyer.php', {
-            member_id: memberId,
-            fields: JSON.stringify(fields),
-        }).then(function () {
-            nameEl.textContent = newName.trim() || currentName;
-            metaEl.innerHTML = (newEmail.trim() ? escapeHtml(newEmail.trim()) : '') +
-                (newPhone.trim() ? ' &middot; ' + escapeHtml(newPhone.trim()) : '');
-            PFM.toast.show('Buyer updated.', 'success');
-        }).catch(function (err) {
-            PFM.toast.show(err.message || 'Could not update.', 'danger');
+        li.classList.add('pfm-buyer--editing');
+
+        infoEl.innerHTML =
+            '<div class="pfm-grid pfm-grid--2" style="gap:10px;">' +
+                '<label class="pfm-field" style="margin:0;">' +
+                    '<span class="pfm-field__label">Full Name *</span>' +
+                    '<input type="text" class="pfm-input" data-edit-name maxlength="255" value="' + escapeHtml(currentName) + '">' +
+                '</label>' +
+                '<label class="pfm-field" style="margin:0;">' +
+                    '<span class="pfm-field__label">Email</span>' +
+                    '<input type="email" class="pfm-input" data-edit-email maxlength="255" value="' + escapeHtml(currentEmail) + '">' +
+                '</label>' +
+                '<label class="pfm-field" style="margin:0;">' +
+                    '<span class="pfm-field__label">Phone</span>' +
+                    '<input type="tel" class="pfm-input" data-edit-phone maxlength="100" value="' + escapeHtml(currentPhone) + '">' +
+                '</label>' +
+                '<label class="pfm-field" style="margin:0;">' +
+                    '<span class="pfm-field__label">Note</span>' +
+                    '<input type="text" class="pfm-input" data-edit-note maxlength="255" value="' + escapeHtml(currentNote) + '">' +
+                '</label>' +
+            '</div>';
+
+        actionsEl.innerHTML =
+            '<button type="button" class="pfm-btn pfm-btn--primary pfm-btn--sm" data-edit-save>Save</button> ' +
+            '<button type="button" class="pfm-btn pfm-btn--ghost pfm-btn--sm" data-edit-cancel>Cancel</button>';
+
+        var restoreCard = function () {
+            infoEl.innerHTML    = infoSnapshot;
+            actionsEl.innerHTML = actionsSnapshot;
+            li.classList.remove('pfm-buyer--editing');
+            // Re-bind because we just swapped the buttons back in.
+            bindRow(li);
+        };
+
+        actionsEl.querySelector('[data-edit-cancel]').addEventListener('click', restoreCard);
+
+        actionsEl.querySelector('[data-edit-save]').addEventListener('click', function () {
+            var newName  = (infoEl.querySelector('[data-edit-name]').value  || '').trim();
+            var newEmail = (infoEl.querySelector('[data-edit-email]').value || '').trim();
+            var newPhone = (infoEl.querySelector('[data-edit-phone]').value || '').trim();
+            var newNote  = (infoEl.querySelector('[data-edit-note]').value  || '').trim();
+
+            if (newName === '') {
+                PFM.toast.show('Buyer name cannot be empty.', 'danger');
+                return;
+            }
+
+            var fields = {};
+            if (newName  !== currentName)  fields.member_name = newName;
+            if (newEmail !== currentEmail) fields.email       = newEmail;
+            if (newPhone !== currentPhone) fields.phone1      = newPhone;
+            if (newNote  !== currentNote)  fields.note        = newNote;
+
+            if (Object.keys(fields).length === 0) {
+                restoreCard();
+                return;
+            }
+
+            PFM.api.post('modify-buyer.php', {
+                member_id: memberId,
+                fields: JSON.stringify(fields),
+            }).then(function () {
+                // Persist the edited values back to the data-* attributes so
+                // the next Edit click starts from the new values without a
+                // full page reload.
+                li.setAttribute('data-buyer-name',  newName);
+                li.setAttribute('data-buyer-email', newEmail);
+                li.setAttribute('data-buyer-phone', newPhone);
+                li.setAttribute('data-buyer-note',  newNote);
+
+                infoEl.innerHTML =
+                    '<p class="pfm-buyer__name">' + escapeHtml(newName) + '</p>' +
+                    '<p class="pfm-buyer__meta">' +
+                        '<span class="pfm-buyer__label">Email:</span> ' +
+                        (newEmail ? escapeHtml(newEmail) :
+                            '<span class="pfm-text-muted"><em>not provided</em></span>') +
+                    '</p>' +
+                    '<p class="pfm-buyer__meta">' +
+                        '<span class="pfm-buyer__label">Phone:</span> ' +
+                        (newPhone ? escapeHtml(newPhone) :
+                            '<span class="pfm-text-muted"><em>not provided</em></span>') +
+                    '</p>' +
+                    (newNote ?
+                        '<p class="pfm-buyer__meta">' +
+                            '<span class="pfm-buyer__label">Note:</span> ' + escapeHtml(newNote) +
+                        '</p>' : '');
+
+                actionsEl.innerHTML = actionsSnapshot;
+                li.classList.remove('pfm-buyer--editing');
+                bindRow(li);
+
+                PFM.toast.show('Buyer updated.', 'success');
+            }).catch(function (err) {
+                PFM.toast.show(err.message || 'Could not update.', 'danger');
+            });
         });
     }
 

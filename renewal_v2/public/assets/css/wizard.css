@@ -555,6 +555,18 @@ p { margin: 0 0 12px; }
     margin: 2px 0 0;
 }
 
+.pfm-buyer__label {
+    display: inline-block;
+    min-width: 48px;
+    color: var(--pfm-text-emphasis);
+    font-weight: 500;
+    margin-right: 4px;
+}
+
+.pfm-buyer--editing .pfm-buyer__avatar {
+    opacity: 0.6;
+}
+
 .pfm-buyer__actions {
     display: flex;
     gap: 6px;
