@@ -25,18 +25,56 @@ $mainContact = Db::one(
     [$session->clientId]
 );
 
-// Prefill priority: draft_data > existing DB row > empty
+// Prefill priority — each field falls through this chain in order:
+//   1. draft_data.contact value (so partial edits survive a refresh)
+//   2. members main_contact row value
+//   3. clients.main_contact_* column (legacy storage, written by the
+//      existing PFM admin form_clients_staff)
+//   4. empty string
 //
-// title comes from clients.main_contact_title (not from the members
-// row — that table doesn't have a title column). Added 2026-06-17
-// per Larissa's request to capture the main contact's title (Owner,
-// Administrator, etc.) during renewal.
+// The ?? null-coalesce was widening the wrong way here: if Step 3's
+// auto-save fired with a cleared email field, draft_data.contact.email
+// became '' (empty string, NOT null), and ?? happily returned the
+// empty string instead of falling through to the DB. User's manual
+// test on 2026-06-17 hit this exact scenario — members.email had
+// the right address but the form rendered blank because the draft
+// blanked it. Switched to a helper that treats empty string as
+// missing, matching the user's expectation that a refresh shouldn't
+// wipe a field that was filled in the existing record.
+//
+// title comes from clients.main_contact_title (the members row has
+// no title column). Added 2026-06-17 per Larissa's request to capture
+// the main contact's title (Owner / Administrator / etc.) during
+// renewal.
 $draftContact = $session->draftData['contact'] ?? [];
+$pick = static function (...$candidates): string {
+    foreach ($candidates as $v) {
+        if ($v !== null && $v !== '') {
+            return (string) $v;
+        }
+    }
+    return '';
+};
 $values = [
-    'name'  => $draftContact['name']  ?? $mainContact['member_name']  ?? '',
-    'email' => $draftContact['email'] ?? $mainContact['email']        ?? '',
-    'phone' => $draftContact['phone'] ?? $mainContact['phone1']       ?? '',
-    'title' => $draftContact['title'] ?? $client['main_contact_title'] ?? '',
+    'name'  => $pick(
+        $draftContact['name']  ?? null,
+        $mainContact['member_name'] ?? null,
+        $client['main_contact_name'] ?? null
+    ),
+    'email' => $pick(
+        $draftContact['email'] ?? null,
+        $mainContact['email']  ?? null,
+        $client['main_contact_email'] ?? null
+    ),
+    'phone' => $pick(
+        $draftContact['phone'] ?? null,
+        $mainContact['phone1'] ?? null,
+        $client['main_contact_phone'] ?? null
+    ),
+    'title' => $pick(
+        $draftContact['title'] ?? null,
+        $client['main_contact_title'] ?? null
+    ),
 ];
 
 // ── ID document state — three possible cases ───────────────────────
