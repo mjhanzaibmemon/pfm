@@ -174,16 +174,26 @@ require __DIR__ . '/../_includes/progress-bar.php';
     </h3>
 
     <?php if ($hasLegacyId && !$uploaded): ?>
-        <!-- Case 2: legacy ID on file — show as a carry-over badge -->
+        <!-- Case 2: legacy ID on file — show as a carry-over badge + View link -->
         <div class="pfm-alert pfm-alert--success">
-            <strong>ID on file:</strong>
-            <span style="font-family:monospace;"><?= htmlspecialchars($legacyIdName) ?></span>
-            <?php if ($legacyIdSize > 0): ?>
-                <span class="pfm-text-muted">(<?= number_format($legacyIdSize / 1024, 0) ?>&nbsp;KB)</span>
-            <?php endif; ?>
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <div style="flex:1; min-width:200px;">
+                    <strong>ID on file:</strong>
+                    <span style="font-family:monospace;"><?= htmlspecialchars($legacyIdName) ?></span>
+                    <?php if ($legacyIdSize > 0): ?>
+                        <span class="pfm-text-muted">(<?= number_format($legacyIdSize / 1024, 0) ?>&nbsp;KB)</span>
+                    <?php endif; ?>
+                </div>
+                <a class="pfm-btn pfm-btn--ghost pfm-btn--sm"
+                   href="/renewal_v2/public/api/view-document.php?token=<?= urlencode($session->token) ?>&amp;key=legacy_main_contact_id"
+                   target="_blank" rel="noopener">
+                    View &nearr;
+                </a>
+            </div>
             <p class="pfm-mt-0" style="margin-bottom:0;">
                 You don't need to re-upload your ID unless it has changed since your
-                last renewal. To replace it, drop a new file below.
+                last renewal. Use the View button above to check which file we have on
+                file, then drop a new file below if it needs replacing.
             </p>
         </div>
     <?php else: ?>
@@ -208,6 +218,9 @@ require __DIR__ . '/../_includes/progress-bar.php';
                 <span>&#128206;</span>
                 <span class="pfm-file__name"><?= htmlspecialchars($uploaded['original_name']) ?></span>
                 <span class="pfm-file__meta"><?= number_format(($uploaded['size'] ?? 0) / 1024, 0) ?>&nbsp;KB</span>
+                <a class="pfm-btn pfm-btn--ghost pfm-btn--sm"
+                   href="/renewal_v2/public/api/view-document.php?token=<?= urlencode($session->token) ?>&amp;key=<?= urlencode($idKey) ?>"
+                   target="_blank" rel="noopener">View &nearr;</a>
                 <button type="button" class="pfm-btn pfm-btn--danger pfm-btn--sm" data-pfm-delete-id>Remove</button>
             </li>
         <?php endif; ?>
@@ -278,10 +291,15 @@ require __DIR__ . '/../_includes/progress-bar.php';
         PFM.api.upload(file, idKey)
             .then(function (data) {
                 hasIdUploaded = true;
+                var viewHref = '/renewal_v2/public/api/view-document.php?token=' +
+                    encodeURIComponent(<?= json_encode($session->token) ?>) +
+                    '&key=' + encodeURIComponent(idKey);
                 fileList.innerHTML = '<li class="pfm-file" data-id-uploaded="1">' +
                     '<span>&#128206;</span>' +
                     '<span class="pfm-file__name">' + escapeHtml(data.original_name) + '</span>' +
                     '<span class="pfm-file__meta">' + PFM.format.bytes(data.size) + '</span>' +
+                    '<a class="pfm-btn pfm-btn--ghost pfm-btn--sm" target="_blank" rel="noopener" href="' +
+                        escapeHtml(viewHref) + '">View &nearr;</a>' +
                     '<button type="button" class="pfm-btn pfm-btn--danger pfm-btn--sm" data-pfm-delete-id>Remove</button>' +
                 '</li>';
                 bindDelete();

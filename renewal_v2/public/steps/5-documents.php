@@ -32,6 +32,18 @@ foreach ($allDocs as $k => $d) {
 
 $customerNote = $session->draftData['customer_note'] ?? '';
 
+// Reusable inline helper: build a "View" link for one uploaded doc.
+// Added 2026-06-17 per user feedback — the customer needs a way to
+// open a document they previously uploaded so they can tell whether
+// it still applies or needs to be replaced. Streams via the new
+// public/api/view-document.php endpoint, which auths on the renewal
+// token already in the URL.
+$viewLink = static function (string $key) use ($session): string {
+    return '/renewal_v2/public/api/view-document.php?token='
+         . urlencode($session->token)
+         . '&key=' . urlencode($key);
+};
+
 require __DIR__ . '/../_includes/header.php';
 require __DIR__ . '/../_includes/progress-bar.php';
 ?>
@@ -53,6 +65,9 @@ require __DIR__ . '/../_includes/progress-bar.php';
                 <span>&#128206;</span>
                 <span class="pfm-file__name"><?= htmlspecialchars($idDoc['original_name']) ?></span>
                 <span class="pfm-file__meta"><?= number_format(($idDoc['size'] ?? 0) / 1024, 0) ?>&nbsp;KB</span>
+                <a class="pfm-btn pfm-btn--ghost pfm-btn--sm"
+                   href="<?= htmlspecialchars($viewLink($idDocKey), ENT_QUOTES) ?>"
+                   target="_blank" rel="noopener">View &nearr;</a>
                 <span class="pfm-text-muted" style="font-size: 0.8rem;">Uploaded in Step 3</span>
             </li>
         </ul>
@@ -81,6 +96,9 @@ require __DIR__ . '/../_includes/progress-bar.php';
                 <span>&#128206;</span>
                 <span class="pfm-file__name"><?= htmlspecialchars($businessDoc['original_name']) ?></span>
                 <span class="pfm-file__meta"><?= number_format(($businessDoc['size'] ?? 0) / 1024, 0) ?>&nbsp;KB</span>
+                <a class="pfm-btn pfm-btn--ghost pfm-btn--sm"
+                   href="<?= htmlspecialchars($viewLink($businessKey), ENT_QUOTES) ?>"
+                   target="_blank" rel="noopener">View &nearr;</a>
                 <button type="button" class="pfm-btn pfm-btn--danger pfm-btn--sm"
                         data-pfm-delete-doc="<?= htmlspecialchars($businessKey) ?>">Remove</button>
             </li>
@@ -105,6 +123,9 @@ require __DIR__ . '/../_includes/progress-bar.php';
                 <span>&#128206;</span>
                 <span class="pfm-file__name"><?= htmlspecialchars($d['original_name']) ?></span>
                 <span class="pfm-file__meta"><?= number_format(($d['size'] ?? 0) / 1024, 0) ?>&nbsp;KB</span>
+                <a class="pfm-btn pfm-btn--ghost pfm-btn--sm"
+                   href="<?= htmlspecialchars($viewLink($k), ENT_QUOTES) ?>"
+                   target="_blank" rel="noopener">View &nearr;</a>
                 <button type="button" class="pfm-btn pfm-btn--danger pfm-btn--sm"
                         data-pfm-delete-doc="<?= htmlspecialchars($k, ENT_QUOTES) ?>">Remove</button>
             </li>
@@ -217,9 +238,14 @@ require __DIR__ . '/../_includes/progress-bar.php';
                     var li = document.createElement('li');
                     li.className = 'pfm-file';
                     li.setAttribute('data-extra-key', data.key);
+                    var viewHref = '/renewal_v2/public/api/view-document.php?token=' +
+                        encodeURIComponent(<?= json_encode($session->token) ?>) +
+                        '&key=' + encodeURIComponent(data.key);
                     li.innerHTML = '<span>&#128206;</span>' +
                         '<span class="pfm-file__name">' + escapeHtml(data.original_name) + '</span>' +
                         '<span class="pfm-file__meta">' + PFM.format.bytes(data.size) + '</span>' +
+                        '<a class="pfm-btn pfm-btn--ghost pfm-btn--sm" target="_blank" rel="noopener" href="' +
+                            escapeHtml(viewHref) + '">View &nearr;</a>' +
                         '<button type="button" class="pfm-btn pfm-btn--danger pfm-btn--sm" data-pfm-delete-doc="' + data.key + '">Remove</button>';
                     // Replace existing entry with same key, else append
                     var existing = listEl.querySelector('[data-extra-key="' + data.key + '"]');
