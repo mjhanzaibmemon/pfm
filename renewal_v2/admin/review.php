@@ -28,6 +28,7 @@ require_once __DIR__ . '/../lib/Db.php';
 require_once __DIR__ . '/../lib/RenewalSession.php';
 require_once __DIR__ . '/../lib/PhoneFormat.php';
 require_once __DIR__ . '/../lib/DocumentUpload.php';
+require_once __DIR__ . '/../lib/BuyerManager.php';
 require_once __DIR__ . '/_includes/admin_layout.php';
 
 // PHP session is needed for CSRF token used by the confirm form below
@@ -83,14 +84,15 @@ $client = Db::one(
     [$session->clientId]
 ) ?? [];
 
-$activeBuyers = Db::all(
-    'SELECT member_id, member_name, email, phone1
-       FROM members
-      WHERE client_id = ? AND (main_contact IS NULL OR main_contact = \'\' OR main_contact = 0)
-        AND (include IS NULL OR include != 0)
-      ORDER BY member_id',
-    [$session->clientId]
-);
+// Use BuyerManager::getActive() instead of an inline query so the
+// admin review panel always matches what the customer sees on Step 4
+// of the wizard. The inline query that was here used the legacy
+// `include` BIT filter — that hid the admin-added buyers (whose
+// include defaults to b'0') that migration 006 specifically fixed
+// on the wizard side. User's manual test on 2026-06-19 (client
+// 737831, "Test Member 20-Jun-2026") showed Step 4 with 3 active
+// buyers but admin review claiming only 1.
+$activeBuyers = BuyerManager::getActive($session->clientId);
 
 // Mark "reviewed" the first time someone opens this page. Idempotent.
 $session->markAdminReviewed();
