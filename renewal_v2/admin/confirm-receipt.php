@@ -187,26 +187,34 @@ try {
 
     // 5d. Advance the member's membership cycle (the actual "renewal"
     //     effect that removes them from the Renewing Active grid and
-    //     gives them another year). Per Muhammad's product decision
-    //     (confirmed 2026-06-10):
+    //     gives them another year). Per Larissa's 2026-06-10 reply:
     //       - memb_status_id is set authoritatively to 3 (Active) — this
     //         flips the status from 9 (Renewing Active) back to normal.
     //         We set it unconditionally rather than only-if-9 because
     //         Confirm Receipt is the staff's explicit "this member is
     //         good" action; whatever the prior state, we want Active.
-    //       - renewal_date is advanced by 1 calendar year from its OWN
-    //         current value (NOT from today). This keeps the yearly
-    //         cycle stable — a member who renews 10 days late doesn't
-    //         get 10 free days; their next due date stays on the same
-    //         anniversary. If renewal_date is NULL (rare — legacy data
-    //         hole), we skip the date bump so we don't store a NULL+1Y
-    //         garbage value; staff can then set it manually via the
-    //         edit form.
+    //       - renewal_date math follows Larissa's 90-day split:
+    //           * If expiration_date is 90 days or less in the past
+    //             (or in the future), renewal_date advances 1 year
+    //             from its OWN current value — keeping the yearly
+    //             anniversary stable so on-time renewers don't drift.
+    //           * If expiration_date is more than 90 days in the past,
+    //             renewal_date is reset to today + 1 year — so a
+    //             months-late renewal doesn't immediately re-expire
+    //             after a few weeks. Mirrors the >90-day staff-handling
+    //             gate on Step 1 of the wizard so the rule is applied
+    //             consistently from both sides.
+    //         If renewal_date is NULL (rare legacy hole), we skip the
+    //         date bump rather than store NULL+1Y garbage; staff can
+    //         set it manually via the edit form.
     $pdo->prepare(
         'UPDATE clients
             SET memb_status_id = 3,
                 renewal_date   = CASE
                                    WHEN renewal_date IS NULL THEN renewal_date
+                                   WHEN expiration_date IS NOT NULL
+                                        AND DATEDIFF(CURDATE(), expiration_date) > 90
+                                     THEN DATE_ADD(CURDATE(), INTERVAL 1 YEAR)
                                    ELSE DATE_ADD(renewal_date, INTERVAL 1 YEAR)
                                  END
           WHERE client_id = ?'

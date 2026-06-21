@@ -18,17 +18,21 @@ $PFM_REQUIRES   = 'draft';
 require __DIR__ . '/../_includes/step_bootstrap.php';
 
 // ── Determine renewal display data from existing membership ────────
-// `clients` holds the renewal_date which we extend by one year for
-// standard renewals.
+// `clients` holds the renewal_date and expiration_date which we use
+// to render the customer's current cycle and compute the new
+// renewal_date after this renewal.
 //
-// NOTE: An earlier draft of this step blocked customers whose membership
-// had been expired for more than 90 days, sending them to a "contact
-// staff" message. That threshold was an interpretation I added in the
-// v3 spec but Larissa never explicitly confirmed it. Per her actual
-// instruction ("standard renewal extends +1 year, same month/day"),
-// every customer is allowed to self-serve. We will reconfirm the
-// staff-only threshold with her at demo time and reintroduce it here
-// if she wants it back.
+// >90-day staff-handling gate: per Larissa's 2026-06-10 reply
+// ("If a membership is more than 90 days expired, the customer
+// should be directed to contact PFM staff before renewing."),
+// customers whose expiration_date is more than 90 days in the past
+// see a contact-staff message instead of the wizard.
+//
+// The same threshold is mirrored on the Confirm Receipt side
+// (admin/confirm-receipt.php) where it switches the new renewal_date
+// from "old + 1 year" to "today + 1 year" when the same condition
+// holds — keeping the gate and the renewal-date math on the same
+// 90-day rule.
 $statusRow = Db::one(
     'SELECT c.memb_status_id, c.renewal_date, c.expiration_date
        FROM clients c
@@ -46,12 +50,19 @@ if ($statusRow && !empty($statusRow['expiration_date'])) {
     }
 }
 
-// Standard renewal: extend renewal_date by +1 year (same month/day)
+$blockedTooExpired = ($daysSinceExpiry !== null && $daysSinceExpiry > 90);
+
+// Standard renewal: extend renewal_date by +1 year (same month/day).
+// When the >90-day gate fires, this preview value is replaced below by
+// "today + 1 year" so the customer doesn't see a misleading old date.
 if (!empty($statusRow['renewal_date'])) {
     $renewalTs = strtotime((string) $statusRow['renewal_date']);
     if ($renewalTs !== false) {
         $newRenewalDate = date('F j, Y', strtotime('+1 year', $renewalTs));
     }
+}
+if ($blockedTooExpired) {
+    $newRenewalDate = date('F j, Y', strtotime('+1 year'));
 }
 
 // Membership level name (display only)
@@ -90,29 +101,56 @@ require __DIR__ . '/../_includes/progress-bar.php';
         </div>
     </div>
 
-    <?php if ($daysSinceExpiry !== null && $daysSinceExpiry > 0): ?>
+    <?php if ($blockedTooExpired): ?>
+        <div class="pfm-alert pfm-alert--warning">
+            <strong>Your membership has been expired for <?= (int) $daysSinceExpiry ?> days.</strong>
+            <p class="pfm-mt-1 pfm-mb-0">
+                Memberships more than 90 days past expiration cannot be
+                renewed online &mdash; please contact PFM staff and they
+                will help you complete the renewal.
+            </p>
+        </div>
+
+        <div class="pfm-card pfm-mt-2" style="background: #f8f9fa;">
+            <h3 class="pfm-mt-0">Contact PFM staff</h3>
+            <p class="pfm-mb-1">
+                <strong>Phone:</strong>
+                <a href="tel:+15032891500">503-289-1500</a>
+            </p>
+            <p class="pfm-mb-0">
+                <strong>Email:</strong>
+                <a href="mailto:info@ofgaflowers.com">info@ofgaflowers.com</a>
+            </p>
+        </div>
+    <?php elseif ($daysSinceExpiry !== null && $daysSinceExpiry > 0): ?>
         <div class="pfm-alert pfm-alert--info">
             Your membership is currently <strong><?= (int) $daysSinceExpiry ?> day(s) past its expiration</strong>.
             You can renew online below.
         </div>
     <?php endif; ?>
 
-    <p>
-        This renewal takes about <strong>5&ndash;10 minutes</strong>. You'll confirm your
-        organisation details, your main contact, your list of buyers, upload any required documents,
-        and then complete payment securely through Stripe.
-    </p>
-    <p class="pfm-text-muted">
-        Your progress is auto-saved as you go, so you can close this window and return any time
-        within 30 days using the link from your renewal email.
-    </p>
+    <?php if (!$blockedTooExpired): ?>
+        <p>
+            This renewal takes about <strong>5&ndash;10 minutes</strong>. You'll confirm your
+            organisation details, your main contact, your list of buyers, upload any required documents,
+            and then complete payment securely through Stripe.
+        </p>
+        <p class="pfm-text-muted">
+            Your progress is auto-saved as you go, so you can close this window and return any time
+            within 30 days using the link from your renewal email.
+        </p>
+    <?php endif; ?>
 </div>
 
 <div class="pfm-nav">
     <span></span>
-    <a href="<?= htmlspecialchars(pfm_step_url(2)) ?>" class="pfm-btn pfm-btn--primary pfm-btn--lg">
-        Begin renewal &rarr;
-    </a>
+    <?php if ($blockedTooExpired): ?>
+        <span class="pfm-text-muted"><em>Online renewal unavailable &mdash; please contact PFM staff.</em></span>
+    <?php else: ?>
+        <a href="<?= htmlspecialchars(pfm_step_url(2)) ?>" class="pfm-btn pfm-btn--primary pfm-btn--lg">
+            Begin renewal &rarr;
+        </a>
+    <?php endif; ?>
 </div>
 
 <?php require __DIR__ . '/../_includes/footer.php'; ?>
