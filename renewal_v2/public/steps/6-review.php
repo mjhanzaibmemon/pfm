@@ -38,15 +38,51 @@ $mainContact = Db::one(
 );
 
 $effOrg = [
-    'co_name'          => $draftOrg['co_name']          ?? $client['co_name']          ?? '',
-    'business_type'    => $draftOrg['business_type']    ?? $client['business_type']    ?? '',
-    'business_license' => $draftOrg['business_license'] ?? $client['business_license'] ?? '',
+    'co_name'         => $draftOrg['co_name']         ?? $client['co_name']         ?? '',
+    'bus_cat_id'      => (int) ($draftOrg['bus_cat_id']    ?? $client['bus_cat_id']    ?? 0),
+    'bus_subcat_id'   => (int) ($draftOrg['bus_subcat_id'] ?? $client['bus_subcat_id'] ?? 0),
+    'mailing_address' => $draftOrg['mailing_address'] ?? $client['mailing_address'] ?? '',
+    'city'            => $draftOrg['city']            ?? $client['city']            ?? '',
+    'state'           => $draftOrg['state']           ?? $client['state']           ?? '',
+    'zip_code'        => $draftOrg['zip_code']        ?? $client['zip_code']        ?? '',
+    'website_url'     => $draftOrg['website_url']     ?? $client['website_url']     ?? '',
+    'acct_instagram'  => $draftOrg['acct_instagram']  ?? $client['acct_instagram']  ?? '',
+    'acct_facebook'   => $draftOrg['acct_facebook']   ?? $client['acct_facebook']   ?? '',
 ];
 $effContact = [
-    'name'  => $draftContact['name']  ?? $mainContact['member_name'] ?? '',
-    'email' => $draftContact['email'] ?? $mainContact['email']       ?? '',
-    'phone' => $draftContact['phone'] ?? $mainContact['phone1']      ?? '',
+    'name'  => $draftContact['name']  ?? $mainContact['member_name']       ?? '',
+    'email' => $draftContact['email'] ?? $mainContact['email']             ?? '',
+    'phone' => $draftContact['phone'] ?? $mainContact['phone1']            ?? '',
+    'title' => $draftContact['title'] ?? $client['main_contact_title']     ?? '',
 ];
+
+// Look up the category / subcategory display labels — same source the
+// wizard's Step 2 dropdowns pull from (bus_categories + bus_subcats).
+$busCatName    = '';
+$busSubcatName = '';
+if ($effOrg['bus_cat_id'] > 0) {
+    $row = Db::one(
+        'SELECT bus_cat FROM bus_categories WHERE bus_cat_id = ?',
+        [$effOrg['bus_cat_id']]
+    );
+    $busCatName = (string) ($row['bus_cat'] ?? '');
+}
+if ($effOrg['bus_subcat_id'] > 0) {
+    $row = Db::one(
+        'SELECT bus_subcategory FROM bus_subcats WHERE bus_subcat_id = ?',
+        [$effOrg['bus_subcat_id']]
+    );
+    $busSubcatName = (string) ($row['bus_subcategory'] ?? '');
+}
+
+// Compose the single-line mailing-address string used in the review row.
+$mailingParts = array_filter([
+    trim((string) $effOrg['mailing_address']),
+    trim((string) $effOrg['city']),
+    trim((string) $effOrg['state']),
+    trim((string) $effOrg['zip_code']),
+], static fn($v) => $v !== '');
+$mailingLine  = $mailingParts ? implode(', ', $mailingParts) : '';
 
 // ── Pricing breakdown ───────────────────────────────────────────────
 try {
@@ -80,13 +116,35 @@ require __DIR__ . '/../_includes/progress-bar.php';
                 <div class="pfm-review__val"><?= htmlspecialchars($effOrg['co_name'] ?: '—') ?></div>
             </div>
             <div class="pfm-review__row">
-                <div class="pfm-review__key">Business type</div>
-                <div class="pfm-review__val"><?= htmlspecialchars($effOrg['business_type'] ?: '—') ?></div>
+                <div class="pfm-review__key">Business category</div>
+                <div class="pfm-review__val">
+                    <?php
+                        $catLine = trim($busCatName);
+                        if ($busSubcatName !== '') {
+                            $catLine = $catLine !== '' ? "{$catLine} &mdash; {$busSubcatName}" : $busSubcatName;
+                        }
+                        echo $catLine !== '' ? $catLine : '—';
+                    ?>
+                </div>
             </div>
             <div class="pfm-review__row">
-                <div class="pfm-review__key">Business license #</div>
-                <div class="pfm-review__val"><?= htmlspecialchars($effOrg['business_license'] ?: '—') ?></div>
+                <div class="pfm-review__key">Mailing address</div>
+                <div class="pfm-review__val"><?= htmlspecialchars($mailingLine ?: '—') ?></div>
             </div>
+            <?php if ($effOrg['website_url'] !== '' || $effOrg['acct_instagram'] !== '' || $effOrg['acct_facebook'] !== ''): ?>
+            <div class="pfm-review__row">
+                <div class="pfm-review__key">Online presence</div>
+                <div class="pfm-review__val">
+                    <?php
+                        $links = [];
+                        if ($effOrg['website_url']    !== '') { $links[] = 'Website: '   . htmlspecialchars($effOrg['website_url']); }
+                        if ($effOrg['acct_instagram'] !== '') { $links[] = 'Instagram: ' . htmlspecialchars($effOrg['acct_instagram']); }
+                        if ($effOrg['acct_facebook']  !== '') { $links[] = 'Facebook: '  . htmlspecialchars($effOrg['acct_facebook']); }
+                        echo implode('<br>', $links);
+                    ?>
+                </div>
+            </div>
+            <?php endif; ?>
         </section>
 
         <!-- Main Contact -->
@@ -98,6 +156,10 @@ require __DIR__ . '/../_includes/progress-bar.php';
             <div class="pfm-review__row">
                 <div class="pfm-review__key">Name</div>
                 <div class="pfm-review__val"><?= htmlspecialchars($effContact['name'] ?: '—') ?></div>
+            </div>
+            <div class="pfm-review__row">
+                <div class="pfm-review__key">Title</div>
+                <div class="pfm-review__val"><?= htmlspecialchars($effContact['title'] ?: '—') ?></div>
             </div>
             <div class="pfm-review__row">
                 <div class="pfm-review__key">Email</div>
