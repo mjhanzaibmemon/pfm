@@ -23,10 +23,17 @@ require_once RNW_ROOT . '/lib/RenewalSession.php';
 require_once RNW_ROOT . '/config/config.php';
 
 // ── Session setup ────────────────────────────────────────────────────
+//
+// Unique session_name() so the wizard's cookie can't collide with the
+// existing PFM admin's PHPSESSID (legacy ScriptCase sets that one with
+// path=/). Same rationale as step_bootstrap.php / api_bootstrap.php —
+// without this, staff who use both the wizard and /renewal_v2/admin/
+// see "bar bar logout" on the admin pages (2026-06-19 report).
 $sessionSavePath = RNW_ROOT . '/storage/sessions';
 if (is_dir($sessionSavePath)) {
     session_save_path($sessionSavePath);
 }
+session_name('PFMRNW_WIZ');
 session_set_cookie_params([
     'lifetime' => 0,
     'path'     => '/renewal_v2/',

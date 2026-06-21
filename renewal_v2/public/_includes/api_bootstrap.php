@@ -28,11 +28,18 @@ header('Cache-Control: no-store, no-cache, must-revalidate');
 header('X-Content-Type-Options: nosniff');
 
 // PHP session (stored in storage/sessions/ — not web-accessible)
+//
+// Unique session_name() so the wizard's cookie can't collide with the
+// existing PFM admin's PHPSESSID (legacy ScriptCase sets that one with
+// path=/). Same rationale as step_bootstrap.php / index.php — without
+// this, staff who use both the wizard and /renewal_v2/admin/ see
+// "bar bar logout" on the admin pages (2026-06-19 report).
 $sessionSavePath = RNW_ROOT . '/storage/sessions';
 if (is_dir($sessionSavePath)) {
     session_save_path($sessionSavePath);
 }
 if (session_status() === PHP_SESSION_NONE) {
+    session_name('PFMRNW_WIZ');
     session_set_cookie_params([
         'lifetime' => 0,
         'path'     => '/renewal_v2/',

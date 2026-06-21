@@ -29,11 +29,21 @@ require_once RNW_ROOT . '/lib/DocumentUpload.php';
 require_once RNW_ROOT . '/lib/StripeClient.php';
 
 // ── Session setup (must match index.php / api_bootstrap.php) ────────
+//
+// Unique session_name() so the wizard's PHPSESSID cookie can't collide
+// with the existing PFM admin's PHPSESSID (which the legacy ScriptCase
+// app sets with path=/). Without this, a user who visits the wizard
+// and then the /renewal_v2/admin/ dashboard would have TWO PHPSESSID
+// cookies for the same name — PHP could only resolve one of them, and
+// the dashboard would lose its session on every navigation (user
+// reported "bar bar logout" on 2026-06-19). Unique name = clean
+// separation, no cookie shadowing.
 $pfmSessionDir = RNW_ROOT . '/storage/sessions';
 if (is_dir($pfmSessionDir)) {
     session_save_path($pfmSessionDir);
 }
 if (session_status() === PHP_SESSION_NONE) {
+    session_name('PFMRNW_WIZ');
     session_set_cookie_params([
         'lifetime' => 0,
         'path'     => '/renewal_v2/',
