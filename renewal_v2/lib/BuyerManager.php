@@ -281,47 +281,51 @@ class BuyerManager
     }
 
     /**
-     * Hard-delete buyers that were ADDED and then REMOVED inside the same
-     * wizard session, plus their renewal_changes log entries. Called from
+     * Hard-delete every buyer the customer marked as removed in this
+     * session's wizard run, so the legacy PFM admin CURRENT BUYERS grid
+     * matches what the customer actually decided. Called from
      * submit-application.php right before the session transitions to
      * 'submitted' so the cleanup happens once per renewal.
      *
-     * Why: the customer's intent for an "added then removed in the same
-     * sitting" buyer is that the buyer never existed. The wizard treats it
-     * as removed (wizard_removed_at NOT NULL filters it out everywhere
-     * BuyerManager::getActive is used). The legacy PFM admin CURRENT
-     * BUYERS subgrid, however, doesn't know about wizard_removed_at and
-     * isn't safe to modify on the admin side, so we satisfy it by deleting
-     * the row outright — the audit trail still survives via the B1-a
-     * renewal-history note written at Confirm Receipt, which captures the
-     * net effect rather than each intra-session toggle.
+     * Why hard delete (and not just the wizard_removed_at + include = b'0'
+     * flags set by remove()): the legacy form_clients_staff CURRENT
+     * BUYERS subgrid doesn't filter on either flag — it lists every
+     * members row for the client_id. Larissa's Phase 6 round-1 intent
+     * ("customer can remove buyers no longer active") is only achieved
+     * if the row is gone from that grid too, otherwise staff see
+     * "phantom" rows with empty fields that the customer has already
+     * declared inactive, which is exactly the duplicate / clutter
+     * problem the rebuild is meant to fix. Touching the legacy admin
+     * grid SQL was off the table, so the row deletion happens
+     * customer-side instead.
      *
-     * Pre-existing buyers (admin-added or carried from earlier renewals)
-     * that the customer removes are NOT touched here — they keep the
-     * wizard_removed_at + include=0 flags from remove() so the legacy
-     * staff workflow can still see they were on file at one point.
+     * Two cases:
+     *   - Same-session ghost (ADDED and REMOVED both logged on this
+     *     session): wipe ALL log entries for this member_id so the
+     *     Changes Summary and B1-a renewal-history note stay clean —
+     *     a buyer that never made it past the wizard isn't worth a
+     *     line in either place.
+     *   - Pre-existing buyer (no ADDED entry on this session, just a
+     *     REMOVED entry): KEEP the CHANGE_BUYER_REMOVED log entry so
+     *     the B1-a note can report "Removed: {old_value}" with the
+     *     buyer's name (which was captured in old_value at remove()
+     *     time, doesn't depend on the now-deleted members row).
+     *
+     * renewal_changes.target_id has no FK to members so a deleted
+     * member_id is harmless — the log row remains intact.
      *
      * Idempotent and safe to re-run.
      */
-    public static function pruneSameSessionAddRemove(int $sessionId): void
+    public static function purgeRemovedBuyers(int $sessionId): void
     {
-        // Find member_ids that have BOTH an ADDED and a REMOVED log entry
-        // for this session — these are the same-session toggles.
+        // Find every member_id this session marked as removed.
         $rows = Db::all(
-            "SELECT DISTINCT a.target_id AS member_id
-               FROM renewal_changes a
-               JOIN renewal_changes r
-                 ON r.session_id = a.session_id
-                AND r.target_id  = a.target_id
-                AND r.change_type = ?
-              WHERE a.session_id  = ?
-                AND a.change_type = ?
-                AND a.target_id IS NOT NULL",
-            [
-                RenewalSession::CHANGE_BUYER_REMOVED,
-                $sessionId,
-                RenewalSession::CHANGE_BUYER_ADDED,
-            ]
+            "SELECT DISTINCT target_id AS member_id
+               FROM renewal_changes
+              WHERE session_id  = ?
+                AND change_type = ?
+                AND target_id IS NOT NULL",
+            [$sessionId, RenewalSession::CHANGE_BUYER_REMOVED]
         );
 
         foreach ($rows as $row) {
@@ -331,8 +335,9 @@ class BuyerManager
             }
 
             // Belt-and-suspenders: only hard-delete if the row is STILL
-            // wizard-removed (customer may have hit Restore after toggling,
-            // in which case we want to keep it).
+            // wizard-removed (customer may have hit Restore after
+            // toggling, in which case we want to keep both the row and
+            // the matching ADDED-via-restore log entry).
             $stillRemoved = (int) Db::scalar(
                 "SELECT COUNT(*) FROM members
                   WHERE member_id = ? AND wizard_removed_at IS NOT NULL",
@@ -342,15 +347,26 @@ class BuyerManager
                 continue;
             }
 
-            // Drop every log entry tied to this member_id (covers ADDED,
-            // REMOVED, plus any MODIFIED rows from intra-session edits) so
-            // the Changes Summary on admin/review.php doesn't surface an
-            // add/remove pair for a buyer that no longer exists.
-            Db::exec(
-                "DELETE FROM renewal_changes
-                  WHERE session_id = ? AND target_id = ?",
-                [$sessionId, $memberId]
+            // Was this buyer ADDED in this same session? If yes, it's a
+            // same-session ghost — drop every log entry so neither the
+            // Changes Summary nor the B1-a note mentions a buyer who
+            // never actually existed for staff. If no, the buyer is
+            // pre-existing and we keep the REMOVED log entry for audit.
+            $wasAddedHere = (int) Db::scalar(
+                "SELECT COUNT(*) FROM renewal_changes
+                  WHERE session_id = ? AND target_id = ? AND change_type = ?",
+                [$sessionId, $memberId, RenewalSession::CHANGE_BUYER_ADDED]
             );
+
+            if ($wasAddedHere > 0) {
+                Db::exec(
+                    "DELETE FROM renewal_changes
+                      WHERE session_id = ? AND target_id = ?",
+                    [$sessionId, $memberId]
+                );
+            }
+            // else: pre-existing — REMOVED log entry stays so B1-a
+            // can report "Removed: <buyer name>" using its old_value.
 
             Db::exec(
                 "DELETE FROM members WHERE member_id = ?",
