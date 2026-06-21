@@ -252,8 +252,22 @@ class BuyerManager
             return;
         }
 
+        // Flag the row as wizard-removed in BOTH columns:
+        //   - `wizard_removed_at` — the canonical wizard-side flag used by
+        //     getActive() (mirrored on admin/review.php's "Active buyers"
+        //     panel).
+        //   - legacy `include = b'0'` — defensive sync so any consumer that
+        //     still reads the BIT field (existing PFM admin views, exports,
+        //     other ScriptCase grids) sees a consistent removed state.
+        // Buyers that the customer added AND removed in the same wizard
+        // session get hard-deleted later by pruneSameSessionAddRemove()
+        // on submit so the legacy CURRENT BUYERS subgrid doesn't keep an
+        // orphan with empty fields.
         Db::exec(
-            "UPDATE members SET wizard_removed_at = NOW() WHERE member_id = ?",
+            "UPDATE members
+                SET wizard_removed_at = NOW(),
+                    include           = b'0'
+              WHERE member_id = ?",
             [$memberId]
         );
 
@@ -264,6 +278,85 @@ class BuyerManager
             $buyer['member_name'],
             null
         );
+    }
+
+    /**
+     * Hard-delete buyers that were ADDED and then REMOVED inside the same
+     * wizard session, plus their renewal_changes log entries. Called from
+     * submit-application.php right before the session transitions to
+     * 'submitted' so the cleanup happens once per renewal.
+     *
+     * Why: the customer's intent for an "added then removed in the same
+     * sitting" buyer is that the buyer never existed. The wizard treats it
+     * as removed (wizard_removed_at NOT NULL filters it out everywhere
+     * BuyerManager::getActive is used). The legacy PFM admin CURRENT
+     * BUYERS subgrid, however, doesn't know about wizard_removed_at and
+     * isn't safe to modify on the admin side, so we satisfy it by deleting
+     * the row outright — the audit trail still survives via the B1-a
+     * renewal-history note written at Confirm Receipt, which captures the
+     * net effect rather than each intra-session toggle.
+     *
+     * Pre-existing buyers (admin-added or carried from earlier renewals)
+     * that the customer removes are NOT touched here — they keep the
+     * wizard_removed_at + include=0 flags from remove() so the legacy
+     * staff workflow can still see they were on file at one point.
+     *
+     * Idempotent and safe to re-run.
+     */
+    public static function pruneSameSessionAddRemove(int $sessionId): void
+    {
+        // Find member_ids that have BOTH an ADDED and a REMOVED log entry
+        // for this session — these are the same-session toggles.
+        $rows = Db::all(
+            "SELECT DISTINCT a.target_id AS member_id
+               FROM renewal_changes a
+               JOIN renewal_changes r
+                 ON r.session_id = a.session_id
+                AND r.target_id  = a.target_id
+                AND r.change_type = ?
+              WHERE a.session_id  = ?
+                AND a.change_type = ?
+                AND a.target_id IS NOT NULL",
+            [
+                RenewalSession::CHANGE_BUYER_REMOVED,
+                $sessionId,
+                RenewalSession::CHANGE_BUYER_ADDED,
+            ]
+        );
+
+        foreach ($rows as $row) {
+            $memberId = (int) $row['member_id'];
+            if ($memberId <= 0) {
+                continue;
+            }
+
+            // Belt-and-suspenders: only hard-delete if the row is STILL
+            // wizard-removed (customer may have hit Restore after toggling,
+            // in which case we want to keep it).
+            $stillRemoved = (int) Db::scalar(
+                "SELECT COUNT(*) FROM members
+                  WHERE member_id = ? AND wizard_removed_at IS NOT NULL",
+                [$memberId]
+            );
+            if ($stillRemoved === 0) {
+                continue;
+            }
+
+            // Drop every log entry tied to this member_id (covers ADDED,
+            // REMOVED, plus any MODIFIED rows from intra-session edits) so
+            // the Changes Summary on admin/review.php doesn't surface an
+            // add/remove pair for a buyer that no longer exists.
+            Db::exec(
+                "DELETE FROM renewal_changes
+                  WHERE session_id = ? AND target_id = ?",
+                [$sessionId, $memberId]
+            );
+
+            Db::exec(
+                "DELETE FROM members WHERE member_id = ?",
+                [$memberId]
+            );
+        }
     }
 
     /**
@@ -305,8 +398,15 @@ class BuyerManager
                 );
             }
 
+            // Mirror the dual-flag write that remove() does: clear the
+            // wizard flag AND flip legacy include back to b'1' so every
+            // consumer (wizard, admin review, legacy admin grids) lands
+            // on the same "active again" state.
             Db::exec(
-                "UPDATE members SET wizard_removed_at = NULL WHERE member_id = ?",
+                "UPDATE members
+                    SET wizard_removed_at = NULL,
+                        include           = b'1'
+                  WHERE member_id = ?",
                 [$memberId]
             );
 

@@ -217,6 +217,14 @@ Db::transaction(function () use ($session, $draft, $customerNote): void {
         }
     }
 
+    // Prune buyers that were ADDED and then REMOVED inside this same
+    // session so the legacy PFM admin CURRENT BUYERS grid doesn't keep
+    // an orphan row with empty fields after submit. Pre-existing buyers
+    // that the customer removed via the wizard are left alone (their
+    // wizard_removed_at + include=b'0' flags stay set). See
+    // BuyerManager::pruneSameSessionAddRemove() for the full rationale.
+    BuyerManager::pruneSameSessionAddRemove($session->id);
+
     // Transition: draft → submitted
     $session->submit($customerNote);
 });
