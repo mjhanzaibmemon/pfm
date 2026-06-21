@@ -500,13 +500,43 @@ $adminTok = htmlspecialchars($session->adminReviewToken ?? '', ENT_QUOTES);
     <?php else: ?>
         <ul style="list-style: none; padding: 0; margin: 0;">
         <?php foreach ($activeBuyers as $buyer): ?>
-            <li style="padding: 8px 0; border-bottom: 1px solid #eef2f7;">
-                <strong><?= htmlspecialchars((string) ($buyer['member_name'] ?? '')) ?></strong>
-                <span class="pfm-text-muted" style="font-size:0.85rem;">
-                    &middot; <?= htmlspecialchars((string) ($buyer['email'] ?? '')) ?>
-                    &middot; <?= htmlspecialchars(pfm_format_phone((string) ($buyer['phone1'] ?? ''))) ?>
-                    &middot; <span style="font-family:monospace;">#<?= (int) $buyer['member_id'] ?></span>
-                </span>
+            <?php
+                $bName  = (string) ($buyer['member_name'] ?? '');
+                $bEmail = (string) ($buyer['email']       ?? '');
+                $bPhone = (string) ($buyer['phone1']      ?? '');
+                $bNote  = (string) ($buyer['note']        ?? '');
+            ?>
+            <li style="padding: 12px 0; border-bottom: 1px solid #eef2f7;">
+                <div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;">
+                    <strong><?= htmlspecialchars($bName !== '' ? $bName : 'Unnamed buyer') ?></strong>
+                    <span class="pfm-text-muted" style="font-family:monospace; font-size:0.8rem;">#<?= (int) $buyer['member_id'] ?></span>
+                </div>
+                <div style="margin-top:4px; font-size:0.9rem;">
+                    <div>
+                        <span class="pfm-text-muted">Email:</span>
+                        <?php if ($bEmail !== ''): ?>
+                            <?= htmlspecialchars($bEmail) ?>
+                        <?php else: ?>
+                            <span class="pfm-text-muted"><em>not provided</em></span>
+                        <?php endif; ?>
+                    </div>
+                    <div>
+                        <span class="pfm-text-muted">Phone:</span>
+                        <?php if ($bPhone !== ''): ?>
+                            <?= htmlspecialchars(pfm_format_phone($bPhone)) ?>
+                        <?php else: ?>
+                            <span class="pfm-text-muted"><em>not provided</em></span>
+                        <?php endif; ?>
+                    </div>
+                    <div>
+                        <span class="pfm-text-muted">Note:</span>
+                        <?php if ($bNote !== ''): ?>
+                            <?= htmlspecialchars($bNote) ?>
+                        <?php else: ?>
+                            <span class="pfm-text-muted"><em>not provided</em></span>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </li>
         <?php endforeach; ?>
         </ul>
