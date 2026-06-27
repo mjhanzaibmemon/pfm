@@ -15,6 +15,7 @@ $PFM_STEP_TITLE = 'Main Contact';
 $PFM_REQUIRES   = 'draft';
 
 require __DIR__ . '/../_includes/step_bootstrap.php';
+require_once __DIR__ . '/../../lib/PhoneFormat.php';
 
 // ── Load existing main contact row ──────────────────────────────────
 $mainContact = Db::one(
@@ -66,11 +67,18 @@ $values = [
         $mainContact['email']  ?? null,
         $client['main_contact_email'] ?? null
     ),
-    'phone' => $pick(
+    // Phone is formatted with pfm_format_phone() so US numbers render in
+    // (XXX) XXX-XXXX form on initial paint, matching what Step 6 and the
+    // admin review screen already show. Non-US numbers (e.g. Pakistani
+    // mobile leading 0) pass through untouched per the formatter's
+    // NANPA-aware rules. The submit handler accepts the formatted value
+    // back unchanged — phone1 storage is varchar(100), and downstream
+    // displays normalise on read.
+    'phone' => pfm_format_phone($pick(
         $draftContact['phone'] ?? null,
         $mainContact['phone1'] ?? null,
         $client['main_contact_phone'] ?? null
-    ),
+    )),
     'title' => $pick(
         $draftContact['title'] ?? null,
         $client['main_contact_title'] ?? null
@@ -255,6 +263,38 @@ require __DIR__ . '/../_includes/progress-bar.php';
 
     // Auto-save contact fields → draft_data.contact.*
     var saver = PFM.autosave.attach(form, { section: 'contact', step: 3 });
+
+    // Live phone formatting on input. Mirrors lib/PhoneFormat.php's
+    // NANPA-aware rule: a clean US 10-digit number (or 11-digit leading
+    // "1") renders as (XXX) XXX-XXXX / 1 (XXX) XXX-XXXX, and anything
+    // else (Pakistani 0…, international formats, partial entries) is
+    // left as-is so the customer's typing doesn't get mangled
+    // mid-stream. Same formatter runs server-side on first paint.
+    var phoneIn = document.getElementById('contact_phone');
+    if (phoneIn) {
+        phoneIn.addEventListener('input', function () {
+            var raw    = phoneIn.value;
+            var digits = raw.replace(/\D/g, '');
+            var formatted;
+            if (digits.length === 10 && digits.charAt(0) >= '2' && digits.charAt(0) <= '9') {
+                formatted = '(' + digits.slice(0, 3) + ') ' + digits.slice(3, 6) + '-' + digits.slice(6);
+            } else if (digits.length === 11 && digits.charAt(0) === '1' && digits.charAt(1) >= '2' && digits.charAt(1) <= '9') {
+                formatted = '1 (' + digits.slice(1, 4) + ') ' + digits.slice(4, 7) + '-' + digits.slice(7);
+            } else {
+                // Partial entry, international, or non-NANPA — leave the
+                // raw input alone so the cursor and user-typed format
+                // stay intact.
+                return;
+            }
+            if (formatted !== raw) {
+                phoneIn.value = formatted;
+                // Cursor at end — phone fields are short enough that
+                // mid-string editing isn't worth the cursor-preservation
+                // complexity.
+                phoneIn.setSelectionRange(formatted.length, formatted.length);
+            }
+        });
+    }
 
     // Drag-drop visual feedback
     ['dragenter', 'dragover'].forEach(function (ev) {
