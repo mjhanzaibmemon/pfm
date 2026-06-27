@@ -89,14 +89,38 @@ class BuyerManager
         // is_active flag is always true here (we only return active rows).
         // is_primary mirrors main_contact for callers that prefer the
         // semantic name (Step 4 UI, admin/review.php).
+        //
+        // For the main_contact=1 row we COALESCE email and phone against
+        // the legacy clients.main_contact_email / .main_contact_phone
+        // mirror columns, because the legacy PFM admin "Add Member" form
+        // doesn't reliably populate members.email / .phone1 for the
+        // primary row — it stamps clients.main_contact_* and leaves the
+        // mirror on members blank. Larissa's 2026-06-27 Round 4 setup hit
+        // exactly that: clients.main_contact_email = mjhanzaibmemon123
+        // @gmail.com, members.email IS NULL, and Step 4's buyer card
+        // rendered "Email: not provided" for the Primary Contact. The
+        // submit handler already mirrors Step 3 edits back into clients
+        // (commit 371cd5c), so reading clients on the way out keeps
+        // every surface (Step 4, Step 6 review, admin/review.php Active
+        // buyers panel) consistent with what staff see in the legacy
+        // edit form — without needing to backfill the underlying members
+        // row.
         $rows = Db::all(
-            "SELECT member_id, member_name, email, phone1, note,
-                    include, main_contact,
+            "SELECT m.member_id, m.member_name,
+                    IF(m.main_contact = b'1',
+                       COALESCE(NULLIF(TRIM(m.email), ''),  c.main_contact_email),
+                       m.email)  AS email,
+                    IF(m.main_contact = b'1',
+                       COALESCE(NULLIF(TRIM(m.phone1), ''), c.main_contact_phone),
+                       m.phone1) AS phone1,
+                    m.note,
+                    m.include, m.main_contact,
                     1 AS is_active
-               FROM members
-              WHERE client_id = ?
-                AND wizard_removed_at IS NULL
-              ORDER BY main_contact DESC, member_id ASC",
+               FROM members m
+               JOIN clients c ON c.client_id = m.client_id
+              WHERE m.client_id = ?
+                AND m.wizard_removed_at IS NULL
+              ORDER BY m.main_contact DESC, m.member_id ASC",
             [$clientId]
         );
 
