@@ -43,8 +43,29 @@ $statusRow = Db::one(
 $daysSinceExpiry = null;
 $newRenewalDate  = null;
 
-if ($statusRow && !empty($statusRow['expiration_date'])) {
-    $expiry = strtotime((string) $statusRow['expiration_date']);
+// expiration_date isn't always set on the clients row — staff who add a
+// member through the legacy "Add Member" form often only fill in
+// renewal_date and leave expiration_date blank. Derive a sensible
+// expiration_date from renewal_date in that case (one year before the
+// next renewal lines up with the canonical "anniversary" cycle), so
+// Step 1's "Current expiration date" never renders as an em-dash when
+// we have enough information to compute it.
+$effExpirationDate = null;
+if ($statusRow) {
+    $rawExp = trim((string) ($statusRow['expiration_date'] ?? ''));
+    $rawRen = trim((string) ($statusRow['renewal_date']    ?? ''));
+    if ($rawExp !== '' && $rawExp !== '0000-00-00 00:00:00') {
+        $effExpirationDate = $rawExp;
+    } elseif ($rawRen !== '' && $rawRen !== '0000-00-00 00:00:00') {
+        $ts = strtotime($rawRen);
+        if ($ts !== false) {
+            $effExpirationDate = date('Y-m-d', strtotime('-1 year', $ts));
+        }
+    }
+}
+
+if ($effExpirationDate !== null) {
+    $expiry = strtotime($effExpirationDate);
     if ($expiry !== false) {
         $daysSinceExpiry = (int) floor((time() - $expiry) / 86400);
     }
@@ -93,7 +114,7 @@ require __DIR__ . '/../_includes/progress-bar.php';
         </div>
         <div>
             <div class="pfm-field__label">Current expiration date</div>
-            <div><?= !empty($statusRow['expiration_date']) ? htmlspecialchars(date('F j, Y', strtotime((string) $statusRow['expiration_date']))) : '—' ?></div>
+            <div><?= $effExpirationDate !== null ? htmlspecialchars(date('F j, Y', strtotime($effExpirationDate))) : '—' ?></div>
         </div>
         <div>
             <div class="pfm-field__label">New renewal date (after this renewal)</div>
