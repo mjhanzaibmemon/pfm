@@ -99,13 +99,74 @@ $session->markAdminReviewed();
 // ── 3. Pull the Changes Summary entries from renewal_changes ───────────
 $rawChanges = $session->getChanges();
 
+// Pre-load lookup tables so the formatter can resolve raw IDs to
+// readable names. Larissa's 2026-06-22 Round 3 QA called out a row
+// reading "bus_subcat_id changed from 3 to 2" — staff have to mentally
+// translate every ID into a category name, which they shouldn't have
+// to do. We do the lookup once per page render rather than per row.
+$busCatLookup    = [];
+$busSubcatLookup = [];
+foreach (Db::all('SELECT bus_cat_id, bus_cat FROM bus_categories') as $r) {
+    $busCatLookup[(int) $r['bus_cat_id']] = (string) ($r['bus_cat'] ?? '');
+}
+foreach (Db::all('SELECT bus_subcat_id, bus_subcategory FROM bus_subcats') as $r) {
+    $busSubcatLookup[(int) $r['bus_subcat_id']] = (string) ($r['bus_subcategory'] ?? '');
+}
+
+// Friendly labels for the column names we log into renewal_changes.
+// Anything not in this map falls back to the raw column name, which is
+// still better than nothing — but every column the wizard actively
+// edits has a row here so staff never see column-name lingo.
+$fieldLabels = [
+    // Step 2 — organisation
+    'co_name'             => 'Company name',
+    'bus_cat_id'          => 'Business category',
+    'bus_subcat_id'       => 'Business subcategory',
+    'mailing_address'     => 'Mailing address',
+    'city'                => 'City',
+    'state'               => 'State',
+    'zip_code'            => 'ZIP code',
+    'website_url'         => 'Company website',
+    'acct_instagram'      => 'Instagram',
+    'acct_facebook'       => 'Facebook',
+    // Step 3 — main contact
+    'member_name'         => 'Name',
+    'email'               => 'Email',
+    'phone1'              => 'Phone',
+    'main_contact_title'  => 'Title',
+    // Step 4 — buyers
+    'note'                => 'Note',
+    // Step 5 — documents (the field_name is the slot key the wizard used)
+    'main_contact_id'     => 'Main contact ID',
+    'business_license'    => 'Business Registry',
+];
+
+// Helper: turn old_value / new_value into a display string, looking up
+// IDs for the two foreign-key fields. Empty values pass through as ''.
+$valueFor = static function (string $field, string $raw)
+    use ($busCatLookup, $busSubcatLookup): string {
+    if ($raw === '') {
+        return '';
+    }
+    if ($field === 'bus_cat_id' && ctype_digit($raw)) {
+        return $busCatLookup[(int) $raw] ?? $raw;
+    }
+    if ($field === 'bus_subcat_id' && ctype_digit($raw)) {
+        return $busSubcatLookup[(int) $raw] ?? $raw;
+    }
+    return $raw;
+};
+
 // Format each change row into a human-readable line for the Changes panel.
 // Spec section 8 defines the format. We support 6 change_type values.
-$formattedChanges = array_map(static function (array $c): array {
+$formattedChanges = array_map(static function (array $c) use ($fieldLabels, $valueFor): array {
     $type     = (string) ($c['change_type']  ?? '');
     $field    = (string) ($c['field_name']   ?? '');
-    $oldV     = trim((string) ($c['old_value'] ?? ''));
-    $newV     = trim((string) ($c['new_value'] ?? ''));
+    $oldRaw   = trim((string) ($c['old_value'] ?? ''));
+    $newRaw   = trim((string) ($c['new_value'] ?? ''));
+    $oldV     = $valueFor($field, $oldRaw);
+    $newV     = $valueFor($field, $newRaw);
+    $label    = $fieldLabels[$field] ?? $field;
     $targetId = $c['target_id'];
 
     // Default values; specific cases override
@@ -136,7 +197,7 @@ $formattedChanges = array_map(static function (array $c): array {
         case 'buyer_modified':
             $cssClass = 'modified';
             $badge    = 'Buyer modified';
-            $headline = "Field <em>{$field}</em>";
+            $headline = $label;
             $detail   = ($oldV !== '' ? "from \"{$oldV}\" " : '')
                       . "to \"{$newV}\"";
             if ($targetId) {
@@ -147,7 +208,7 @@ $formattedChanges = array_map(static function (array $c): array {
         case 'company_changed':
             $cssClass = 'modified';
             $badge    = 'Company updated';
-            $headline = "Field <em>{$field}</em>";
+            $headline = $label;
             $detail   = ($oldV !== '' ? "from \"{$oldV}\" " : '')
                       . "to \"{$newV}\"";
             break;
@@ -155,7 +216,7 @@ $formattedChanges = array_map(static function (array $c): array {
         case 'contact_changed':
             $cssClass = 'modified';
             $badge    = 'Main contact updated';
-            $headline = "Field <em>{$field}</em>";
+            $headline = $label;
             $detail   = ($oldV !== '' ? "from \"{$oldV}\" " : '')
                       . "to \"{$newV}\"";
             break;
@@ -163,7 +224,7 @@ $formattedChanges = array_map(static function (array $c): array {
         case 'document_changed':
             $cssClass = 'modified';
             $badge    = 'Document uploaded';
-            $headline = "Field <em>{$field}</em>";
+            $headline = $label;
             $detail   = "File: \"{$newV}\"";
             break;
     }
