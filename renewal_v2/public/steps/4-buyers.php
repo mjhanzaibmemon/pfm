@@ -290,6 +290,25 @@ require __DIR__ . '/../_includes/progress-bar.php';
         });
     }
 
+    // NANPA-aware phone formatter — mirrors lib/PhoneFormat.php's
+    // pfm_format_phone() rule so server-rendered cards (initial paint
+    // + Step 6 review + admin review) and JS-rendered cards (new
+    // wizard buyer added, inline-edited buyer) read identically:
+    //   10 digits, first 2-9 -> (XXX) XXX-XXXX
+    //   11 digits leading 1, area 2-9 -> 1 (XXX) XXX-XXXX
+    //   else -> raw input (non-NANPA numbers stay readable).
+    function formatPhoneForDisplay(raw) {
+        var s = String(raw == null ? '' : raw);
+        var d = s.replace(/\D+/g, '');
+        if (d.length === 10 && d.charAt(0) >= '2' && d.charAt(0) <= '9') {
+            return '(' + d.slice(0, 3) + ') ' + d.slice(3, 6) + '-' + d.slice(6);
+        }
+        if (d.length === 11 && d.charAt(0) === '1' && d.charAt(1) >= '2' && d.charAt(1) <= '9') {
+            return '1 (' + d.slice(1, 4) + ') ' + d.slice(4, 7) + '-' + d.slice(7);
+        }
+        return s;
+    }
+
     // ── Add buyer ────────────────────────────────────────
     addBtn.addEventListener('click', function () {
         var name = nameIn.value.trim();
@@ -310,17 +329,52 @@ require __DIR__ . '/../_includes/progress-bar.php';
             phone: phoneIn.value.trim(),
             note: noteIn.value.trim(),
         }).then(function (data) {
-            // Render the new buyer row
+            // Render the new buyer row using the same labelled layout
+            // PHP renders on the initial Step 4 paint (Name + Email +
+            // Phone + Note rows, each labelled, with a muted
+            // "not provided" placeholder for blank fields and the phone
+            // formatted via the NANPA rule from lib/PhoneFormat.php).
+            // Earlier this branch built a single-line compact card that
+            // also bypassed the phone formatter — Larissa's 2026-06-27
+            // setup added two wizard buyers and saw their raw digits
+            // "5035559999" sit underneath the main contact's formatted
+            // "(503) 555-1234", an obvious inconsistency in the same
+            // list. A refresh would have fixed it (PHP re-renders from
+            // the DB on next paint), but the customer shouldn't have to
+            // refresh to get a consistent view.
+            var emailRaw = emailIn.value.trim();
+            var phoneRaw = phoneIn.value.trim();
+            var noteRaw  = noteIn.value.trim();
+            var phoneDisplay = formatPhoneForDisplay(phoneRaw);
+
             var li = document.createElement('li');
             li.className = 'pfm-buyer';
             li.setAttribute('data-member-id', String(data.member_id));
             li.setAttribute('data-active', '1');
+            li.setAttribute('data-primary', '0');
+            li.setAttribute('data-buyer-name',  name);
+            li.setAttribute('data-buyer-email', emailRaw);
+            li.setAttribute('data-buyer-phone', phoneRaw);
+            li.setAttribute('data-buyer-note',  noteRaw);
             li.innerHTML =
                 '<div class="pfm-buyer__avatar">' + escapeHtml(name.charAt(0).toUpperCase()) + '</div>' +
                 '<div class="pfm-buyer__info">' +
                     '<p class="pfm-buyer__name">' + escapeHtml(name) + '</p>' +
-                    '<p class="pfm-buyer__meta">' + escapeHtml(emailIn.value.trim()) +
-                    (phoneIn.value.trim() ? ' &middot; ' + escapeHtml(phoneIn.value.trim()) : '') + '</p>' +
+                    '<p class="pfm-buyer__meta">' +
+                        '<span class="pfm-buyer__label">Email:</span> ' +
+                        (emailRaw ? escapeHtml(emailRaw) :
+                            '<span class="pfm-text-muted"><em>not provided</em></span>') +
+                    '</p>' +
+                    '<p class="pfm-buyer__meta">' +
+                        '<span class="pfm-buyer__label">Phone:</span> ' +
+                        (phoneRaw ? escapeHtml(phoneDisplay) :
+                            '<span class="pfm-text-muted"><em>not provided</em></span>') +
+                    '</p>' +
+                    (noteRaw ?
+                        '<p class="pfm-buyer__meta">' +
+                            '<span class="pfm-buyer__label">Note:</span> ' + escapeHtml(noteRaw) +
+                        '</p>'
+                        : '') +
                 '</div>' +
                 '<div class="pfm-buyer__actions">' +
                     '<button type="button" class="pfm-btn pfm-btn--ghost pfm-btn--sm" data-pfm-edit>Edit</button>' +
@@ -488,7 +542,7 @@ require __DIR__ . '/../_includes/progress-bar.php';
                     '</p>' +
                     '<p class="pfm-buyer__meta">' +
                         '<span class="pfm-buyer__label">Phone:</span> ' +
-                        (newPhone ? escapeHtml(newPhone) :
+                        (newPhone ? escapeHtml(formatPhoneForDisplay(newPhone)) :
                             '<span class="pfm-text-muted"><em>not provided</em></span>') +
                     '</p>' +
                     (newNote ?
