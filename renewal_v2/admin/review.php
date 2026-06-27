@@ -306,14 +306,37 @@ $alreadyConfirmed = ($session->adminConfirmedAt !== null);
             <h3 class="pfm-card__subtitle pfm-mt-3">Company</h3>
             <div class="pfm-data-row">
                 <span class="label">Address</span>
-                <span class="value">
-                    <?= htmlspecialchars(trim(
-                        ($client['mailing_address'] ?? '') . ', ' .
-                        ($client['city'] ?? '') . ', ' .
-                        ($client['state'] ?? '') . ' ' .
-                        ($client['zip_code'] ?? ''),
-                        ', '
-                    )) ?>
+                <span class="value" style="overflow-wrap: anywhere; word-break: break-word;">
+                    <?php
+                        // Render street on one line, city / state / zip on a
+                        // second line. Larissa's 2026-06-26 Round 4 test caught
+                        // the previous single-line implementation breaking
+                        // "Karachi Central" between "Centr" and "al" when the
+                        // mailing_address field carried a long string (in her
+                        // test, the customer had pasted an email address into
+                        // street_address, blowing the column width). Two-line
+                        // layout + overflow-wrap: anywhere on the value cell
+                        // gives the address breathing room and forces any
+                        // single overlong token to break at character bounds
+                        // instead of mangling a word in the middle.
+                        $street   = trim((string) ($client['mailing_address'] ?? ''));
+                        $cityLine = trim(implode(', ', array_filter([
+                            trim((string) ($client['city']     ?? '')),
+                            trim((string) ($client['state']    ?? '')),
+                        ], static fn($v) => $v !== '')));
+                        $zip = trim((string) ($client['zip_code'] ?? ''));
+                        if ($cityLine !== '' && $zip !== '') {
+                            $cityLine .= ' ' . $zip;
+                        } elseif ($zip !== '') {
+                            $cityLine = $zip;
+                        }
+                    ?>
+                    <?php if ($street !== ''): ?>
+                        <?= htmlspecialchars($street) ?><br>
+                    <?php endif; ?>
+                    <?php if ($cityLine !== ''): ?>
+                        <?= htmlspecialchars($cityLine) ?>
+                    <?php endif; ?>
                 </span>
             </div>
         </div>
