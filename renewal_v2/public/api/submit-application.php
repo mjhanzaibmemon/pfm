@@ -142,14 +142,42 @@ Db::transaction(function () use ($session, $draft, $customerNote): void {
 
     // Persist main contact changes if present.
     //
-    // name / email / phone live on the members row with main_contact = 1
-    // (the renewal wizard treats that row as the canonical contact). title
-    // is on the clients table (clients.main_contact_title) — the members
-    // table doesn't have a title column — so it's persisted separately.
+    // The customer-facing main contact actually lives in TWO places in
+    // the existing PFM schema, and the legacy form_clients_staff form
+    // expects them to stay in sync:
+    //
+    //   1. members row WHERE main_contact = b'1'
+    //        (member_name / email / phone1) — this is the row the
+    //        wizard treats as canonical and what BuyerManager / Step 4
+    //        / the admin review panel all read from.
+    //
+    //   2. clients row legacy mirror columns
+    //        (main_contact_name / main_contact_email / main_contact_phone)
+    //        — these were written by the legacy "Add Member" admin form
+    //        and the legacy edit form keeps reading from them on render.
+    //
+    // Until this commit, the wizard only updated (1). Larissa's
+    // 2026-06-22 Round 3 QA hit the resulting bug: she renamed the main
+    // contact in Step 3, members.member_name updated correctly, but
+    // clients.main_contact_name kept the old name with its leading
+    // space. When she next opened the legacy edit form, the form's
+    // existing "create-if-missing" sync logic spotted the mismatch and
+    // INSERTed a brand new members row with main_contact = b'1', using
+    // the stale clients.main_contact_name value — leaving her with two
+    // Primary rows in CURRENT BUYERS and the renamed contact never
+    // visible on the legacy Main Contact tab.
+    //
+    // Fix: write to both surfaces in lock-step inside the same
+    // transaction. members stays canonical for the wizard / admin
+    // review surfaces; clients mirror columns stay current for the
+    // legacy edit form.
+    //
+    // title only lives on clients.main_contact_title — the members
+    // table has no title column — so it's persisted there only.
     if (!empty($draft['contact'])) {
         $contact = $draft['contact'];
 
-        // ── name / email / phone → members row ───────────────────────
+        // ── name / email / phone → members row + clients mirror ─────
         $mainContact = Db::one(
             "SELECT member_id, member_name, email, phone1
                FROM members
@@ -158,35 +186,71 @@ Db::transaction(function () use ($session, $draft, $customerNote): void {
         );
 
         if ($mainContact !== null) {
-            $contactFields = ['member_name' => 'name', 'email' => 'email', 'phone1' => 'phone'];
-            $updates = [];
-            $params  = [];
+            // (members col, clients mirror col, draft key)
+            $contactFields = [
+                ['member_name', 'main_contact_name',  'name'],
+                ['email',       'main_contact_email', 'email'],
+                ['phone1',      'main_contact_phone', 'phone'],
+            ];
 
-            foreach ($contactFields as $dbCol => $draftKey) {
+            $memberUpdates  = [];
+            $memberParams   = [];
+            $clientsUpdates = [];
+            $clientsParams  = [];
+
+            // Read the current clients mirror values so we can suppress
+            // no-op UPDATEs and log the right "from" side for the
+            // change-log entry.
+            $clientsMirror = Db::one(
+                'SELECT main_contact_name, main_contact_email, main_contact_phone
+                   FROM clients WHERE client_id = ?',
+                [$session->clientId]
+            ) ?? [];
+
+            foreach ($contactFields as [$memberCol, $clientsCol, $draftKey]) {
                 if (!isset($contact[$draftKey])) {
                     continue;
                 }
-                $newVal = trim((string) $contact[$draftKey]);
-                $oldVal = trim((string) ($mainContact[$dbCol] ?? ''));
-                if ($newVal === $oldVal) {
-                    continue;
+                $newVal     = trim((string) $contact[$draftKey]);
+                $oldMember  = trim((string) ($mainContact[$memberCol]    ?? ''));
+                $oldClients = trim((string) ($clientsMirror[$clientsCol] ?? ''));
+                $persisted  = $newVal !== '' ? $newVal : null;
+
+                if ($newVal !== $oldMember) {
+                    $memberUpdates[] = "{$memberCol} = ?";
+                    $memberParams[]  = $persisted;
+                    $session->logChange(
+                        RenewalSession::CHANGE_CONTACT_CHANGED,
+                        (int) $mainContact['member_id'],
+                        $memberCol,
+                        $oldMember ?: null,
+                        $newVal    ?: null
+                    );
                 }
-                $updates[] = "{$dbCol} = ?";
-                $params[]  = $newVal !== '' ? $newVal : null;
-                $session->logChange(
-                    RenewalSession::CHANGE_CONTACT_CHANGED,
-                    (int) $mainContact['member_id'],
-                    $dbCol,
-                    $oldVal ?: null,
-                    $newVal ?: null
+
+                // Even when members already had the right value, the
+                // clients mirror may be stale — happens for any contact
+                // whose Step 3 prefill came from the members row but
+                // never round-tripped through clients. Sync it.
+                if ($newVal !== $oldClients) {
+                    $clientsUpdates[] = "{$clientsCol} = ?";
+                    $clientsParams[]  = $persisted;
+                }
+            }
+
+            if (!empty($memberUpdates)) {
+                $memberParams[] = (int) $mainContact['member_id'];
+                Db::exec(
+                    'UPDATE members SET ' . implode(', ', $memberUpdates) . ' WHERE member_id = ?',
+                    $memberParams
                 );
             }
 
-            if (!empty($updates)) {
-                $params[] = (int) $mainContact['member_id'];
+            if (!empty($clientsUpdates)) {
+                $clientsParams[] = $session->clientId;
                 Db::exec(
-                    'UPDATE members SET ' . implode(', ', $updates) . ' WHERE member_id = ?',
-                    $params
+                    'UPDATE clients SET ' . implode(', ', $clientsUpdates) . ' WHERE client_id = ?',
+                    $clientsParams
                 );
             }
         }
