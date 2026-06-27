@@ -21,6 +21,7 @@
 
 declare(strict_types=1);
 require_once __DIR__ . '/../_includes/api_bootstrap.php';
+require_once __DIR__ . '/../../lib/PhoneFormat.php';
 
 api_require_method('POST');
 api_require_csrf();
@@ -211,9 +212,26 @@ Db::transaction(function () use ($session, $draft, $customerNote): void {
                 if (!isset($contact[$draftKey])) {
                     continue;
                 }
-                $newVal     = trim((string) $contact[$draftKey]);
+                $rawNewVal  = trim((string) $contact[$draftKey]);
                 $oldMember  = trim((string) ($mainContact[$memberCol]    ?? ''));
                 $oldClients = trim((string) ($clientsMirror[$clientsCol] ?? ''));
+
+                // Phone columns canonicalise to raw digits before either
+                // the diff check or the DB write. Two reasons:
+                //   1. The legacy PFM admin form has its own phone input
+                //      mask that chokes on parens / dashes and renders
+                //      "((50) 3) - 555-" if it receives a pre-formatted
+                //      value. Raw digits feed straight into that mask.
+                //   2. Comparing raw-to-raw keeps the change log from
+                //      noisily recording a "0313261879 -> (031) 326-1879"
+                //      diff that's really just a format change with no
+                //      underlying number change.
+                $isPhone = ($memberCol === 'phone1');
+                $newVal  = $isPhone
+                    ? (string) (pfm_normalize_phone($rawNewVal) ?? '')
+                    : $rawNewVal;
+                $oldMember  = $isPhone ? (string) (pfm_normalize_phone($oldMember)  ?? '') : $oldMember;
+                $oldClients = $isPhone ? (string) (pfm_normalize_phone($oldClients) ?? '') : $oldClients;
                 $persisted  = $newVal !== '' ? $newVal : null;
 
                 if ($newVal !== $oldMember) {

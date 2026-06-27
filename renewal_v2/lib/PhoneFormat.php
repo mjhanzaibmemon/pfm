@@ -74,3 +74,42 @@ if (!function_exists('pfm_format_phone')) {
         return $raw;
     }
 }
+
+if (!function_exists('pfm_normalize_phone')) {
+
+    /**
+     * Strip a phone value back to raw digits before storing it.
+     *
+     * Phone fields go INTO the wizard already raw (admin "Add Member"
+     * form stores 10 digits) but are then displayed through
+     * pfm_format_phone() on Step 3 / Step 6 / admin review, so the
+     * value the customer sees in the input — and that the JS live-
+     * formatter rewrites in place on every keystroke — is shaped
+     * like "(503) 555-0212". Auto-save and submit handlers were
+     * dumping that formatted string straight into members.phone1
+     * and clients.main_contact_phone. The existing PFM admin's
+     * legacy phone input mask then chokes on the parentheses /
+     * dashes and renders "((50) 3) - 555-" — broken on Larissa's
+     * 2026-06-26 Round 4 test (clients 737836 + member 38727).
+     *
+     * Canonical storage is raw digits; format-on-display handles
+     * the rest. This helper strips every non-digit so either a raw
+     * value, an already-formatted display value, or even a value
+     * with an extension ("503-555-1212 x123") collapses to a clean
+     * digit-only string. Empty / null pass through as null so the
+     * caller can write NULL to the column when the customer cleared
+     * the field.
+     *
+     * @param  string|null $raw
+     * @return string|null  Raw digits, or null when the input was
+     *                      empty / null.
+     */
+    function pfm_normalize_phone(?string $raw): ?string
+    {
+        if ($raw === null) {
+            return null;
+        }
+        $digits = preg_replace('/\D+/', '', $raw) ?? '';
+        return $digits !== '' ? $digits : null;
+    }
+}

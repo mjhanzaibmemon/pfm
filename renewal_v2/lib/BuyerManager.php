@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/Db.php';
 require_once __DIR__ . '/RenewalSession.php';
+require_once __DIR__ . '/PhoneFormat.php';
 
 class BuyerManager
 {
@@ -222,7 +223,10 @@ class BuyerManager
                     $session->clientId,
                     $name,
                     self::sanitiseOptional($email, 255),
-                    self::sanitiseOptional($phone, 100),
+                    // Phone goes in as raw digits — see PhoneFormat
+                    // ::pfm_normalize_phone for why; the legacy admin's
+                    // phone input mask requires this shape.
+                    pfm_normalize_phone(self::sanitiseOptional($phone, 100)),
                     self::sanitiseOptional($note, 255),
                 ]
             );
@@ -524,6 +528,14 @@ class BuyerManager
                 $cleaned = null;
             }
 
+            // Phone fields canonicalise to raw digits before both the
+            // diff check and the DB write so the legacy admin form's
+            // phone input mask renders them correctly and the change
+            // log doesn't record a pure format-change diff.
+            if ($field === 'phone1') {
+                $cleaned = pfm_normalize_phone($cleaned);
+            }
+
             $oldValue = $buyer[$field] ?? null;
 
             // Skip if value is unchanged. Compare with the same trim+empty→null logic
@@ -532,6 +544,9 @@ class BuyerManager
             $oldNormalised = $oldValue !== null ? trim((string) $oldValue) : null;
             if ($oldNormalised === '') {
                 $oldNormalised = null;
+            }
+            if ($field === 'phone1') {
+                $oldNormalised = pfm_normalize_phone($oldNormalised);
             }
             if ($cleaned === $oldNormalised) {
                 continue;
