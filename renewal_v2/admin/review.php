@@ -78,15 +78,53 @@ if ($session === null) {
 }
 
 // ── 2. Look up customer + company context ───────────────────────────────
+// pricing_level_id + bus_cat_id + bus_subcat_id + website_url + Instagram
+// + Facebook columns added 2026-06-26 — Larissa's Round 4 retest noted
+// the admin review's "Company" subsection only carried the Address row
+// (after we'd dropped the legacy free-text business_type / license /
+// federal_tax_id rows in 8b9d801) and read as half-empty. The actual
+// page-title carries co_name, but staff scanning the body don't always
+// notice that — surfacing Membership level / Business category / Online
+// presence in the Company block makes the section earn its space again.
 $client = Db::one(
     'SELECT client_id, co_name, MembershipID, email, phone_number,
             main_contact_name, main_contact_email, main_contact_phone, main_contact_title,
             mailing_address, city, state, zip_code,
+            pricing_level_id, bus_cat_id, bus_subcat_id,
+            website_url, acct_instagram, acct_facebook,
             renewal_date, expiration_date
        FROM clients
       WHERE client_id = ?',
     [$session->clientId]
 ) ?? [];
+
+// Membership level / category / subcategory display labels — same source
+// the wizard's Step 2 dropdowns + Step 6 review use, so the names line
+// up across every surface.
+$membershipLevelName = '';
+$busCatName          = '';
+$busSubcatName       = '';
+if (!empty($client['pricing_level_id'])) {
+    $row = Db::one(
+        'SELECT pricing_level FROM members_level WHERE memb_lev_id = ?',
+        [(int) $client['pricing_level_id']]
+    );
+    $membershipLevelName = (string) ($row['pricing_level'] ?? '');
+}
+if (!empty($client['bus_cat_id'])) {
+    $row = Db::one(
+        'SELECT bus_cat FROM bus_categories WHERE bus_cat_id = ?',
+        [(int) $client['bus_cat_id']]
+    );
+    $busCatName = (string) ($row['bus_cat'] ?? '');
+}
+if (!empty($client['bus_subcat_id'])) {
+    $row = Db::one(
+        'SELECT bus_subcategory FROM bus_subcats WHERE bus_subcat_id = ?',
+        [(int) $client['bus_subcat_id']]
+    );
+    $busSubcatName = (string) ($row['bus_subcategory'] ?? '');
+}
 
 // Use BuyerManager::getActive() instead of an inline query so the
 // admin review panel always matches what the customer sees on Step 4
@@ -304,6 +342,54 @@ $alreadyConfirmed = ($session->adminConfirmedAt !== null);
             </div>
 
             <h3 class="pfm-card__subtitle pfm-mt-3">Company</h3>
+            <div class="pfm-data-row">
+                <span class="label">Name</span>
+                <span class="value"><?= htmlspecialchars($client['co_name'] ?? '—') ?></span>
+            </div>
+            <?php if ($membershipLevelName !== ''): ?>
+            <div class="pfm-data-row">
+                <span class="label">Membership level</span>
+                <span class="value"><?= htmlspecialchars($membershipLevelName) ?></span>
+            </div>
+            <?php endif; ?>
+            <?php
+                $catLine = $busCatName;
+                if ($busSubcatName !== '') {
+                    $catLine = $catLine !== ''
+                        ? $catLine . ' — ' . $busSubcatName
+                        : $busSubcatName;
+                }
+            ?>
+            <?php if ($catLine !== ''): ?>
+            <div class="pfm-data-row">
+                <span class="label">Business category</span>
+                <span class="value"><?= htmlspecialchars($catLine) ?></span>
+            </div>
+            <?php endif; ?>
+            <?php
+                // Only render the Online presence row when the customer
+                // actually has at least one of the three. Keeps the block
+                // compact for clients who don't use social.
+                $onlineLinks = [];
+                foreach ([
+                    'Website'   => $client['website_url']    ?? '',
+                    'Instagram' => $client['acct_instagram'] ?? '',
+                    'Facebook'  => $client['acct_facebook']  ?? '',
+                ] as $lbl => $val) {
+                    $val = trim((string) $val);
+                    if ($val !== '') {
+                        $onlineLinks[] = $lbl . ': ' . $val;
+                    }
+                }
+            ?>
+            <?php if (!empty($onlineLinks)): ?>
+            <div class="pfm-data-row">
+                <span class="label">Online presence</span>
+                <span class="value" style="overflow-wrap: anywhere; word-break: break-word;">
+                    <?= implode('<br>', array_map('htmlspecialchars', $onlineLinks)) ?>
+                </span>
+            </div>
+            <?php endif; ?>
             <div class="pfm-data-row">
                 <span class="label">Address</span>
                 <span class="value" style="overflow-wrap: anywhere; word-break: break-word;">
