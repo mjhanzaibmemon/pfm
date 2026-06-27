@@ -94,6 +94,16 @@ if ($docKey === 'legacy_main_contact_id') {
     exit;
 }
 
+// ── 3b. Special case — legacy Business Registry from clients.doc_sec_of_state ──
+// Mirrors the legacy_main_contact_id path. Step 5's carry-over badge
+// links here when the customer has a Business Registry on file from a
+// prior renewal. Same auth gate (the renewal session token in the URL
+// already validated above) covers it.
+if ($docKey === 'legacy_business_registry') {
+    streamLegacyBusinessRegistry($session);
+    exit;
+}
+
 // ── 4. Wizard-side upload via DocumentUpload ──────────────────────
 $record = DocumentUpload::getByKey($session, $docKey);
 if ($record === null) {
@@ -197,6 +207,57 @@ function streamLegacyId(RenewalSession $session): void
             default      => 'application/octet-stream',
         };
     }
+
+    emitHeaders($mime, $size, $name);
+    echo $bytes;
+}
+
+/**
+ * Stream the customer's legacy Business Registry straight from
+ * clients.doc_sec_of_state (a BLOB; the legacy admin form has no
+ * sibling filename / size column for this slot, so we sniff the MIME
+ * type from the bytes themselves and synthesize a filename for the
+ * Content-Disposition header).
+ */
+function streamLegacyBusinessRegistry(RenewalSession $session): void
+{
+    $row = Db::one(
+        'SELECT doc_sec_of_state FROM clients WHERE client_id = ?',
+        [$session->clientId]
+    );
+
+    if ($row === null || empty($row['doc_sec_of_state'])) {
+        http_response_code(404);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'No Business Registry is currently on file for this membership.';
+        return;
+    }
+
+    $bytes = (string) $row['doc_sec_of_state'];
+    $size  = strlen($bytes);
+
+    // Sniff MIME from the actual bytes — there's no filename column
+    // alongside doc_sec_of_state, so we have to derive everything from
+    // the BLOB itself.
+    $mime = 'application/octet-stream';
+    if (class_exists('finfo')) {
+        $f = new finfo(FILEINFO_MIME_TYPE);
+        $detected = $f->buffer($bytes);
+        if (is_string($detected) && $detected !== '') {
+            $mime = $detected;
+        }
+    }
+
+    // Pick a filename extension from the sniffed MIME so the browser
+    // does the right thing with the Content-Disposition.
+    $ext = match ($mime) {
+        'application/pdf' => 'pdf',
+        'image/png'       => 'png',
+        'image/jpeg'      => 'jpg',
+        'image/gif'       => 'gif',
+        default           => 'bin',
+    };
+    $name = 'business-registry.' . $ext;
 
     emitHeaders($mime, $size, $name);
     echo $bytes;

@@ -30,6 +30,18 @@ foreach ($allDocs as $k => $d) {
     $additionalDocs[$k] = $d;
 }
 
+// Legacy Business Registry carry-over — mirrors the ID carry-over on
+// Step 3. Confirm Receipt (commit bc1031c) writes wizard-uploaded
+// business registries into clients.doc_sec_of_state so the NEXT year's
+// renewal sees the document as "on file" and the customer can skip the
+// upload unless it has actually changed. Query a single byte to detect
+// presence without hauling the whole BLOB into PHP memory.
+$hasLegacyBusinessReg = (int) (Db::scalar(
+    'SELECT IF(doc_sec_of_state IS NULL OR OCTET_LENGTH(doc_sec_of_state) = 0, 0, 1)
+       FROM clients WHERE client_id = ?',
+    [$session->clientId]
+) ?? 0) === 1;
+
 $customerNote = $session->draftData['customer_note'] ?? '';
 
 // Reusable inline helper: build a "View" link for one uploaded doc.
@@ -81,8 +93,29 @@ require __DIR__ . '/../_includes/progress-bar.php';
     <!-- Note: internal $businessKey stays as 'business_license' so files
          already uploaded under this slot remain retrievable. Only the
          customer-facing label is changed (per Larissa's Phase 6 video). -->
-    <h3 class="pfm-mt-2">Business Registry</h3>
+    <h3 class="pfm-mt-2">Business Registry <span class="pfm-required">*</span></h3>
     <p class="pfm-text-muted pfm-mb-1">A clear photo or scan of your current business registry.</p>
+
+    <?php if ($hasLegacyBusinessReg && !$businessDoc): ?>
+        <!-- Legacy Business Registry on file from a prior renewal — show as a carry-over
+             badge with a View link, same pattern as the ID carry-over on Step 3. The
+             customer can either keep this one or drop a new file below to replace it. -->
+        <div class="pfm-alert pfm-alert--success">
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <div style="flex:1; min-width:200px;">
+                    <strong>Business Registry on file</strong>
+                    <span class="pfm-text-muted"> &mdash; carried over from your last renewal.</span>
+                </div>
+                <a class="pfm-btn pfm-btn--ghost pfm-btn--sm"
+                   href="<?= htmlspecialchars($viewLink('legacy_business_registry'), ENT_QUOTES) ?>"
+                   target="_blank" rel="noopener">View &nearr;</a>
+            </div>
+            <p class="pfm-mt-0" style="margin-bottom:0;">
+                You don't need to re-upload your Business Registry unless it has changed since
+                your last renewal. Drop a new file below if it needs replacing.
+            </p>
+        </div>
+    <?php endif; ?>
 
     <label class="pfm-upload" id="pfm-upload-license">
         <input type="file" id="pfm-license-file" accept="application/pdf,image/jpeg,image/png">
@@ -161,29 +194,34 @@ require __DIR__ . '/../_includes/progress-bar.php';
     // Auto-save the customer_note field
     PFM.autosave.attach(document.getElementById('pfm-form-note'), { step: 5 });
 
-    // Track whether at least one BUSINESS document has been uploaded
-    // ("business document" = anything except the main_contact_id ID slot
-    //  from Step 3, which is for identity not business eligibility).
-    //
-    // Per v3 spec line 15327: "Please upload at least one business document
-    // to continue." mirrors the ID-required validation on Step 3.
-    var hasBusinessDoc = <?= (!empty($businessDoc) || !empty($additionalDocs)) ? 'true' : 'false' ?>;
+    // Track whether the Business Registry slot is satisfied. Per
+    // Larissa's 2026-06-22 Round 3 QA ("Business Registry MUST be a
+    // required field"), the slot is satisfied if EITHER:
+    //   - the customer uploaded a fresh file under the business_license
+    //     slot in this wizard session, OR
+    //   - they had a Business Registry on file from a prior renewal
+    //     (clients.doc_sec_of_state BLOB has bytes) and have not chosen
+    //     to remove the carry-over.
+    // Additional documents no longer count toward the requirement —
+    // they're a separate optional bucket.
+    var hasBusinessReg     = <?= !empty($businessDoc) ? 'true' : 'false' ?>;
+    var hasLegacyBusReg    = <?= $hasLegacyBusinessReg ? 'true' : 'false' ?>;
 
-    function refreshBusinessDocFlag() {
-        // Recount from the live DOM: any .pfm-file row inside either the
-        // business-license list OR the additional-docs list counts.
-        var bizCount = document.querySelectorAll('#pfm-license-list .pfm-file').length;
-        var extCount = document.querySelectorAll('#pfm-extra-list .pfm-file').length;
-        hasBusinessDoc = (bizCount + extCount) > 0;
+    function refreshBusinessRegFlag() {
+        // Live DOM recount of the business_license slot — fresh uploads
+        // populate #pfm-license-list, so any .pfm-file row inside that
+        // list means the slot now has a fresh upload.
+        hasBusinessReg = document.querySelectorAll('#pfm-license-list .pfm-file').length > 0;
     }
 
-    // Next button — block until at least one business document is uploaded
+    // Next button — block until the Business Registry slot has either a
+    // fresh upload or a legacy carry-over.
     var nextBtn = document.getElementById('pfm-next');
     nextBtn.addEventListener('click', function () {
-        refreshBusinessDocFlag();
-        if (!hasBusinessDoc) {
+        refreshBusinessRegFlag();
+        if (!hasBusinessReg && !hasLegacyBusReg) {
             PFM.toast.show(
-                'Please upload at least one business document to continue.',
+                'Please upload your Business Registry to continue.',
                 'danger',
                 6000
             );
