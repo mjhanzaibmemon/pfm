@@ -24,9 +24,7 @@ require_once __DIR__ . '/../lib/Db.php';
 require_once __DIR__ . '/../lib/RenewalSession.php';
 require_once __DIR__ . '/_includes/admin_layout.php';
 
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
-}
+pfm_admin_session_start();
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }

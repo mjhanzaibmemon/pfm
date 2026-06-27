@@ -35,9 +35,7 @@ require_once __DIR__ . '/../lib/DocumentUpload.php';
 require_once __DIR__ . '/../lib/RenewalHistoryNote.php';
 require_once __DIR__ . '/_includes/admin_layout.php';
 
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
-}
+pfm_admin_session_start();
 
 /* ─── Small helper: render the error/success terminal screens ──────────── */
 function pfm_admin_terminal(string $title, string $alertClass, string $bodyHtml, ?int $sessionId = null): void
@@ -67,6 +65,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
 
 $postedCsrf = (string) ($_POST['csrf_token'] ?? '');
 $sessionCsrf = (string) ($_SESSION['csrf_token'] ?? '');
+// Release the session lock immediately after pulling the CSRF token —
+// confirm-receipt runs a multi-step DB transaction plus a Stripe API
+// poll and a couple of MailerSend sends, and a held lock would force a
+// second admin tab on the same browser to wait for all of that.
+session_write_close();
 if ($postedCsrf === '' || !hash_equals($sessionCsrf, $postedCsrf)) {
     pfm_admin_terminal(
         'Confirm Receipt — CSRF mismatch',

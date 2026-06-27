@@ -16,6 +16,67 @@
 
 declare(strict_types=1);
 
+/**
+ * Start a PHP session that shares cleanly with the existing PFM admin
+ * (ScriptCase) session, instead of bare session_start() with whatever
+ * php.ini happens to default to. Called by every renewal_v2/admin/*.php
+ * page (review, dashboard, confirm-receipt).
+ *
+ * Why this exists: Larissa's 2026-06-22 Round 3 QA reported "After
+ * completing or viewing the renewal review, I clicked into Memberships
+ * and received a message that said I needed to be logged in" — an
+ * intermittent ScriptCase auth-loss that pointed at session-handling
+ * collisions. PHP's ini defaults set save_path to /var/lib/php/sessions
+ * and cookie_path to /, which matches ScriptCase by coincidence, but
+ * any future ini change OR a fresh PHP-FPM pool would silently break
+ * the inheritance. We pin the values explicitly here.
+ *
+ * Two extra hardenings:
+ *   - explicit cookie_lifetime = 0 so the PHPSESSID cookie is a true
+ *     browser-session cookie and ScriptCase's own expiry rules stay
+ *     authoritative (PHP's default lifetime from ini is sometimes a
+ *     long number that would survive a browser close and confuse the
+ *     legacy app).
+ *   - session_write_close() should be called by the page as soon as
+ *     it's done mutating $_SESSION, so the per-session file lock
+ *     releases before any slow rendering / Stripe API call — without
+ *     that, a second admin tab on the same browser blocks for the
+ *     duration of the first tab's request and looks like a hang.
+ *
+ * Idempotent — if a session is already active, we leave it alone
+ * (this handles the rare PHP_SAPI = cli-server path under
+ * development).
+ */
+if (!function_exists('pfm_admin_session_start')) {
+
+    function pfm_admin_session_start(): void
+    {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            return;
+        }
+
+        // Explicit handle to /var/lib/php/sessions matches ScriptCase's
+        // own save_path (PHP-FPM pool default on this host). If a
+        // future ops change moves ScriptCase elsewhere, update both at
+        // the same time.
+        $savePath = '/var/lib/php/sessions';
+        if (is_dir($savePath) && is_writable($savePath)) {
+            session_save_path($savePath);
+        }
+
+        session_name('PHPSESSID');
+        session_set_cookie_params([
+            'lifetime' => 0,
+            'path'     => '/',
+            'secure'   => !empty($_SERVER['HTTPS']),
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+
+        session_start();
+    }
+}
+
 if (!function_exists('pfm_admin_header')) {
 
     function pfm_admin_header(string $title, ?string $subtitle = null): void

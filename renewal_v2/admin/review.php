@@ -31,13 +31,18 @@ require_once __DIR__ . '/../lib/DocumentUpload.php';
 require_once __DIR__ . '/../lib/BuyerManager.php';
 require_once __DIR__ . '/_includes/admin_layout.php';
 
-// PHP session is needed for CSRF token used by the confirm form below
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
-}
+// PHP session is needed for CSRF token used by the confirm form below.
+// pfm_admin_session_start() pins save_path / cookie params to match
+// ScriptCase so we share the legacy PFM admin session cleanly. Once the
+// CSRF token is ensured, release the session lock immediately —
+// admin/review.php has slow downstream calls (Stripe receipt fetch,
+// document listing) and a held lock would block a second admin tab.
+pfm_admin_session_start();
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
+$pfmCsrfToken = $_SESSION['csrf_token'];
+session_write_close();
 
 // ── 1. Validate admin_review_token from URL ─────────────────────────────
 $token = isset($_GET['token']) ? trim((string) $_GET['token']) : '';
@@ -613,7 +618,7 @@ $adminTok = htmlspecialchars($session->adminReviewToken ?? '', ENT_QUOTES);
 
         <form action="/renewal_v2/admin/confirm-receipt.php" method="POST" class="pfm-mt-2"
               onsubmit="return confirm('Confirm receipt of $<?= $session->amountCharged !== null ? number_format($session->amountCharged, 2) : '0.00' ?> for <?= htmlspecialchars(addslashes($client['co_name'] ?? '')) ?>?\n\nThis writes to client_pmts and cannot be undone from this page.');">
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($pfmCsrfToken) ?>">
             <input type="hidden" name="admin_review_token" value="<?= htmlspecialchars($session->adminReviewToken ?? '') ?>">
             <button type="submit" class="pfm-btn pfm-btn--primary" style="background:#0acf97; border-color:#0acf97;">
                 ✓ Confirm Receipt &amp; Apply Payment
