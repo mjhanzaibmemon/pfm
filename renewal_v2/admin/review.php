@@ -541,12 +541,16 @@ $adminTok = htmlspecialchars($session->adminReviewToken ?? '', ENT_QUOTES);
     <?php endif; ?>
 </div>
 
-<!-- ── Active buyers (post-renewal) ── -->
+<!-- ── Active buyers (post-renewal) — includes the main contact, per
+     Path B (matches legacy renewal counting). The main_contact row is
+     surfaced with a Primary Contact pill so staff can tell it apart at
+     a glance. ── -->
 <div class="pfm-card pfm-mt-2">
     <h2 class="pfm-card__title pfm-mt-0">Active buyers (<?= count($activeBuyers) ?>)</h2>
     <p class="pfm-text-muted pfm-mt-0">
-        Current active buyers under <?= htmlspecialchars($client['co_name'] ?? 'this client') ?>
-        after the customer's edits in this renewal.
+        Current active members under <?= htmlspecialchars($client['co_name'] ?? 'this client') ?>
+        after the customer's edits in this renewal &mdash; main contact + buyers,
+        same way the legacy renewal counted them.
     </p>
     <?php if (empty($activeBuyers)): ?>
         <p class="pfm-text-muted"><em>No active buyers.</em></p>
@@ -554,14 +558,22 @@ $adminTok = htmlspecialchars($session->adminReviewToken ?? '', ENT_QUOTES);
         <ul style="list-style: none; padding: 0; margin: 0;">
         <?php foreach ($activeBuyers as $buyer): ?>
             <?php
-                $bName  = (string) ($buyer['member_name'] ?? '');
-                $bEmail = (string) ($buyer['email']       ?? '');
-                $bPhone = (string) ($buyer['phone1']      ?? '');
-                $bNote  = (string) ($buyer['note']        ?? '');
+                $bName    = (string) ($buyer['member_name'] ?? '');
+                $bEmail   = (string) ($buyer['email']       ?? '');
+                $bPhone   = (string) ($buyer['phone1']      ?? '');
+                $bNote    = (string) ($buyer['note']        ?? '');
+                $isPrimary = !empty($buyer['main_contact']);
             ?>
             <li style="padding: 12px 0; border-bottom: 1px solid #eef2f7;">
                 <div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;">
-                    <strong><?= htmlspecialchars($bName !== '' ? $bName : 'Unnamed buyer') ?></strong>
+                    <strong>
+                        <?= htmlspecialchars($bName !== '' ? $bName : 'Unnamed buyer') ?>
+                        <?php if ($isPrimary): ?>
+                            <span style="display:inline-block; margin-left:8px; padding:2px 8px; background:#727cf5; color:#fff; border-radius:10px; font-size:0.7rem; font-weight:600; vertical-align:middle;">
+                                Primary Contact
+                            </span>
+                        <?php endif; ?>
+                    </strong>
                     <span class="pfm-text-muted" style="font-family:monospace; font-size:0.8rem;">#<?= (int) $buyer['member_id'] ?></span>
                 </div>
                 <div style="margin-top:4px; font-size:0.9rem;">

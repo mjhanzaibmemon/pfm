@@ -171,12 +171,16 @@ require __DIR__ . '/../_includes/progress-bar.php';
             </div>
         </section>
 
-        <!-- Buyers -->
+        <!-- Buyers — includes the main contact (counted toward the active
+             member roster per legacy renewal pricing rules). -->
         <section class="pfm-review__section">
             <div class="pfm-review__head">
                 <h3 class="pfm-review__title">Active Buyers (<?= (int) $buyerCount ?>)</h3>
                 <a href="<?= htmlspecialchars(pfm_step_url(4)) ?>" class="pfm-review__edit">Edit &rarr;</a>
             </div>
+            <p class="pfm-text-muted pfm-mt-0" style="font-size:0.85rem;">
+                Includes the main contact &mdash; edit them on Step 3, or any other buyer on Step 4.
+            </p>
             <?php if ($buyerCount === 0): ?>
                 <div class="pfm-alert pfm-alert--warning pfm-mb-0">
                     You need at least one active buyer to continue. Please add one in Step 4.
@@ -184,10 +188,19 @@ require __DIR__ . '/../_includes/progress-bar.php';
             <?php else: ?>
                 <ul class="pfm-buyer-list pfm-mb-0">
                     <?php foreach ($buyers as $b): ?>
-                        <li class="pfm-buyer">
+                        <?php $isPrimary = !empty($b['main_contact']); ?>
+                        <li class="pfm-buyer <?= $isPrimary ? 'pfm-buyer--primary' : '' ?>">
                             <div class="pfm-buyer__avatar"><?= strtoupper(substr((string) ($b['member_name'] ?? '?'), 0, 1)) ?></div>
                             <div class="pfm-buyer__info">
-                                <p class="pfm-buyer__name"><?= htmlspecialchars((string) ($b['member_name'] ?? '')) ?></p>
+                                <p class="pfm-buyer__name">
+                                    <?= htmlspecialchars((string) ($b['member_name'] ?? '')) ?>
+                                    <?php if ($isPrimary): ?>
+                                        <span class="pfm-badge pfm-badge--primary"
+                                              style="display:inline-block; margin-left:8px; padding:2px 8px; background:#727cf5; color:#fff; border-radius:10px; font-size:0.7rem; font-weight:600; vertical-align:middle;">
+                                            Primary Contact
+                                        </span>
+                                    <?php endif; ?>
+                                </p>
                                 <p class="pfm-buyer__meta">
                                     <?= htmlspecialchars((string) ($b['email'] ?? '')) ?>
                                     <?php if (!empty($b['phone1'])): ?>
@@ -246,7 +259,7 @@ require __DIR__ . '/../_includes/progress-bar.php';
             </div>
             <div class="pfm-pricing">
                 <div class="pfm-pricing__row">
-                    <div>Base membership (<?= (int) $pricing['included_buyers'] ?> buyers included)</div>
+                    <div>Base membership (<?= (int) $pricing['included_buyers'] ?> included &mdash; main contact + buyers)</div>
                     <div><?= PFM_money($pricing['base_price']) ?></div>
                 </div>
                 <?php if ($pricing['extra_buyers'] > 0): ?>
