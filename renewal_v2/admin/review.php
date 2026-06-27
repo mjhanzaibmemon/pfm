@@ -76,8 +76,7 @@ if ($session === null) {
 $client = Db::one(
     'SELECT client_id, co_name, MembershipID, email, phone_number,
             main_contact_name, main_contact_email, main_contact_phone, main_contact_title,
-            business_type, business_license, federal_tax_id,
-            street_address, city, state, zip_code,
+            mailing_address, city, state, zip_code,
             renewal_date, expiration_date
        FROM clients
       WHERE client_id = ?',
@@ -240,22 +239,10 @@ $alreadyConfirmed = ($session->adminConfirmedAt !== null);
 
             <h3 class="pfm-card__subtitle pfm-mt-3">Company</h3>
             <div class="pfm-data-row">
-                <span class="label">Business type</span>
-                <span class="value"><?= htmlspecialchars($client['business_type'] ?? '—') ?></span>
-            </div>
-            <div class="pfm-data-row">
-                <span class="label">Business license</span>
-                <span class="value"><?= htmlspecialchars($client['business_license'] ?? '—') ?></span>
-            </div>
-            <div class="pfm-data-row">
-                <span class="label">Federal tax ID</span>
-                <span class="value"><?= htmlspecialchars($client['federal_tax_id'] ?? '—') ?></span>
-            </div>
-            <div class="pfm-data-row">
                 <span class="label">Address</span>
                 <span class="value">
                     <?= htmlspecialchars(trim(
-                        ($client['street_address'] ?? '') . ', ' .
+                        ($client['mailing_address'] ?? '') . ', ' .
                         ($client['city'] ?? '') . ', ' .
                         ($client['state'] ?? '') . ' ' .
                         ($client['zip_code'] ?? ''),
