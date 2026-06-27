@@ -40,11 +40,32 @@ class BuyerManager
     // ===== READ =====
 
     /**
-     * Return all active buyers for a client (excludes main contact and
-     * wizard-removed entries).
+     * Return the active member roster for a client — the main contact
+     * row first (when one exists), followed by buyers in
+     * member_id-ascending order.
      *
      * "Active" = wizard_removed_at IS NULL
-     * "Buyer"  = main_contact = 0
+     * "Roster" = main_contact = 1 (the contact) UNION main_contact = 0
+     *            (the buyers)
+     *
+     * Why main contact is included (Path B, 2026-06-22 Round 3 QA):
+     *   Larissa's review of the legacy renewal flow confirmed it counts
+     *   every members row for the client when computing the renewal
+     *   fee — see form_clients_steps_appn_stripe_renew_apl.php line
+     *   3164 ("SELECT COUNT(client_id) FROM members WHERE client_id = X"
+     *   with no main_contact filter) feeding the pricing tier check at
+     *   line 3349 ("if ($members_ct <= 3) base else base + extras"). The
+     *   wizard's earlier behaviour (main contact excluded from the
+     *   count) silently undercharged every customer with more than 3
+     *   total members by one tier — a regression versus the legacy
+     *   billing PFM was already running on. Including main contact in
+     *   getActive() restores legacy parity across pricing, Step 4 UI,
+     *   Step 6 review, and admin/review.php in one place.
+     *
+     * Buyer-management operations (remove / restore / modify) still
+     * reject main_contact = 1 rows so Step 3 stays the single source
+     * of truth for editing the main contact; Step 4 cards skip the
+     * Edit/Remove buttons for that row.
      *
      * NOTE: this filter intentionally does NOT touch the legacy `include`
      * BIT column. The existing PFM admin "Add Buyer" form inserts new
@@ -56,25 +77,25 @@ class BuyerManager
      * added by migration 006, leaving `include` alone for any other
      * system that reads it.
      *
-     * Results are ordered by member_id ASC (stable, matches the order
-     * they were added).
-     *
      * @return array[]  Each row: member_id, member_name, email, phone1,
-     *                  note, include (as int), main_contact, is_active
+     *                  note, include (as int), main_contact (as int),
+     *                  is_active (always 1), is_primary (1 when this is
+     *                  the main contact row, 0 otherwise — caller-friendly
+     *                  alias for main_contact).
      */
     public static function getActive(int $clientId): array
     {
         // is_active flag is always true here (we only return active rows).
-        // We still surface `include` in the row for callers that want it.
+        // is_primary mirrors main_contact for callers that prefer the
+        // semantic name (Step 4 UI, admin/review.php).
         $rows = Db::all(
             "SELECT member_id, member_name, email, phone1, note,
                     include, main_contact,
                     1 AS is_active
                FROM members
               WHERE client_id = ?
-                AND main_contact = b'0'
                 AND wizard_removed_at IS NULL
-              ORDER BY member_id ASC",
+              ORDER BY main_contact DESC, member_id ASC",
             [$clientId]
         );
 
@@ -104,15 +125,18 @@ class BuyerManager
     }
 
     /**
-     * Count active buyers for a client (excludes main contact and
-     * wizard-removed buyers).
+     * Count active members for a client — main contact + buyers,
+     * minus any wizard-removed rows. Matches the legacy renewal's
+     * "SELECT COUNT(client_id) FROM members WHERE client_id" used by
+     * the pricing tier check at apl.php line 3349. Used by Step 4's
+     * live pricing line, StripeClient::pricingForClient(), and the
+     * MAX_BUYERS cap on add().
      */
     public static function countActive(int $clientId): int
     {
         return (int) Db::scalar(
             "SELECT COUNT(*) FROM members
               WHERE client_id = ?
-                AND main_contact = b'0'
                 AND wizard_removed_at IS NULL",
             [$clientId]
         );
