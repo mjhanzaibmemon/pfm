@@ -45,11 +45,17 @@ $newRenewalDate  = null;
 
 // expiration_date isn't always set on the clients row — staff who add a
 // member through the legacy "Add Member" form often only fill in
-// renewal_date and leave expiration_date blank. Derive a sensible
-// expiration_date from renewal_date in that case (one year before the
-// next renewal lines up with the canonical "anniversary" cycle), so
-// Step 1's "Current expiration date" never renders as an em-dash when
-// we have enough information to compute it.
+// renewal_date and leave expiration_date blank. In the PFM data model
+// renewal_date and expiration_date actually represent the same concept
+// (the date the current period ends / the member is due to renew by);
+// confirm-receipt.php's existing UPDATE advances renewal_date by one
+// year on each completed renewal. So when expiration_date is missing,
+// fall back to renewal_date directly — NOT renewal_date minus one year
+// (an earlier draft of this fallback did the subtraction and made
+// Step 1 read the date a full year early, which falsely tripped the
+// >90-day staff-handling gate for any member whose renewal_date was
+// just a few weeks in the past — Larissa's 2026-06-26 Round 4 test
+// caught that on client 737836 with renewal_date = 2026-05-31).
 $effExpirationDate = null;
 if ($statusRow) {
     $rawExp = trim((string) ($statusRow['expiration_date'] ?? ''));
@@ -57,10 +63,7 @@ if ($statusRow) {
     if ($rawExp !== '' && $rawExp !== '0000-00-00 00:00:00') {
         $effExpirationDate = $rawExp;
     } elseif ($rawRen !== '' && $rawRen !== '0000-00-00 00:00:00') {
-        $ts = strtotime($rawRen);
-        if ($ts !== false) {
-            $effExpirationDate = date('Y-m-d', strtotime('-1 year', $ts));
-        }
+        $effExpirationDate = $rawRen;
     }
 }
 

@@ -210,13 +210,23 @@ try {
     //         If renewal_date is NULL (rare legacy hole), we skip the
     //         date bump rather than store NULL+1Y garbage; staff can
     //         set it manually via the edit form.
+    // The 90-day decision uses COALESCE(expiration_date, renewal_date)
+    // because expiration_date is frequently NULL in PFM data — the
+    // legacy "Add Member" admin form sets renewal_date but leaves
+    // expiration_date blank. In the PFM data model the two columns
+    // represent the same concept (when the current period ends), so
+    // when expiration_date is missing we evaluate the 90-day rule
+    // against renewal_date itself. Without this coalesce the second
+    // WHEN was skipped whenever expiration_date was NULL, and even a
+    // member who paid years late would have their anniversary
+    // preserved — defeating Larissa's 2026-06-10 instruction that
+    // late-by-more-than-90-days renewals reset to today + 1 year.
     $pdo->prepare(
         'UPDATE clients
             SET memb_status_id = 3,
                 renewal_date   = CASE
                                    WHEN renewal_date IS NULL THEN renewal_date
-                                   WHEN expiration_date IS NOT NULL
-                                        AND DATEDIFF(CURDATE(), expiration_date) > 90
+                                   WHEN DATEDIFF(CURDATE(), COALESCE(expiration_date, renewal_date)) > 90
                                      THEN DATE_ADD(CURDATE(), INTERVAL 1 YEAR)
                                    ELSE DATE_ADD(renewal_date, INTERVAL 1 YEAR)
                                  END
