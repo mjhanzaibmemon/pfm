@@ -59,12 +59,14 @@ require __DIR__ . '/../_includes/progress-bar.php';
         <h2 class="pfm-card__title">Your Buyers</h2>
         <p class="pfm-card__subtitle">
             Add, update, or remove the people who buy on behalf of your organisation.
-            You can have up to <?= (int) $maxBuyers ?> active buyers.
+            Your main contact (set on Step 3) is also counted as a buyer.
+            You can have up to <?= (int) $maxBuyers ?> active members in total.
         </p>
     </div>
 
     <div class="pfm-counter">
         Active buyers: <strong id="pfm-buyer-count"><?= (int) $activeCount ?></strong> of <?= (int) $maxBuyers ?>
+        <span class="pfm-text-muted" style="font-size: 0.85rem;">(includes main contact)</span>
     </div>
 
     <?php if ($pricing !== null): ?>
@@ -81,7 +83,8 @@ require __DIR__ . '/../_includes/progress-bar.php';
                 $totalInitial  = $base + ($extraInitial * $perExtra);
                 $extraCharge   = $extraInitial * $perExtra;
             ?>
-            <strong id="pfm-pricing-count"><?= (int) $activeCount ?></strong> buyers &mdash;
+            <strong id="pfm-pricing-count"><?= (int) $activeCount ?></strong> buyers
+            <span class="pfm-text-muted" style="font-size:0.85rem;">(including main contact)</span> &mdash;
             <?php if ($extraInitial > 0): ?>
                 base + <span id="pfm-pricing-extra-n"><?= $extraInitial ?></span> additional =
                 $<span id="pfm-pricing-base"><?= number_format($base, 2) ?></span>
@@ -91,7 +94,7 @@ require __DIR__ . '/../_includes/progress-bar.php';
                 base =
                 <strong>$<span id="pfm-pricing-total"><?= number_format($base, 2) ?></span> total</strong>
                 <span class="pfm-text-muted" style="font-size: 0.85rem;">
-                    (<?= $included ?> buyers included; $<?= number_format($perExtra, 2) ?> each additional)
+                    (<?= $included ?> included; $<?= number_format($perExtra, 2) ?> each additional)
                 </span>
             <?php endif; ?>
         </div>
@@ -110,21 +113,31 @@ require __DIR__ . '/../_includes/progress-bar.php';
     <ul class="pfm-buyer-list" id="pfm-buyer-list">
         <?php foreach ($buyers as $b): ?>
             <?php
-                $bName  = (string) ($b['member_name'] ?? '');
-                $bEmail = (string) ($b['email']       ?? '');
-                $bPhone = (string) ($b['phone1']      ?? '');
-                $bNote  = (string) ($b['note']        ?? '');
+                $bName    = (string) ($b['member_name'] ?? '');
+                $bEmail   = (string) ($b['email']       ?? '');
+                $bPhone   = (string) ($b['phone1']      ?? '');
+                $bNote    = (string) ($b['note']        ?? '');
+                $isPrimary = !empty($b['main_contact']);
             ?>
-            <li class="pfm-buyer <?= $b['is_active'] ? '' : 'pfm-buyer--removed' ?>"
+            <li class="pfm-buyer <?= $b['is_active'] ? '' : 'pfm-buyer--removed' ?> <?= $isPrimary ? 'pfm-buyer--primary' : '' ?>"
                 data-member-id="<?= (int) $b['member_id'] ?>"
                 data-active="<?= $b['is_active'] ? '1' : '0' ?>"
+                data-primary="<?= $isPrimary ? '1' : '0' ?>"
                 data-buyer-name="<?= htmlspecialchars($bName, ENT_QUOTES) ?>"
                 data-buyer-email="<?= htmlspecialchars($bEmail, ENT_QUOTES) ?>"
                 data-buyer-phone="<?= htmlspecialchars($bPhone, ENT_QUOTES) ?>"
                 data-buyer-note="<?= htmlspecialchars($bNote, ENT_QUOTES) ?>">
                 <div class="pfm-buyer__avatar"><?= strtoupper(substr($bName !== '' ? $bName : '?', 0, 1)) ?></div>
                 <div class="pfm-buyer__info">
-                    <p class="pfm-buyer__name"><?= htmlspecialchars($bName !== '' ? $bName : 'Unnamed buyer') ?></p>
+                    <p class="pfm-buyer__name">
+                        <?= htmlspecialchars($bName !== '' ? $bName : 'Unnamed buyer') ?>
+                        <?php if ($isPrimary): ?>
+                            <span class="pfm-badge pfm-badge--primary"
+                                  style="display:inline-block; margin-left:8px; padding:2px 8px; background:#727cf5; color:#fff; border-radius:10px; font-size:0.7rem; font-weight:600; vertical-align:middle;">
+                                Primary Contact
+                            </span>
+                        <?php endif; ?>
+                    </p>
                     <p class="pfm-buyer__meta">
                         <span class="pfm-buyer__label">Email:</span>
                         <?php if ($bEmail !== ''): ?>
@@ -149,7 +162,15 @@ require __DIR__ . '/../_includes/progress-bar.php';
                     <?php endif; ?>
                 </div>
                 <div class="pfm-buyer__actions">
-                    <?php if ($b['is_active']): ?>
+                    <?php if ($isPrimary): ?>
+                        <!-- Main contact row: edited on Step 3, not here. Surface a small link
+                             so the customer knows where to go if they want to change it. -->
+                        <a class="pfm-btn pfm-btn--ghost pfm-btn--sm"
+                           href="<?= htmlspecialchars(pfm_step_url(3)) ?>"
+                           title="Edit the main contact on Step 3">
+                            Edit on Step 3 &rarr;
+                        </a>
+                    <?php elseif ($b['is_active']): ?>
                         <button type="button" class="pfm-btn pfm-btn--ghost pfm-btn--sm" data-pfm-edit>Edit</button>
                         <button type="button" class="pfm-btn pfm-btn--danger pfm-btn--sm" data-pfm-remove>Remove</button>
                     <?php else: ?>
