@@ -43,13 +43,22 @@ if (!function_exists('pfm_format_phone')) {
         $digits = preg_replace('/[^0-9]/', '', $raw) ?? '';
         $len    = strlen($digits);
 
-        // NANPA rule (North American Numbering Plan): valid US/Canada
-        // area codes (digits 1-3 of a 10-digit number) NEVER start with
-        // 0 or 1. If the first digit is 0/1, this isn't a US number —
-        // return raw so non-US numbers like "0313261879" (Pakistan) or
-        // "07911123456" (UK) display readable instead of mangled into
-        // a fake "(031) 326-1879".
-        if ($len === 10 && $digits[0] >= '2') {
+        // Formatting rule: a 10-digit number whose first digit is not
+        // "0" formats as (XXX) XXX-XXXX. Numbers starting with "0" are
+        // left raw because that's the shape of most international
+        // numbers PFM staff use for testing / internal reference
+        // (e.g. Pakistani mobile "0313261879") — formatting those as
+        // "(031) 326-1879" would fabricate a US-looking area code.
+        //
+        // Earlier NANPA-strict rule (first digit 2-9 only) was safer
+        // for real US phones but confused testers who used placeholder
+        // values like "1111111111" — Larissa's 2026-06-30 Round 4 QA
+        // hit that: her placeholder "1111111112" was displayed raw and
+        // she read the output as "phone format is not working". The
+        // relaxed rule keeps international protection (leading 0) while
+        // formatting placeholders and any 10-digit real-world US
+        // number staff might enter.
+        if ($len === 10 && $digits[0] !== '0') {
             return sprintf(
                 '(%s) %s-%s',
                 substr($digits, 0, 3),
@@ -59,8 +68,8 @@ if (!function_exists('pfm_format_phone')) {
         }
 
         // 11 digits leading "1" is the US country-code form (1-503-...).
-        // The area code (digits 2-4) must still pass the NANPA rule.
-        if ($len === 11 && $digits[0] === '1' && $digits[1] >= '2') {
+        // The area code (digits 2-4) follows the same "not 0" rule.
+        if ($len === 11 && $digits[0] === '1' && $digits[1] !== '0') {
             return sprintf(
                 '1 (%s) %s-%s',
                 substr($digits, 1, 3),

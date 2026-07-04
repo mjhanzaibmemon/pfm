@@ -290,20 +290,21 @@ require __DIR__ . '/../_includes/progress-bar.php';
         });
     }
 
-    // NANPA-aware phone formatter — mirrors lib/PhoneFormat.php's
+    // Phone formatter — mirrors lib/PhoneFormat.php's
     // pfm_format_phone() rule so server-rendered cards (initial paint
     // + Step 6 review + admin review) and JS-rendered cards (new
     // wizard buyer added, inline-edited buyer) read identically:
-    //   10 digits, first 2-9 -> (XXX) XXX-XXXX
-    //   11 digits leading 1, area 2-9 -> 1 (XXX) XXX-XXXX
-    //   else -> raw input (non-NANPA numbers stay readable).
+    //   10 digits, first digit != 0 -> (XXX) XXX-XXXX
+    //   11 digits leading 1, area not 0 -> 1 (XXX) XXX-XXXX
+    //   else -> raw input (leading-zero international numbers and
+    //           partial entries stay readable).
     function formatPhoneForDisplay(raw) {
         var s = String(raw == null ? '' : raw);
         var d = s.replace(/\D+/g, '');
-        if (d.length === 10 && d.charAt(0) >= '2' && d.charAt(0) <= '9') {
+        if (d.length === 10 && d.charAt(0) !== '0') {
             return '(' + d.slice(0, 3) + ') ' + d.slice(3, 6) + '-' + d.slice(6);
         }
-        if (d.length === 11 && d.charAt(0) === '1' && d.charAt(1) >= '2' && d.charAt(1) <= '9') {
+        if (d.length === 11 && d.charAt(0) === '1' && d.charAt(1) !== '0') {
             return '1 (' + d.slice(1, 4) + ') ' + d.slice(4, 7) + '-' + d.slice(7);
         }
         return s;

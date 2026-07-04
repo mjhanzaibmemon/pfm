@@ -265,25 +265,26 @@ require __DIR__ . '/../_includes/progress-bar.php';
     var saver = PFM.autosave.attach(form, { section: 'contact', step: 3 });
 
     // Live phone formatting on input. Mirrors lib/PhoneFormat.php's
-    // NANPA-aware rule: a clean US 10-digit number (or 11-digit leading
-    // "1") renders as (XXX) XXX-XXXX / 1 (XXX) XXX-XXXX, and anything
-    // else (Pakistani 0…, international formats, partial entries) is
-    // left as-is so the customer's typing doesn't get mangled
-    // mid-stream. Same formatter runs server-side on first paint.
+    // format-if-not-starting-with-0 rule: a 10-digit number whose first
+    // digit is not "0" renders as (XXX) XXX-XXXX, an 11-digit leading
+    // "1" (US country-code form) renders as 1 (XXX) XXX-XXXX, and
+    // anything else (Pakistani 0…, partial entries) is left as-is so
+    // international numbers stay readable and mid-typing doesn't get
+    // mangled. Same formatter runs server-side on first paint.
     var phoneIn = document.getElementById('contact_phone');
     if (phoneIn) {
         phoneIn.addEventListener('input', function () {
             var raw    = phoneIn.value;
             var digits = raw.replace(/\D/g, '');
             var formatted;
-            if (digits.length === 10 && digits.charAt(0) >= '2' && digits.charAt(0) <= '9') {
+            if (digits.length === 10 && digits.charAt(0) !== '0') {
                 formatted = '(' + digits.slice(0, 3) + ') ' + digits.slice(3, 6) + '-' + digits.slice(6);
-            } else if (digits.length === 11 && digits.charAt(0) === '1' && digits.charAt(1) >= '2' && digits.charAt(1) <= '9') {
+            } else if (digits.length === 11 && digits.charAt(0) === '1' && digits.charAt(1) !== '0') {
                 formatted = '1 (' + digits.slice(1, 4) + ') ' + digits.slice(4, 7) + '-' + digits.slice(7);
             } else {
-                // Partial entry, international, or non-NANPA — leave the
-                // raw input alone so the cursor and user-typed format
-                // stay intact.
+                // Partial entry or leading-zero international — leave
+                // the raw input alone so the cursor and user-typed
+                // format stay intact.
                 return;
             }
             if (formatted !== raw) {
