@@ -53,6 +53,49 @@ if ($token === '') {
     showError('No renewal link found. Please use the link from your renewal email.');
 }
 
+// ── Stale-link check (before loadOrCreate) ──────────────────────────
+// Larissa's 2026-06-30 Round 4 QA raised the question of what happens
+// when a customer clicks an OLD email link after staff have started a
+// new renewal cycle for the same customer. Every "Email" click on the
+// legacy Renewals grid stamps a fresh sec_renewals row (new token, new
+// 30-day expiry) — so the moment staff generate a new link, the old
+// token becomes stale even if it hasn't hit its own token_exp yet.
+//
+// Detect that shape here and route the customer to a friendly
+// "please use your latest email link" page instead of dumping them
+// back on the old completed session's Thank You page. If the token
+// has been applied but no newer token exists (the classic bookmark-
+// after-paying case), we fall through so the customer still sees
+// their completion — that's the intent of 9d62f9c and stays as-is.
+$stalenessProbe = Db::one(
+    'SELECT client_id, applied FROM sec_renewals
+      WHERE token = ? ORDER BY token_created DESC LIMIT 1',
+    [$token]
+);
+if ($stalenessProbe !== null && $stalenessProbe['applied'] !== null) {
+    $newerActive = Db::one(
+        "SELECT sec_renew_id
+           FROM sec_renewals
+          WHERE client_id  = ?
+            AND token     != ?
+            AND applied IS NULL
+            AND token_exp > NOW()
+          ORDER BY token_created DESC
+          LIMIT 1",
+        [(int) $stalenessProbe['client_id'], $token]
+    );
+    if ($newerActive !== null) {
+        unset($_SESSION['renewal_token']);
+        showError(
+            'This renewal link has already been used.',
+            'A newer renewal email has been sent to you. Please check '
+            . 'your inbox for the most recent renewal link, or contact '
+            . '<a href="mailto:' . PFM_RNW_SUPPORT_EMAIL . '">'
+            . PFM_RNW_SUPPORT_EMAIL . '</a> if you can no longer find it.'
+        );
+    }
+}
+
 // ── Load / create session ────────────────────────────────────────────
 $renewalSession = RenewalSession::loadOrCreate($token);
 
