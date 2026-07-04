@@ -375,6 +375,96 @@ try {
             $session->id, $e->getMessage()
         ));
     }
+
+    // 5h. Surface each wizard-uploaded business document (Business
+    //     Registry + any additional docs) in the legacy PFM admin's
+    //     Operational Records tab. The tab reads from the client_docs
+    //     table — Larissa's 2026-06-30 Round 4 screenshot showed
+    //     existing rows shaped as
+    //         doc_type = "Active Secretary of State Registration"
+    //         doc_file = <BLOB>
+    //         doc_filename = <original filename>
+    //         doc_filesize = <bytes, as varchar>
+    //         ts = when it was added
+    //         user = who added it
+    //     with staff typically writing "larisu" or similar in user.
+    //     For wizard uploads we stamp user = "renewal_v2" so staff can
+    //     tell the two apart at a glance without changing the tab UI.
+    //
+    //     Mapping:
+    //       wizard key 'main_contact_id'  → SKIP. Driver's license /
+    //         photo ID belongs on the Main Contact tab (via clients
+    //         .main_contact_img_id, handled in 5g), not Operational
+    //         Records. The tab is for business documents.
+    //       wizard key 'business_license' → doc_type "Active Secretary
+    //         of State Registration" — matches the 1,702 existing
+    //         rows in production's client_docs table, the canonical
+    //         business-registry label PFM staff already use.
+    //       any other key (Step 5 "additional documents") → doc_type
+    //         "Other type of document" — matches the existing catch-
+    //         all label. Staff can retype the doc_type via the tab's
+    //         Edit button later if a more specific label applies.
+    //
+    //     Non-fatal in the same way 5g is: payment commit already
+    //     happened; a failed INSERT here just means the document
+    //     doesn't appear in the tab, and staff can re-upload from
+    //     admin/review.php's Uploaded Documents panel where it is
+    //     still surfaced. Migration 008 grants INSERT + SELECT on
+    //     client_docs to the pfm_renewal MySQL user; without that
+    //     migration this block would 1142 every time.
+    try {
+        $wizardDocs = DocumentUpload::getAll($session);
+        foreach ($wizardDocs as $docKey => $docMeta) {
+            if ($docKey === 'main_contact_id') {
+                continue; // stays on the Main Contact tab, not here
+            }
+            $docType = $docKey === 'business_license'
+                ? 'Active Secretary of State Registration'
+                : 'Other type of document';
+            try {
+                $absPath = DocumentUpload::getAbsolutePath($session, $docKey);
+            } catch (\Throwable $e) {
+                error_log(sprintf(
+                    '[renewal_v2] client_docs: could not resolve path for %s: %s',
+                    $docKey, $e->getMessage()
+                ));
+                continue;
+            }
+            if (!is_file($absPath) || !is_readable($absPath)) {
+                continue;
+            }
+            $bytes = file_get_contents($absPath);
+            if ($bytes === false || $bytes === '') {
+                continue;
+            }
+            $originalName = (string) ($docMeta['original_name'] ?? 'document');
+            $sizeString   = (string) ((int) ($docMeta['size'] ?? strlen($bytes)));
+
+            Db::exec(
+                "INSERT INTO client_docs
+                    (client_id, appn_id, doc_type, doc_file, doc_filename, doc_filesize, ts, user)
+                 VALUES (?, 0, ?, ?, ?, ?, NOW(), 'renewal_v2')",
+                [
+                    $session->clientId,
+                    $docType,
+                    $bytes,
+                    $originalName,
+                    $sizeString,
+                ]
+            );
+            error_log(sprintf(
+                '[renewal_v2] client_docs INSERT: wizard %s (%s) -> client %d '
+                . '(session %d, %d bytes, doc_type="%s").',
+                $docKey, $originalName, $session->clientId, $session->id,
+                strlen($bytes), $docType
+            ));
+        }
+    } catch (\Throwable $e) {
+        error_log(sprintf(
+            '[renewal_v2] client_docs INSERT block FAILED for session %d: %s',
+            $session->id, $e->getMessage()
+        ));
+    }
 } catch (\Throwable $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
