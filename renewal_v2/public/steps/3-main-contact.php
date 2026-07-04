@@ -104,8 +104,30 @@ $idKey      = 'main_contact_id';
 $uploaded   = $session->draftData['documents'][$idKey] ?? null;
 $legacyIdName = (string) ($client['main_contact_img_file'] ?? '');
 $legacyIdSize = (int)    ($client['main_contact_img_size'] ?? 0);
-$hasLegacyId  = ($legacyIdName !== '' && $legacyIdSize > 0);
-$idRequired   = !$uploaded && !$hasLegacyId;
+
+// hasLegacyId falls back to a direct BLOB check when the filename /
+// size sibling columns aren't populated. The legacy PFM admin "Add
+// Member" and edit forms sometimes write clients.main_contact_img_id
+// (the BLOB itself) without ever touching main_contact_img_file /
+// main_contact_img_size — Larissa's 2026-06-30 test on an older
+// customer file (client 12) hit exactly that shape and got asked to
+// re-upload despite the ID BLOB being present. Same defensive pattern
+// dd1beb8 uses for clients.doc_sec_of_state on Step 5.
+$hasLegacyId = ($legacyIdName !== '' && $legacyIdSize > 0);
+if (!$hasLegacyId) {
+    $hasLegacyId = (int) (Db::scalar(
+        'SELECT IF(main_contact_img_id IS NULL OR OCTET_LENGTH(main_contact_img_id) = 0, 0, 1)
+           FROM clients WHERE client_id = ?',
+        [$session->clientId]
+    ) ?? 0) === 1;
+    if ($hasLegacyId && $legacyIdName === '') {
+        // Give the customer a friendly label when the filename column
+        // is empty but the BLOB is there.
+        $legacyIdName = 'ID on file';
+    }
+}
+
+$idRequired = !$uploaded && !$hasLegacyId;
 
 require __DIR__ . '/../_includes/header.php';
 require __DIR__ . '/../_includes/progress-bar.php';
