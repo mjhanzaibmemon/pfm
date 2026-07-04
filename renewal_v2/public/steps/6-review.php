@@ -30,6 +30,34 @@ $buyerCount   = count($buyers);
 $docs         = DocumentUpload::getAll($session);
 $customerNote = $session->draftData['customer_note'] ?? '';
 
+// Overlay draft_data.contact onto the main_contact row in $buyers so
+// the Active Buyers section renders the customer's Step 3 edits before
+// submit — mirrors the same overlay Step 4 does. Larissa's 2026-06-30
+// Round 4 QA on session 49 hit this too: her renamed main contact
+// appeared in the Main Contact block (which reads $draftContact
+// directly) but the buyer list below still showed the pre-edit name
+// because it iterates $buyers which pulls straight from members.
+if (!empty($draftContact)) {
+    foreach ($buyers as &$__b) {
+        if (empty($__b['main_contact'])) {
+            continue;
+        }
+        if (isset($draftContact['name'])) {
+            $__nameCandidate = trim((string) $draftContact['name']);
+            if ($__nameCandidate !== '') {
+                $__b['member_name'] = $__nameCandidate;
+            }
+        }
+        if (isset($draftContact['email'])) {
+            $__b['email'] = trim((string) $draftContact['email']);
+        }
+        if (isset($draftContact['phone'])) {
+            $__b['phone1'] = pfm_normalize_phone($draftContact['phone']);
+        }
+    }
+    unset($__b);
+}
+
 // Effective values (draft override → live DB)
 $mainContact = Db::one(
     "SELECT member_name, email, phone1 FROM members

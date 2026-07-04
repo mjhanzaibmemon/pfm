@@ -27,6 +27,47 @@ $buyers      = BuyerManager::getActive($session->clientId);
 $activeCount = count($buyers);
 $maxBuyers   = BuyerManager::MAX_BUYERS;
 
+require_once __DIR__ . '/../../lib/PhoneFormat.php';
+
+// Overlay draft_data.contact onto the main_contact row so Step 4
+// reflects Step 3 edits before the customer has submitted. Without
+// this, changing the main contact's name (or email / phone) on
+// Step 3 and clicking Continue produces a Step 4 card that still
+// carries the pre-edit values from the members table — Larissa's
+// 2026-06-30 Round 4 QA caught it on session 49 (Primary Contact
+// card showed "Larissa Test Contact" even though Step 3 had been
+// saved as "...Name updated at renewal").
+//
+// The DB values are still authoritative post-submit; submit-
+// application.php writes both members.member_name/email/phone1 and
+// the clients.main_contact_* mirror. This overlay is purely the
+// pre-submit live-preview layer.
+$draftContactPreview = $session->draftData['contact'] ?? [];
+if (!empty($draftContactPreview)) {
+    foreach ($buyers as &$__b) {
+        if (empty($__b['main_contact'])) {
+            continue;
+        }
+        if (isset($draftContactPreview['name'])) {
+            $__nameCandidate = trim((string) $draftContactPreview['name']);
+            if ($__nameCandidate !== '') {
+                $__b['member_name'] = $__nameCandidate;
+            }
+        }
+        if (isset($draftContactPreview['email'])) {
+            $__b['email'] = trim((string) $draftContactPreview['email']);
+        }
+        if (isset($draftContactPreview['phone'])) {
+            // Normalise to raw digits so the display path (pfm_format_phone)
+            // and the data-buyer-phone attribute (used by the inline Edit
+            // form) both see the same canonical shape submit-application
+            // is going to store.
+            $__b['phone1'] = pfm_normalize_phone($draftContactPreview['phone']);
+        }
+    }
+    unset($__b);
+}
+
 // ── Pricing for the live "X buyers — base + Y additional = $A + $B = $T" line ──
 // Per v3 spec line 494: "Counter updates in real time: '4 buyers — base + 1
 // additional = $50 + $15 = $65 total'". Fetch the level row once on page load,
