@@ -15,13 +15,27 @@
 -- HISTORICAL NOTE
 --   These two tables were created directly on staging on 2026-05-23
 --   as the very first Phase 2 task (see larissa_rebuild.md's Phase 2
---   Day 1 log entry, "Database foundation + folder structure"). The
---   numbered .sql file itself was written later, retroactively, so the
---   production Phase 7 deploy has a single canonical script to run
---   rather than pasting inline SQL from the deploy checklist. The
---   schema below matches the state PRODUCTION_DEPLOY_CHECKLIST.md
---   section 1.1 documents as the Phase 2 baseline, before migrations
---   002 and 004 add the Phase 4 admin-review + Stripe-receipt columns.
+--   Day 1 log entry, "Database foundation + folder structure").
+--   Commit 20ae0c8 "Add renewal_v2 — Phase 2 backend complete" shipped
+--   the PHP code but did NOT include a numbered .sql file — the CREATE
+--   statements were pasted into staging's mysql client inline and the
+--   migration file itself was never written.
+--
+--   This file was therefore reconstructed retroactively on 2026-07-04
+--   by taking `SHOW CREATE TABLE renewal_sessions / renewal_changes`
+--   from live staging and subtracting every column + index that
+--   migrations 002 (admin-review columns) and 004 (Stripe-receipt
+--   columns) add. The result is exactly what staging looked like
+--   between 2026-05-23 and the first application of 002 on 2026-06-08.
+--
+--   Two spots where earlier drafts (larissa_rebuild.md's "Planned New
+--   Tables" and PRODUCTION_DEPLOY_CHECKLIST.md § 1.1) drifted from
+--   what was actually executed:
+--     - customer_note is VARCHAR(500), not TEXT. Both docs said TEXT
+--       but staging has always been VARCHAR(500) as far back as we
+--       can inspect. Production must match staging, not the docs.
+--     - idx_updated on (updated_at) exists on staging but was not
+--       listed in either doc. Present in live, so preserved here.
 --
 -- IDEMPOTENT
 --   IF NOT EXISTS on both CREATE TABLE statements means re-running
@@ -36,7 +50,7 @@ CREATE TABLE IF NOT EXISTS renewal_sessions (
     status              ENUM('draft','submitted','awaiting_payment','awaiting_review','completed','cancelled') DEFAULT 'draft',
     current_step        TINYINT DEFAULT 1,
     draft_data          JSON,
-    customer_note       TEXT NULL,
+    customer_note       VARCHAR(500) NULL,
     submitted_at        DATETIME NULL,
     stripe_session_id   VARCHAR(255) NULL,
     payment_id          VARCHAR(255) NULL,
@@ -44,9 +58,10 @@ CREATE TABLE IF NOT EXISTS renewal_sessions (
     amount_charged      DECIMAL(10,2) NULL,
     created_at          DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at          DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_client (client_id),
-    INDEX idx_token  (token),
-    INDEX idx_status (status)
+    INDEX idx_client  (client_id),
+    INDEX idx_token   (token),
+    INDEX idx_status  (status),
+    INDEX idx_updated (updated_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Customer renewal sessions - tracks draft, submitted, paid states';
 
