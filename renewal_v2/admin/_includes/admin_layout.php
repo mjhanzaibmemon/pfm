@@ -74,6 +74,41 @@ if (!function_exists('pfm_admin_session_start')) {
         ]);
 
         session_start();
+
+        // Keep the session file fresh on every /renewal_v2/admin/* hit.
+        // PHP's default session GC (gc_maxlifetime = 1440s = 24 min)
+        // will delete the session file if it hasn't been written to in
+        // that window — and PHP only rewrites the file if $_SESSION
+        // was mutated during the request. Larissa's 2026-06-30 Round 4
+        // QA reported that after clicking Confirm Receipt and staying
+        // on the pending-review screen for a while, clicking back into
+        // the main PFM admin asked her to log in again. The most
+        // likely shape of that failure is the session file getting
+        // GC'd between two of our admin pages that didn't happen to
+        // mutate $_SESSION (only read csrf_token and scriptcase auth
+        // flags), leaving PHP with no session record to load next
+        // request. Stamping pfm_admin_last_seen on every entry
+        // guarantees a write on session_write_close, which resets the
+        // file's mtime and puts the GC clock back to zero.
+        //
+        // Value is time() but any changing scalar would do — the goal
+        // is only to trip PHP's "session was mutated" flag. Logged for
+        // one-line traceability if Larissa reports the logout again.
+        $_SESSION['pfm_admin_last_seen'] = time();
+
+        // Defensive log: if the login pieces ScriptCase relies on ever
+        // go missing between our page loads (usr_login at top level,
+        // or the scriptcase array itself), we want to know. Costs one
+        // error_log line per admin request, which is cheap and gives
+        // us a breadcrumb next time the "please log in" ghost shows up.
+        if (empty($_SESSION['usr_login']) && empty($_SESSION['scriptcase'])) {
+            error_log(sprintf(
+                '[renewal_v2] admin session_start ran with NO ScriptCase '
+                . 'auth keys — session id %s from %s.',
+                session_id(),
+                (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown')
+            ));
+        }
     }
 }
 
