@@ -54,40 +54,55 @@ if ($token === '') {
 }
 
 // ── Stale-link check (before loadOrCreate) ──────────────────────────
-// Larissa's 2026-06-30 Round 4 QA raised the question of what happens
-// when a customer clicks an OLD email link after staff have started a
-// new renewal cycle for the same customer. Every "Email" click on the
-// legacy Renewals grid stamps a fresh sec_renewals row (new token, new
-// 30-day expiry) — so the moment staff generate a new link, the old
-// token becomes stale even if it hasn't hit its own token_exp yet.
+// A renewal link is stale the moment a strictly-NEWER unused-and-still-
+// -valid link exists for the same client. Two paths lead here:
 //
-// Detect that shape here and route the customer to a friendly
-// "please use your latest email link" page instead of dumping them
-// back on the old completed session's Thank You page. If the token
-// has been applied but no newer token exists (the classic bookmark-
-// after-paying case), we fall through so the customer still sees
-// their completion — that's the intent of 9d62f9c and stays as-is.
+//   1. Bug 5 (Larissa's 2026-06-30 Round 4 QA) — customer clicks their
+//      OLD email link after having already paid, and staff have since
+//      sent a new email for a new renewal cycle. The old token has
+//      applied != NULL and a newer active token exists.
+//
+//   2. Reset button (2026-07-05) — staff opened /admin/reset-renewal.php
+//      to force a fresh renewal cycle. The old token may never have
+//      been applied (customer bailed on Step 2), but we still don't
+//      want them to accidentally resume their now-cancelled draft on
+//      the old link. The old token has applied = NULL and a newer
+//      active token exists.
+//
+// Both paths share the same rule: "any strictly-newer unused-and-
+// unexpired sec_renewals row for this client makes the URL token
+// stale, regardless of whether the URL token itself has been applied."
+// The check compares token_created (not just presence) so a customer
+// who correctly clicks the newest link never sees a false stale error
+// even when older tokens are still lying around unused.
+//
+// If no newer row exists we fall through. That preserves the bookmark-
+// after-paying case (paid token, no newer token) so the customer still
+// gets their Thank You page — the intent of 9d62f9c stays intact.
 $stalenessProbe = Db::one(
-    'SELECT client_id, applied FROM sec_renewals
+    'SELECT client_id, token_created FROM sec_renewals
       WHERE token = ? ORDER BY token_created DESC LIMIT 1',
     [$token]
 );
-if ($stalenessProbe !== null && $stalenessProbe['applied'] !== null) {
+if ($stalenessProbe !== null) {
     $newerActive = Db::one(
         "SELECT sec_renew_id
            FROM sec_renewals
-          WHERE client_id  = ?
-            AND token     != ?
+          WHERE client_id     = ?
+            AND token_created > ?
             AND applied IS NULL
             AND token_exp > NOW()
           ORDER BY token_created DESC
           LIMIT 1",
-        [(int) $stalenessProbe['client_id'], $token]
+        [
+            (int) $stalenessProbe['client_id'],
+            (string) $stalenessProbe['token_created'],
+        ]
     );
     if ($newerActive !== null) {
         unset($_SESSION['renewal_token']);
         showError(
-            'This renewal link has already been used.',
+            'This renewal link is no longer active.',
             'A newer renewal email has been sent to you. Please check '
             . 'your inbox for the most recent renewal link, or contact '
             . '<a href="mailto:' . PFM_RNW_SUPPORT_EMAIL . '">'
