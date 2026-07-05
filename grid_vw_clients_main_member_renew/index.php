@@ -5330,6 +5330,29 @@ $_SESSION['scriptcase']['grid_vw_clients_main_member_renew']['contr_erro'] = 'of
     }  
     $_SESSION['scriptcase']['grid_vw_clients_main_member_renew']['contr_erro'] = 'on';
   echo "<br><br>".$tot_row_num . " emails sent.<br><br>";
+
+  /* -- renewal_v2 hand-edit ------------------------------------------
+   * Discovery link for the staff-only Reset page, shown right after
+   * Larissa uses the Email button. Not part of the ScriptCase-
+   * generated toolbar because we want a stable HTML link that survives
+   * grid regeneration. See PROJECT_ROOT/renewal_v2/admin/_includes/
+   * LARISSA_RESET_RENEWAL_GUIDE.md for when to use it.
+   * ---------------------------------------------------------------- */
+  echo '<div style="margin:20px auto;max-width:520px;padding:14px 18px;'
+     . 'background:#eef2ff;border:1px solid #727cf5;border-radius:6px;'
+     . 'text-align:left;font-family:Arial,sans-serif;font-size:0.92rem;'
+     . 'color:#313a46;">'
+     . '<div style="font-weight:700;margin-bottom:4px;">'
+     . 'Need to reset a specific customer\'s renewal?</div>'
+     . '<div style="color:#6c757d;margin-bottom:8px;">'
+     . 'For customers whose link is broken, whose draft is stuck, or '
+     . 'who need to redo their renewal from scratch.</div>'
+     . '<a href="/renewal_v2/admin/reset-renewal.php" target="_blank" '
+     . 'style="display:inline-block;padding:8px 14px;background:#727cf5;'
+     . 'color:white;text-decoration:none;border-radius:4px;'
+     . 'font-weight:600;">'
+     . 'Open Reset &amp; Send Fresh Link &rarr;</a></div>';
+  /* -- /renewal_v2 hand-edit --------------------------------------- */
 $_SESSION['scriptcase']['grid_vw_clients_main_member_renew']['contr_erro'] = 'off'; 
 }  
     $this->NM_buffer = ob_get_contents();
