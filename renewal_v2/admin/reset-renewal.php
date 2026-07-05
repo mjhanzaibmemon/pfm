@@ -177,17 +177,22 @@ if ($searchQuery !== '') {
     }
 }
 
-// Detect the "recently paid" case (Option 1 warning). A client is
-// considered recently-paid if their latest non-cancelled session is
-// 'completed' AND paid_at is within the last 90 days. In that state,
-// resetting means the customer will be asked to pay again — Larissa
-// almost certainly wants the legacy Client Details editor instead, so
-// we surface a red warning + change the button copy.
+// Detect the "recently paid" case (Option 1 warning). We key off the
+// paid_at column directly instead of the status enum, because payment
+// happens BEFORE Confirm Receipt runs — a session sitting in
+// 'awaiting_review' is a paid session that just hasn't been closed
+// out by staff yet. Both 'awaiting_review' and 'completed' rows carry
+// paid_at + amount_charged and both are money-in-hand states we don't
+// want to accidentally re-charge.
+//
+// If it's within the last 90 days we consider it "recent" — anything
+// older is almost certainly a legitimate new annual cycle where the
+// customer should be paying again anyway.
 $recentlyPaid = false;
 $recentlyPaidAmount = null;
 $recentlyPaidWhen   = null;
+$recentlyPaidStatus = null;
 if (!empty($currentState['session'])
-    && $currentState['session']['status'] === 'completed'
     && !empty($currentState['session']['paid_at'])) {
     $paidAt = strtotime((string) $currentState['session']['paid_at']);
     if ($paidAt !== false
@@ -195,6 +200,7 @@ if (!empty($currentState['session'])
         $recentlyPaid       = true;
         $recentlyPaidAmount = $currentState['session']['amount_charged'] ?? null;
         $recentlyPaidWhen   = (string) $currentState['session']['paid_at'];
+        $recentlyPaidStatus = (string) $currentState['session']['status'];
     }
 }
 
@@ -574,19 +580,33 @@ pfm_admin_header('Reset Renewal',
                 &#9888; STOP &mdash; this client already paid
             </div>
             <p style="margin:0 0 8px 0;">
+                <?php if ($recentlyPaidStatus === 'awaiting_review'): ?>
+                Their payment cleared on
+                <strong><?= htmlspecialchars((string) $recentlyPaidWhen) ?></strong><?= $recentlyPaidAmount !== null
+                    ? ' for <strong>$' . number_format((float) $recentlyPaidAmount, 2) . '</strong>'
+                    : '' ?>
+                and is waiting for a staff Confirm Receipt (renewal not
+                yet finalised).
+                <?php else: ?>
                 Their renewal was completed on
                 <strong><?= htmlspecialchars((string) $recentlyPaidWhen) ?></strong><?= $recentlyPaidAmount !== null
                     ? ' for <strong>$' . number_format((float) $recentlyPaidAmount, 2) . '</strong>'
                     : '' ?>.
+                <?php endif; ?>
                 Clicking Reset will start a completely new renewal cycle
                 &mdash; the customer will be asked to <strong>pay again</strong>.
                 Their existing payment record is NOT refunded automatically.
             </p>
             <p style="margin:8px 0 0 0;">
+                <?php if ($recentlyPaidStatus === 'awaiting_review'): ?>
+                To finalise their existing paid renewal, open the pending
+                reviews dashboard and click Confirm Receipt instead.
+                <?php else: ?>
                 If they just need to correct something in their profile
                 (buyers, contact info, documents), edit them directly in
-                the legacy PFM admin's Client Details page instead. Only
-                reset here if you truly want a full re-do.
+                the legacy PFM admin's Client Details page instead.
+                <?php endif; ?>
+                Only reset here if you truly want a full re-do.
             </p>
         </div>
         <?php endif; ?>
