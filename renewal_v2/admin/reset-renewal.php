@@ -158,7 +158,8 @@ if ($searchQuery !== '') {
         $cid = (int) $foundClient['client_id'];
         $currentState = [
             'session' => Db::one(
-                'SELECT id, status, current_step, paid_at, updated_at
+                'SELECT id, status, current_step, paid_at, amount_charged,
+                        updated_at
                    FROM renewal_sessions
                   WHERE client_id = ? AND status != "cancelled"
                   ORDER BY updated_at DESC LIMIT 1',
@@ -173,6 +174,27 @@ if ($searchQuery !== '') {
                 [$cid]
             ),
         ];
+    }
+}
+
+// Detect the "recently paid" case (Option 1 warning). A client is
+// considered recently-paid if their latest non-cancelled session is
+// 'completed' AND paid_at is within the last 90 days. In that state,
+// resetting means the customer will be asked to pay again — Larissa
+// almost certainly wants the legacy Client Details editor instead, so
+// we surface a red warning + change the button copy.
+$recentlyPaid = false;
+$recentlyPaidAmount = null;
+$recentlyPaidWhen   = null;
+if (!empty($currentState['session'])
+    && $currentState['session']['status'] === 'completed'
+    && !empty($currentState['session']['paid_at'])) {
+    $paidAt = strtotime((string) $currentState['session']['paid_at']);
+    if ($paidAt !== false
+        && $paidAt > (time() - 90 * 24 * 60 * 60)) {
+        $recentlyPaid       = true;
+        $recentlyPaidAmount = $currentState['session']['amount_charged'] ?? null;
+        $recentlyPaidWhen   = (string) $currentState['session']['paid_at'];
     }
 }
 
@@ -228,9 +250,23 @@ function pfm_reset_and_send_link(int $clientId): array
     }
 
     try {
-        // 2. Cancel any non-cancelled sessions with token-mangling to
-        //    free the UNIQUE constraint. Same mangling scheme
-        //    RenewalSession::loadOrCreate() uses ('sup_<id>_...').
+        // 2a. Snapshot the sessions we're about to cancel so we can
+        //     log them in the audit note below. Grab it BEFORE the
+        //     UPDATE so the row still shows its original status +
+        //     paid_at (helps a future staff member reading Notes
+        //     understand what was retired).
+        $priorSessions = Db::all(
+            "SELECT id, status, current_step, paid_at, amount_charged
+               FROM renewal_sessions
+              WHERE client_id = ?
+                AND status != 'cancelled'
+              ORDER BY id",
+            [$clientId]
+        );
+
+        // 2b. Cancel any non-cancelled sessions with token-mangling to
+        //     free the UNIQUE constraint. Same mangling scheme
+        //     RenewalSession::loadOrCreate() uses ('sup_<id>_...').
         Db::exec(
             "UPDATE renewal_sessions
                 SET status = 'cancelled',
@@ -307,6 +343,31 @@ function pfm_reset_and_send_link(int $clientId): array
                     'link' => $renewalLink, 'sent_to' => $recipient];
         }
 
+        // 8. Audit trail — drop a row into client_notes so this
+        //    reset shows up in the customer's Notes tab in the legacy
+        //    PFM admin. Same table + user='renewal_v2' pattern
+        //    RenewalHistoryNote uses at Confirm Receipt time. Wrapped
+        //    in its own try/catch so a note-write failure never
+        //    swallows the "email sent" success signal.
+        try {
+            $auditHtml = pfm_reset_audit_note_html(
+                $priorSessions ?? [],
+                $newToken,
+                $recipient
+            );
+            Db::exec(
+                'INSERT INTO client_notes (client_id, note, note_date, user)
+                 VALUES (?, ?, NOW(), ?)',
+                [$clientId, $auditHtml, 'renewal_v2']
+            );
+        } catch (\Throwable $e) {
+            error_log(sprintf(
+                '[renewal_v2] reset-renewal: audit-note write failed for '
+              . 'client %d — %s (email already sent, ignoring)',
+                $clientId, $e->getMessage()
+            ));
+        }
+
         error_log(sprintf(
             '[renewal_v2] reset-renewal: sent fresh link to %s for client %d.',
             $recipient, $clientId
@@ -324,6 +385,66 @@ function pfm_reset_and_send_link(int $clientId): array
                 'msg' => 'Server error: ' . $e->getMessage(),
                 'link' => '', 'sent_to' => ''];
     }
+}
+
+/**
+ * Build the HTML that goes into client_notes.note when a reset happens.
+ * Mirrors the tone + <p>-wrapped format the legacy admin uses for other
+ * note rows so it renders consistently in the Notes tab.
+ *
+ * @param array[] $priorSessions Rows we cancelled (id, status, current_step,
+ *                               paid_at, amount_charged)
+ * @param string  $newToken      The fresh token (only prefix logged)
+ * @param string  $recipient     Email address the fresh link went to
+ */
+function pfm_reset_audit_note_html(
+    array $priorSessions,
+    string $newToken,
+    string $recipient
+): string {
+    $lines = [];
+    $lines[] = '<p><strong>Renewal reset &amp; fresh link emailed</strong> '
+             . 'via /renewal_v2/admin/reset-renewal.php on '
+             . date('M j, Y g:i a') . '.</p>';
+
+    if (empty($priorSessions)) {
+        $lines[] = '<p>No prior in-progress renewal session existed for '
+                 . 'this client at the time of reset — the fresh link is '
+                 . 'their first current renewal.</p>';
+    } else {
+        $lines[] = '<p>The following prior session'
+                 . (count($priorSessions) > 1 ? 's were' : ' was')
+                 . ' cancelled as part of the reset:</p><ul>';
+        foreach ($priorSessions as $s) {
+            $piece = 'Session #' . (int) $s['id']
+                   . ' &mdash; status was <em>'
+                   . htmlspecialchars((string) $s['status']) . '</em>';
+            if (!empty($s['paid_at'])) {
+                $piece .= ', paid '
+                        . htmlspecialchars((string) $s['paid_at']);
+                if (!empty($s['amount_charged'])) {
+                    $piece .= ' ($'
+                            . number_format((float) $s['amount_charged'], 2)
+                            . ')';
+                }
+                $piece .= ' &mdash; NOTE: original payment record in '
+                        . 'client_pmts is preserved and NOT refunded';
+            } else {
+                $piece .= ', last step '
+                        . (int) $s['current_step'];
+            }
+            $lines[] = '<li>' . $piece . '</li>';
+        }
+        $lines[] = '</ul>';
+    }
+
+    $lines[] = '<p>Fresh renewal link sent to '
+             . '<a href="mailto:' . htmlspecialchars($recipient) . '">'
+             . htmlspecialchars($recipient) . '</a>. New token starts '
+             . 'with <code>' . htmlspecialchars(substr($newToken, 0, 8))
+             . '&hellip;</code> and is valid for 30 days.</p>';
+
+    return implode("\n", $lines);
 }
 
 /* ─── Render ──────────────────────────────────────────────────────── */
@@ -445,6 +566,31 @@ pfm_admin_header('Reset Renewal',
             </div>
         <?php endif; ?>
 
+        <?php if ($recentlyPaid): ?>
+        <div style="margin-top:24px;padding:16px;background:#fde4e4;
+                    border:2px solid #c0392b;border-radius:6px;
+                    color:#7a1e1e;">
+            <div style="font-size:1.1rem;font-weight:700;margin-bottom:8px;">
+                &#9888; STOP &mdash; this client already paid
+            </div>
+            <p style="margin:0 0 8px 0;">
+                Their renewal was completed on
+                <strong><?= htmlspecialchars((string) $recentlyPaidWhen) ?></strong><?= $recentlyPaidAmount !== null
+                    ? ' for <strong>$' . number_format((float) $recentlyPaidAmount, 2) . '</strong>'
+                    : '' ?>.
+                Clicking Reset will start a completely new renewal cycle
+                &mdash; the customer will be asked to <strong>pay again</strong>.
+                Their existing payment record is NOT refunded automatically.
+            </p>
+            <p style="margin:8px 0 0 0;">
+                If they just need to correct something in their profile
+                (buyers, contact info, documents), edit them directly in
+                the legacy PFM admin's Client Details page instead. Only
+                reset here if you truly want a full re-do.
+            </p>
+        </div>
+        <?php endif; ?>
+
         <div style="margin-top:24px;padding:16px;background:#fef7e0;
                     border:1px solid #ffbc00;border-radius:6px;
                     color:#7a5a00;">
@@ -452,29 +598,50 @@ pfm_admin_header('Reset Renewal',
             <ol style="margin:8px 0 0 20px;padding:0;font-size:0.9rem;">
                 <li>Any renewal currently in progress or completed for this
                     client is marked <em>cancelled</em> (kept in the DB for
-                    audit — nothing is deleted).</li>
+                    audit &mdash; nothing is deleted).</li>
                 <li>A brand-new renewal link is generated (valid for 30 days).</li>
                 <li>The renewal email is sent to
                     <strong><?= htmlspecialchars((string) ($foundClient['main_contact_email'] ?? '(no email!)')) ?></strong>.</li>
+                <li>An audit entry is added to this client's <em>Notes</em>
+                    tab in the legacy PFM admin so any future staff member
+                    can see the reset happened.</li>
                 <li>The link is also shown to you here in case you need to
                     copy it into a different message.</li>
             </ol>
         </div>
 
+        <?php
+        // Different confirm() copy + button style for the recently-paid
+        // case so Larissa gets a second, louder "you're doing something
+        // irreversible" nudge before we retire a paid session.
+        if ($recentlyPaid) {
+            $btnBg  = '#c0392b';
+            $btnLbl = '&#9888; Reset anyway (customer will pay again)';
+            $jsMsg  = 'This client ALREADY PAID for their renewal. '
+                    . 'Clicking Reset will start a new cycle and the '
+                    . 'customer will be asked to pay again. Their '
+                    . 'existing payment is NOT refunded. Are you SURE '
+                    . 'you want to reset?';
+        } else {
+            $btnBg  = '#fa5c7c';
+            $btnLbl = '&#9851; Reset renewal &amp; send fresh link';
+            $jsMsg  = 'This will cancel any renewal already in progress '
+                    . 'for this client and email them a fresh link. '
+                    . 'Continue?';
+        }
+        ?>
         <form method="post" action="/renewal_v2/admin/reset-renewal.php"
               style="margin-top:16px;"
-              onsubmit="return confirm(
-                'This will cancel any renewal already in progress for this '
-                + 'client and email them a fresh link. Continue?');">
+              onsubmit="return confirm(<?= json_encode($jsMsg) ?>);">
             <input type="hidden" name="csrf_token"
                    value="<?= htmlspecialchars($pfmCsrfToken, ENT_QUOTES) ?>">
             <input type="hidden" name="confirm_client_id"
                    value="<?= (int) $foundClient['client_id'] ?>">
             <button type="submit" name="reset_action" value="1"
-                    style="padding:12px 24px;background:#fa5c7c;color:white;
+                    style="padding:12px 24px;background:<?= $btnBg ?>;color:white;
                            border:none;border-radius:4px;font-weight:600;
                            font-size:1rem;cursor:pointer;">
-                &#9851; Reset renewal &amp; send fresh link
+                <?= $btnLbl ?>
             </button>
         </form>
     </div>

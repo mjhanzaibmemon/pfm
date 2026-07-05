@@ -15,8 +15,8 @@ Use it when a customer asks for a **fresh renewal link** and just clicking
 "Email" in the Renewals grid isn't enough. Common cases:
 
 1. Customer says: *"I filled the renewal form with wrong info, can I start
-   over?"* — their previous session is stuck in draft or completed. This
-   page wipes it and sends them a fresh link.
+   over?"* (and they **have not paid yet**) — their previous session is
+   stuck in draft. This page wipes it and sends them a fresh link.
 
 2. Customer says: *"My renewal link doesn't work anymore."* — the token
    expired (30-day limit) or was already used. This page issues a brand new
@@ -28,6 +28,38 @@ Use it when a customer asks for a **fresh renewal link** and just clicking
 > **Note:** For the normal "send renewal for this year" case, keep using the
 > existing **Email** button in the Renewals grid. This page is for **reset**
 > situations only.
+
+---
+
+## &#9940; When should I NOT use this page
+
+### 1. The customer already paid but wants to make changes
+
+If a customer has already completed their renewal and paid, and now needs
+to correct something (add a buyer, fix contact info, update the company
+name, etc.), **do NOT click Reset**. Reset starts a whole new renewal cycle
+and the customer will be asked to pay again &mdash; the original payment is
+not refunded.
+
+Instead, open the client's record in the legacy PFM admin's **Client
+Details** page and edit the fields directly. This is how amendments were
+handled before renewal_v2 existed and it still works the same way for
+post-payment corrections.
+
+The Reset page detects this case and shows a big red warning banner, but
+the ultimate decision is yours.
+
+### 2. You're not 100% sure it's the right client
+
+Reset **cannot be undone from the UI**. Once you click, the previous
+renewal session is marked cancelled and the token is retired. If you reset
+the wrong client, contact Muhammad (dev) with the client_id and timestamp
+&mdash; the cancelled session can be revived manually from the database,
+but it requires developer intervention.
+
+Rule of thumb: read the client_id + company name + email displayed on
+screen out loud before you click. If any of them look wrong, cancel out and
+re-search.
 
 ---
 
