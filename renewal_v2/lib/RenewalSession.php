@@ -181,29 +181,66 @@ class RenewalSession
     // ===== FACTORY METHODS =====
 
     /**
-     * Load existing session OR create new — implements "one renewal = one request" rule.
-     * Returns null if token invalid or expired.
+     * Load existing session OR create new — the wizard's entry-point resolver.
+     * Returns null if the token is invalid or expired.
+     *
+     * The tricky case this function handles is "customer already renewed AND
+     * staff sent a fresh email for a new renewal cycle". Without care, we
+     * would silently reuse the completed session and show the customer their
+     * OLD Thank You page — which is exactly what Larissa observed on
+     * 2026-07-04 (RNW-49, client 737838). Fix: compare the URL token's
+     * creation time to the existing session's paid_at.
      *
      * Logic:
-     *   1. Validate token in sec_renewals
-     *   2. Look for an existing non-terminal session for that client
-     *   3. If found: resume it (and sync the token if the customer used a newer link)
-     *   4. If not found: create a fresh draft
+     *   1. Fetch token row (validates existence + non-expiry)
+     *   2. Find the latest non-cancelled session for that client
+     *   3. If none → create fresh draft (first-ever renewal)
+     *   4. If found and NOT completed → resume as before, sync token pointer
+     *   5. If found and completed:
+     *        (a) URL token was created ≤ paid_at → bookmark-after-paying
+     *            (customer re-opened their old email link). Return the
+     *            completed session so index.php redirects them to Step 8.
+     *        (b) URL token was created > paid_at → staff sent a new email
+     *            for a new renewal cycle. Cancel the completed session and
+     *            create a fresh draft, so the wizard starts at Step 1.
+     *
+     * Rationale for (b) with no ">90-day gate": customers cannot spawn new
+     * tokens themselves — every sec_renewals row comes from a staff click on
+     * the Renewals grid. If Larissa sent a new email, she meant it. The
+     * 90-day gate June-10 spec targeted was designed for a system where
+     * customers could self-request renewals; that shape doesn't apply here.
+     * The bookmark case is protected by (a) using token_created_at, not by
+     * time-since-paid.
      */
     public static function loadOrCreate(string $token): ?self
     {
-        $clientId = self::validateToken($token);
-        if ($clientId === null) {
+        if ($token === '' || strlen($token) > 50) {
             return null;
         }
 
-        // Find any non-cancelled session for this client. This deliberately
-        // covers a broader set than ACTIVE_STATUSES — we also want to find
-        // sessions in 'awaiting_review' and 'completed' state, because if
-        // the customer revisits their renewal link after paying, we should
-        // resume that same session (so they land on Step 8 confirmation,
-        // not have us try to create a duplicate row that fails the UNIQUE
-        // constraint on token).
+        // Fetch token metadata — need token_created for the completed-session
+        // comparison below, not just client_id.
+        $tokenRow = Db::one(
+            'SELECT client_id, token_created, token_exp
+               FROM sec_renewals
+              WHERE token = ?
+              ORDER BY token_created DESC
+              LIMIT 1',
+            [$token]
+        );
+        if ($tokenRow === null) {
+            return null;
+        }
+        if (strtotime((string) $tokenRow['token_exp']) < time()) {
+            return null;
+        }
+
+        $clientId       = (int) $tokenRow['client_id'];
+        $tokenCreatedAt = (string) $tokenRow['token_created'];
+
+        // Find latest non-cancelled session for this client. Includes
+        // 'completed' so we can distinguish bookmark-after-paying from
+        // staff-triggered new-cycle in the branch below.
         $nonCancelledStates = [
             self::STATUS_DRAFT,
             self::STATUS_SUBMITTED,
@@ -220,18 +257,69 @@ class RenewalSession
         );
 
         if ($row !== null) {
-            // Resume — sync token if customer used a different / newer link
-            if ($row['token'] !== $token) {
+            $isCompleted = ($row['status'] === self::STATUS_COMPLETED);
+            $paidAt      = (string) ($row['paid_at'] ?? '');
+
+            // Case: found completed session — distinguish bookmark vs new cycle
+            if ($isCompleted && $paidAt !== '') {
+                $tokenBeforePayment =
+                    strtotime($tokenCreatedAt) <= strtotime($paidAt);
+
+                if ($tokenBeforePayment) {
+                    // Bookmark-after-paying — return completed session so the
+                    // customer lands on their Step 8 Thank You page again.
+                    // Sync the token pointer defensively (usually a no-op).
+                    if ($row['token'] !== $token) {
+                        Db::exec(
+                            'UPDATE renewal_sessions SET token = ? WHERE id = ?',
+                            [$token, $row['id']]
+                        );
+                        $row['token'] = $token;
+                    }
+                    return new self($row);
+                }
+
+                // Token created AFTER paid_at → new renewal cycle. Retire the
+                // completed session and mangle its token so the UNIQUE index
+                // on renewal_sessions.token doesn't collide when we INSERT a
+                // fresh draft below (both rows want the same URL token).
+                // The mangled form 'sup_<id>_<first-35-chars>' keeps the id
+                // greppable for later forensic work and stays within the
+                // VARCHAR(50) budget (4+6+1+35 = 46).
                 Db::exec(
-                    'UPDATE renewal_sessions SET token = ? WHERE id = ?',
-                    [$token, $row['id']]
+                    'UPDATE renewal_sessions
+                        SET status = ?,
+                            token  = CONCAT(?, id, ?, LEFT(token, 35)),
+                            updated_at = NOW()
+                      WHERE id = ?',
+                    [self::STATUS_CANCELLED, 'sup_', '_', $row['id']]
                 );
-                $row['token'] = $token;
+                error_log(sprintf(
+                    '[renewal_v2] New cycle detected for client %d — '
+                    . 'retired completed session %d (paid %s), token '
+                    . 'created %s. Creating fresh draft.',
+                    $clientId,
+                    (int) $row['id'],
+                    $paidAt,
+                    $tokenCreatedAt
+                ));
+                // fall through to fresh-draft insert below
+            } else {
+                // Not completed — normal resume (draft / submitted / awaiting_*)
+                // Sync token pointer if customer used a newer / different link.
+                if ($row['token'] !== $token) {
+                    Db::exec(
+                        'UPDATE renewal_sessions SET token = ? WHERE id = ?',
+                        [$token, $row['id']]
+                    );
+                    $row['token'] = $token;
+                }
+                return new self($row);
             }
-            return new self($row);
         }
 
-        // No active session — create a fresh draft
+        // No active session (or the previous completed one was just retired) —
+        // create a fresh draft rooted at this token.
         $id = Db::insert(
             'INSERT INTO renewal_sessions
                 (client_id, token, status, current_step, draft_data)
@@ -244,7 +332,6 @@ class RenewalSession
             [$id]
         );
 
-        // Fallback if SELECT fails (shouldn't happen, but guard anyway)
         if ($newRow === null) {
             return null;
         }
