@@ -42,6 +42,18 @@ $hasLegacyBusinessReg = (int) (Db::scalar(
     [$session->clientId]
 ) ?? 0) === 1;
 
+// Legacy Main Contact ID carry-over — mirrors Bug 2 (round 4) fix on
+// Step 3. Without this fallback, Step 5 nags "we don't see a main
+// contact ID on file, go back to Step 3" even when Step 3 correctly
+// showed "ID on file" from the clients.main_contact_img_id BLOB — the
+// two steps would then contradict each other. Same OCTET_LENGTH probe
+// so we don't drag a multi-MB BLOB into PHP.
+$hasLegacyId = (int) (Db::scalar(
+    'SELECT IF(main_contact_img_id IS NULL OR OCTET_LENGTH(main_contact_img_id) = 0, 0, 1)
+       FROM clients WHERE client_id = ?',
+    [$session->clientId]
+) ?? 0) === 1;
+
 $customerNote = $session->draftData['customer_note'] ?? '';
 
 // Reusable inline helper: build a "View" link for one uploaded doc.
@@ -83,6 +95,11 @@ require __DIR__ . '/../_includes/progress-bar.php';
                 <span class="pfm-text-muted" style="font-size: 0.8rem;">Uploaded in Step 3</span>
             </li>
         </ul>
+    <?php elseif ($hasLegacyId): ?>
+        <div class="pfm-alert pfm-alert--info">
+            <strong>ID on file.</strong> We already have a main contact ID on record from a previous renewal.
+            You don't need to re-upload unless it has changed &mdash; if it has, use Step 3 to replace it.
+        </div>
     <?php else: ?>
         <div class="pfm-alert pfm-alert--warning">
             We don't see a main contact ID on file. Please <a href="<?= htmlspecialchars(pfm_step_url(3)) ?>">go back to Step 3</a> and upload it.
