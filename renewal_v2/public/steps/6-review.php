@@ -30,6 +30,29 @@ $buyerCount   = count($buyers);
 $docs         = DocumentUpload::getAll($session);
 $customerNote = $session->draftData['customer_note'] ?? '';
 
+// Legacy carry-over probes — mirror Step 3 (Bug 2) and Step 5 so the
+// review pane doesn't say "No documents uploaded" when there are
+// perfectly valid on-file BLOBs from a previous renewal or a legacy
+// admin ID upload. Discovered in Muhammad's 2026-07-07 Reset
+// walkthrough: Step 5 correctly showed both docs as "on file" but
+// Step 6 review counted only the current session's uploads.
+$hasLegacyId = (int) (Db::scalar(
+    'SELECT IF(main_contact_img_id IS NULL OR OCTET_LENGTH(main_contact_img_id) = 0, 0, 1)
+       FROM clients WHERE client_id = ?',
+    [$session->clientId]
+) ?? 0) === 1;
+$hasLegacyBusinessReg = (int) (Db::scalar(
+    'SELECT IF(doc_sec_of_state IS NULL OR OCTET_LENGTH(doc_sec_of_state) = 0, 0, 1)
+       FROM clients WHERE client_id = ?',
+    [$session->clientId]
+) ?? 0) === 1;
+
+// Which wizard-uploaded slots do we already have this session, so the
+// "on file" line-items don't duplicate anything the customer just
+// re-uploaded?
+$uploadedIdThisSession = isset($docs['main_contact_id']);
+$uploadedBusinessThisSession = isset($docs['business_license']);
+
 // Overlay draft_data.contact onto the main_contact row in $buyers so
 // the Active Buyers section renders the customer's Step 3 edits before
 // submit — mirrors the same overlay Step 4 does. Larissa's 2026-06-30
@@ -248,7 +271,16 @@ require __DIR__ . '/../_includes/progress-bar.php';
                 <h3 class="pfm-review__title">Documents</h3>
                 <a href="<?= htmlspecialchars(pfm_step_url(5)) ?>" class="pfm-review__edit">Edit &rarr;</a>
             </div>
-            <?php if (empty($docs)): ?>
+            <?php
+            // Build a combined list: session uploads first, then any
+            // carry-over slots we haven't just replaced. Only show the
+            // empty-state message when the customer has neither uploaded
+            // anything nor has a carry-over BLOB to fall back on.
+            $showLegacyId       = $hasLegacyId       && !$uploadedIdThisSession;
+            $showLegacyBusiness = $hasLegacyBusinessReg && !$uploadedBusinessThisSession;
+            $hasAnything        = !empty($docs) || $showLegacyId || $showLegacyBusiness;
+            ?>
+            <?php if (!$hasAnything): ?>
                 <div class="pfm-text-muted">No documents uploaded.</div>
             <?php else: ?>
                 <ul class="pfm-file-list pfm-mb-0">
@@ -261,6 +293,24 @@ require __DIR__ . '/../_includes/progress-bar.php';
                             </span>
                         </li>
                     <?php endforeach; ?>
+                    <?php if ($showLegacyId): ?>
+                        <li class="pfm-file">
+                            <span>&#128206;</span>
+                            <span class="pfm-file__name">
+                                Main Contact ID
+                            </span>
+                            <span class="pfm-file__meta">on file &mdash; carried over from previous renewal</span>
+                        </li>
+                    <?php endif; ?>
+                    <?php if ($showLegacyBusiness): ?>
+                        <li class="pfm-file">
+                            <span>&#128206;</span>
+                            <span class="pfm-file__name">
+                                Business Registry
+                            </span>
+                            <span class="pfm-file__meta">on file &mdash; carried over from previous renewal</span>
+                        </li>
+                    <?php endif; ?>
                 </ul>
             <?php endif; ?>
         </section>
