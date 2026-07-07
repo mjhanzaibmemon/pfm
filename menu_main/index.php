@@ -1692,6 +1692,23 @@ if ($_SESSION['scriptcase']['charset'] != "UTF-8" && NM_is_utf8($nm_var_lab[16])
     $nm_var_lab[16] = sc_convert_encoding($nm_var_lab[16], $_SESSION['scriptcase']['charset'], "UTF-8");
 }
  $nm_var_hint[16] = "Approve paid renewals from the new renewal wizard";
+
+/* -- renewal_v2 hand-edit ------------------------------------------
+ * "Reset Renewal" sidebar item — clone of the Renewal Reviews item
+ * added 2026-07-07 per Muhammad's walkthrough. Same charset pipeline
+ * so a UTF-8 label is safe on all admin locales.
+ * ---------------------------------------------------------------- */
+ $nm_var_lab[17] = "Reset Renewal";
+if ($_SESSION['scriptcase']['charset'] != "UTF-8" && NM_is_utf8($nm_var_lab[17]))
+{
+    $nm_var_lab[17] = sc_convert_encoding($nm_var_lab[17], $_SESSION['scriptcase']['charset'], "UTF-8");
+}
+ $nm_var_hint[17] = "Cancel a customer\'s in-progress renewal and email them a fresh link";
+if ($_SESSION['scriptcase']['charset'] != "UTF-8" && NM_is_utf8($nm_var_hint[17]))
+{
+    $nm_var_hint[17] = sc_convert_encoding($nm_var_hint[17], $_SESSION['scriptcase']['charset'], "UTF-8");
+}
+/* -- /renewal_v2 hand-edit --------------------------------------- */
 if ($_SESSION['scriptcase']['charset'] != "UTF-8" && NM_is_utf8($nm_var_hint[16]))
 {
     $nm_var_hint[16] = sc_convert_encoding($nm_var_hint[16], $_SESSION['scriptcase']['charset'], "UTF-8");
@@ -1713,6 +1730,10 @@ if (isset($_SESSION['scriptcase']['sc_apl_seg']['grid_vw_clients_main_member_ren
     $menu_main_menuData['data'] .= "item_19|.|" . $nm_var_lab[3] . "|menu_main_form_php.php?sc_item_menu=item_19&sc_apl_menu=grid_vw_clients_main_member_renew&sc_apl_link=" . urlencode($menu_main_menuData['url']['link']) . "&sc_usa_grupo=" . $_SESSION['scriptcase']['menu_main']['glo_nm_usa_grupo'] . "|" . $nm_var_hint[3] . "||" . $this->menu_main_target('_self') . "|" . "\n";
 $menu_main_menuData['data'] .= "item_50|.|" . $nm_var_lab[16] . "|menu_main_form_php.php?sc_item_menu=item_50&sc_apl_menu=https://" . $_SERVER['HTTP_HOST'] . "/renewal_v2/admin/dashboard.php&sc_apl_link=" . urlencode($menu_main_menuData['url']['link']) . "&sc_usa_grupo=" . $_SESSION['scriptcase']['menu_main']['glo_nm_usa_grupo'] . "|" . $nm_var_hint[16] . "||" . $this->menu_main_target('_blank') . "|" . "
 ";
+/* -- renewal_v2 hand-edit: Reset Renewal sidebar item -- */
+$menu_main_menuData['data'] .= "item_51|.|" . $nm_var_lab[17] . "|menu_main_form_php.php?sc_item_menu=item_51&sc_apl_menu=https://" . $_SERVER['HTTP_HOST'] . "/renewal_v2/admin/reset-renewal.php&sc_apl_link=" . urlencode($menu_main_menuData['url']['link']) . "&sc_usa_grupo=" . $_SESSION['scriptcase']['menu_main']['glo_nm_usa_grupo'] . "|" . $nm_var_hint[17] . "||" . $this->menu_main_target('_blank') . "|" . "
+";
+/* -- /renewal_v2 hand-edit --------------------------------- */
 }
 
 $menu_main_menuData['data'] .= "item_2|.|" . $nm_var_lab[4] . "||" . $nm_var_hint[4] . "||_self|\n";
