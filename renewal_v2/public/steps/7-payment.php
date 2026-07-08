@@ -20,7 +20,11 @@ $PFM_REQUIRES   = 'submitted';
 require __DIR__ . '/../_includes/step_bootstrap.php';
 
 $cancelled  = isset($_GET['cancelled']);
-$buyerCount = BuyerManager::countActive($session->clientId);
+// $session for the deferred-commit refactor. By the time the payment
+// step renders, submit-application.php has already drained buyer_ops
+// to the members table, so this is effectively a no-op — but keeping
+// the arg keeps every wizard-side call site in one shape.
+$buyerCount = BuyerManager::countActive($session->clientId, $session);
 
 try {
     $pricing = StripeClient::pricingForClient($session->clientId, $buyerCount);

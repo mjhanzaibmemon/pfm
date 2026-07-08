@@ -38,6 +38,71 @@ class BuyerManager
         'note'        => 255,
     ];
 
+    /**
+     * Draft-data key that holds the pending buyer-op queue. Every wizard
+     * add / remove / modify appends to this structure and returns; nothing
+     * hits the members table until submit-application.php drains the queue
+     * on Step 6 submit.
+     *
+     * Why deferred: Muhammad's 2026-07-07 walkthrough uncovered that
+     * add-buyer.php was writing directly into the `members` table on the
+     * customer's Step-4 "Save buyer" click, so a buyer that the customer
+     * added mid-wizard would show up in the legacy admin's CURRENT BUYERS
+     * tab even if the customer bailed before paying. Step-3 contact edits
+     * had always stayed in draft_data.contact and only landed in `clients`
+     * on submit — buyer ops needed to work the same way.
+     *
+     * Shape:
+     *   $draftData['buyer_ops'] = [
+     *     'next_tmp_id' => -1,       // decrements as new adds land
+     *     'adds'        => [
+     *       ['tmp_id' => -1, 'name' => …, 'email' => …, 'phone' => …, 'note' => …],
+     *     ],
+     *     'removes'     => [123, 456], // committed member_ids to soft-delete
+     *     'modifies'    => [
+     *       789 => ['member_name' => …, 'email' => …, …],
+     *     ],
+     *   ];
+     */
+    private const OPS_KEY = 'buyer_ops';
+
+    // ===== PENDING-OPS HELPERS =====
+
+    /**
+     * Return the pending-ops structure from the session's draft_data,
+     * defaulting to an empty queue if none exists yet. Never touches
+     * the DB — callers that don't have a session (admin/review.php,
+     * post-submit contexts) simply pass null and get committed state
+     * back from getActive() / countActive().
+     */
+    public static function getPendingOps(?RenewalSession $session): array
+    {
+        if ($session === null) {
+            return self::emptyOps();
+        }
+        $ops = $session->draftData[self::OPS_KEY] ?? null;
+        if (!is_array($ops)) {
+            return self::emptyOps();
+        }
+        // Fill in any missing keys so callers can index without isset checks.
+        return $ops + self::emptyOps();
+    }
+
+    private static function emptyOps(): array
+    {
+        return [
+            'next_tmp_id' => -1,
+            'adds'        => [],
+            'removes'     => [],
+            'modifies'    => [],
+        ];
+    }
+
+    private static function savePendingOps(RenewalSession $session, array $ops): void
+    {
+        $session->saveDraft([self::OPS_KEY => $ops]);
+    }
+
     // ===== READ =====
 
     /**
@@ -84,7 +149,7 @@ class BuyerManager
      *                  the main contact row, 0 otherwise — caller-friendly
      *                  alias for main_contact).
      */
-    public static function getActive(int $clientId): array
+    public static function getActive(int $clientId, ?RenewalSession $session = null): array
     {
         // is_active flag is always true here (we only return active rows).
         // is_primary mirrors main_contact for callers that prefer the
@@ -125,7 +190,67 @@ class BuyerManager
         );
 
         // Normalise BIT fields — PDO returns them as raw byte strings
-        return array_map([self::class, 'normaliseRow'], $rows);
+        $rows = array_map([self::class, 'normaliseRow'], $rows);
+
+        // Overlay pending buyer ops from the current draft session (if any).
+        // Admin surfaces that call getActive() without a session — like
+        // admin/review.php post-Confirm-Receipt — see committed state only,
+        // which is correct: by then submit-application.php has already
+        // drained buyer_ops.
+        if ($session !== null) {
+            $rows = self::applyPendingOps($rows, self::getPendingOps($session));
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Merge the pending-ops queue on top of a committed roster:
+     *   1. Drop rows whose member_id is in ops.removes.
+     *   2. Overlay ops.modifies field values on matching rows.
+     *   3. Append ops.adds as synthetic rows (using their negative tmp_id
+     *      as member_id so downstream UI can identify them for edit /
+     *      remove calls — the API path treats negative ids as pending).
+     */
+    private static function applyPendingOps(array $rows, array $ops): array
+    {
+        $removeSet = [];
+        foreach ($ops['removes'] as $mid) {
+            $removeSet[(int) $mid] = true;
+        }
+        $modifies = $ops['modifies'];
+
+        $out = [];
+        foreach ($rows as $r) {
+            $mid = (int) $r['member_id'];
+            if (isset($removeSet[$mid])) {
+                continue;
+            }
+            if (isset($modifies[$mid]) && is_array($modifies[$mid])) {
+                foreach ($modifies[$mid] as $col => $val) {
+                    // Only overlay whitelisted modifiable columns.
+                    if (array_key_exists($col, self::MODIFIABLE_FIELDS)) {
+                        $r[$col] = $val;
+                    }
+                }
+            }
+            $out[] = $r;
+        }
+
+        foreach ($ops['adds'] as $a) {
+            $out[] = self::normaliseRow([
+                'member_id'    => (int) $a['tmp_id'],
+                'member_name'  => $a['name'] ?? '',
+                'email'        => $a['email'] ?? null,
+                'phone1'       => $a['phone'] ?? null,
+                'note'         => $a['note']  ?? null,
+                'include'      => 1,   // treated as active by the wizard
+                'main_contact' => 0,
+                'is_active'    => 1,
+            ]);
+        }
+
+        return $out;
     }
 
     /**
@@ -157,14 +282,48 @@ class BuyerManager
      * live pricing line, StripeClient::pricingForClient(), and the
      * MAX_BUYERS cap on add().
      */
-    public static function countActive(int $clientId): int
+    public static function countActive(int $clientId, ?RenewalSession $session = null): int
     {
-        return (int) Db::scalar(
+        $committed = (int) Db::scalar(
             "SELECT COUNT(*) FROM members
               WHERE client_id = ?
                 AND wizard_removed_at IS NULL",
             [$clientId]
         );
+
+        if ($session === null) {
+            return $committed;
+        }
+
+        // Adjust for pending ops. Removes subtract, adds add.
+        // Modifies don't affect count. Guard against a remove targeting
+        // a member that isn't currently active (already soft-deleted in
+        // the DB, or belongs to a different client — defensive; caller
+        // should have validated) so the count can never go negative.
+        $ops = self::getPendingOps($session);
+
+        $activeMemberIds = array_column(
+            Db::all(
+                "SELECT member_id FROM members
+                  WHERE client_id = ?
+                    AND wizard_removed_at IS NULL",
+                [$clientId]
+            ),
+            'member_id'
+        );
+        $activeSet = [];
+        foreach ($activeMemberIds as $mid) {
+            $activeSet[(int) $mid] = true;
+        }
+
+        $effectiveRemoves = 0;
+        foreach ($ops['removes'] as $mid) {
+            if (isset($activeSet[(int) $mid])) {
+                $effectiveRemoves++;
+            }
+        }
+
+        return $committed - $effectiveRemoves + count($ops['adds']);
     }
 
     /**
@@ -222,49 +381,48 @@ class BuyerManager
             throw new InvalidArgumentException('Buyer name must be 255 characters or fewer.');
         }
 
-        // Wrap cap-check + INSERT in a transaction with row-level lock on the
-        // client row, so concurrent add()/restore() calls for the same client
-        // can't both pass the cap check (would exceed MAX_BUYERS).
-        return Db::transaction(function () use ($session, $name, $email, $phone, $note): int {
-            // Lock the client row for the duration of this transaction
-            Db::one(
-                'SELECT client_id FROM clients WHERE client_id = ? FOR UPDATE',
-                [$session->clientId]
+        // Deferred-commit model: the buyer stays in draft_data.buyer_ops
+        // until submit-application.php drains the queue on Step 6 submit.
+        // Nothing is written to `members` here, so a customer who bails
+        // between Step 4 and payment leaves zero orphan rows behind.
+        // Concurrency concerns from the old row-lock/transaction pattern
+        // no longer apply — a single wizard session's JS makes serial
+        // calls, and cross-session races would only touch different
+        // clients (each has its own draft_data).
+        $ops = self::getPendingOps($session);
+
+        $effective = self::countActive($session->clientId, $session);
+        if ($effective >= self::MAX_BUYERS) {
+            throw new RuntimeException(
+                "Cannot add buyer: client {$session->clientId} already has {$effective} active buyers "
+                . "(maximum is " . self::MAX_BUYERS . ")."
             );
+        }
 
-            $current = self::countActive($session->clientId);
-            if ($current >= self::MAX_BUYERS) {
-                throw new RuntimeException(
-                    "Cannot add buyer: client {$session->clientId} already has {$current} active buyers "
-                    . "(maximum is " . self::MAX_BUYERS . ")."
-                );
-            }
+        $tmpId = (int) $ops['next_tmp_id'];
+        $ops['next_tmp_id'] = $tmpId - 1;
+        $ops['adds'][] = [
+            'tmp_id' => $tmpId,
+            'name'   => $name,
+            'email'  => self::sanitiseOptional($email, 255),
+            // Phone stored as raw digits (see PhoneFormat::pfm_normalize_phone
+            // for the legacy admin form's input-mask constraint).
+            'phone'  => pfm_normalize_phone(self::sanitiseOptional($phone, 100)),
+            'note'   => self::sanitiseOptional($note, 255),
+        ];
+        self::savePendingOps($session, $ops);
 
-            $memberId = Db::insert(
-                "INSERT INTO members (client_id, member_name, email, phone1, note, include, main_contact)
-                 VALUES (?, ?, ?, ?, ?, b'1', b'0')",
-                [
-                    $session->clientId,
-                    $name,
-                    self::sanitiseOptional($email, 255),
-                    // Phone goes in as raw digits — see PhoneFormat
-                    // ::pfm_normalize_phone for why; the legacy admin's
-                    // phone input mask requires this shape.
-                    pfm_normalize_phone(self::sanitiseOptional($phone, 100)),
-                    self::sanitiseOptional($note, 255),
-                ]
-            );
+        // Log with the negative tmp_id as target. submit-application.php
+        // rewrites these to the real member_id once the INSERT lands.
+        $session->logChange(
+            RenewalSession::CHANGE_BUYER_ADDED,
+            $tmpId,
+            'member_name',
+            null,
+            $name
+        );
 
-            $session->logChange(
-                RenewalSession::CHANGE_BUYER_ADDED,
-                $memberId,
-                'member_name',
-                null,
-                $name
-            );
-
-            return $memberId;
-        });
+        return $tmpId;
     }
 
     /**
@@ -290,6 +448,41 @@ class BuyerManager
     {
         self::requireEditable($session);
 
+        // Case 1: pending add (negative tmp_id) — never made it to the DB,
+        // so just yank it out of ops.adds and discard the matching
+        // CHANGE_BUYER_ADDED log entry so the Changes Summary stays clean.
+        // No DB touch, no "removed" log entry (the buyer never existed to
+        // staff).
+        if ($memberId < 0) {
+            $ops = self::getPendingOps($session);
+            $before = count($ops['adds']);
+            $ops['adds'] = array_values(array_filter(
+                $ops['adds'],
+                static fn(array $a): bool => (int) ($a['tmp_id'] ?? 0) !== $memberId
+            ));
+            if (count($ops['adds']) === $before) {
+                // Not found — silently ignore. This is the idempotent
+                // shape existing callers expect.
+                return;
+            }
+            self::savePendingOps($session, $ops);
+
+            // Drop the ADDED change-log entry so no ghost buyer shows up
+            // on the review panel or the B1-a renewal-history note.
+            Db::exec(
+                'DELETE FROM renewal_changes
+                   WHERE session_id = ?
+                     AND target_id  = ?
+                     AND change_type = ?',
+                [$session->id, $memberId, RenewalSession::CHANGE_BUYER_ADDED]
+            );
+            return;
+        }
+
+        // Case 2: real committed member. Validate ownership, refuse to
+        // remove the main contact, then queue the removal on the ops
+        // struct — the actual UPDATE members SET wizard_removed_at = NOW()
+        // happens in submit-application.php when the queue is drained.
         $buyer = self::assertBelongsToClient($memberId, $session->clientId);
 
         if ($buyer['main_contact']) {
@@ -299,29 +492,24 @@ class BuyerManager
             );
         }
 
-        // If already removed, nothing to do (idempotent)
-        if (!empty($buyer['wizard_removed_at'])) {
-            return;
+        $ops = self::getPendingOps($session);
+
+        // If already queued for removal, idempotent no-op (matches old
+        // wizard_removed_at short-circuit).
+        foreach ($ops['removes'] as $existing) {
+            if ((int) $existing === $memberId) {
+                return;
+            }
         }
 
-        // Flag the row as wizard-removed in BOTH columns:
-        //   - `wizard_removed_at` — the canonical wizard-side flag used by
-        //     getActive() (mirrored on admin/review.php's "Active buyers"
-        //     panel).
-        //   - legacy `include = b'0'` — defensive sync so any consumer that
-        //     still reads the BIT field (existing PFM admin views, exports,
-        //     other ScriptCase grids) sees a consistent removed state.
-        // Buyers that the customer added AND removed in the same wizard
-        // session get hard-deleted later by pruneSameSessionAddRemove()
-        // on submit so the legacy CURRENT BUYERS subgrid doesn't keep an
-        // orphan with empty fields.
-        Db::exec(
-            "UPDATE members
-                SET wizard_removed_at = NOW(),
-                    include           = b'0'
-              WHERE member_id = ?",
-            [$memberId]
-        );
+        // Drop any pending modifies for this member — they're about to
+        // be irrelevant. Keeps the queue slim.
+        if (isset($ops['modifies'][$memberId])) {
+            unset($ops['modifies'][$memberId]);
+        }
+
+        $ops['removes'][] = $memberId;
+        self::savePendingOps($session, $ops);
 
         $session->logChange(
             RenewalSession::CHANGE_BUYER_REMOVED,
@@ -444,32 +632,53 @@ class BuyerManager
     {
         self::requireEditable($session);
 
-        // Wrap cap-check + UPDATE in a transaction with row-level lock on the
-        // client row (same protection as add() — see comment there).
-        Db::transaction(function () use ($session, $memberId): void {
-            Db::one(
-                'SELECT client_id FROM clients WHERE client_id = ? FOR UPDATE',
-                [$session->clientId]
-            );
+        $buyer = self::assertBelongsToClient($memberId, $session->clientId);
 
-            $buyer = self::assertBelongsToClient($memberId, $session->clientId);
+        $ops = self::getPendingOps($session);
 
-            if (empty($buyer['wizard_removed_at'])) {
-                return; // already active — nothing to do
+        $wasQueued = false;
+        $ops['removes'] = array_values(array_filter(
+            $ops['removes'],
+            static function ($mid) use ($memberId, &$wasQueued): bool {
+                if ((int) $mid === $memberId) {
+                    $wasQueued = true;
+                    return false;
+                }
+                return true;
             }
+        ));
 
-            $current = self::countActive($session->clientId);
-            if ($current >= self::MAX_BUYERS) {
+        // If the row wasn't queued AND the DB still has it active, this
+        // is a no-op — matches the old "already active" short-circuit.
+        // (In the deferred model, DB-level wizard_removed_at should only
+        // appear from before this refactor or from an interrupted submit;
+        // the queue is the wizard's canonical source of truth.)
+        if (!$wasQueued && empty($buyer['wizard_removed_at'])) {
+            return;
+        }
+
+        // Cap check against the EFFECTIVE roster after we restore.
+        $effective = self::countActive($session->clientId, $session);
+        if ($wasQueued) {
+            // We just un-queued the remove, so effective is already what
+            // it'll be after the restore. Guard against the pathological
+            // case where the DB is already at MAX_BUYERS AND the customer
+            // queued a remove/restore cycle that would push it over
+            // (shouldn't be reachable from the UI but defend anyway).
+            if ($effective > self::MAX_BUYERS) {
                 throw new RuntimeException(
-                    "Cannot restore buyer: client {$session->clientId} already has {$current} active buyers "
+                    "Cannot restore buyer: client {$session->clientId} already has {$effective} active buyers "
                     . "(maximum is " . self::MAX_BUYERS . ")."
                 );
             }
+        }
 
-            // Mirror the dual-flag write that remove() does: clear the
-            // wizard flag AND flip legacy include back to b'1' so every
-            // consumer (wizard, admin review, legacy admin grids) lands
-            // on the same "active again" state.
+        self::savePendingOps($session, $ops);
+
+        // Legacy pre-refactor cleanup: if the members row still carries
+        // an old wizard_removed_at flag, clear it now. Once every session
+        // has been through the new code path this branch will be dead.
+        if (!empty($buyer['wizard_removed_at'])) {
             Db::exec(
                 "UPDATE members
                     SET wizard_removed_at = NULL,
@@ -477,15 +686,15 @@ class BuyerManager
                   WHERE member_id = ?",
                 [$memberId]
             );
+        }
 
-            $session->logChange(
-                RenewalSession::CHANGE_BUYER_ADDED,
-                $memberId,
-                'member_name',
-                null,
-                $buyer['member_name']
-            );
-        });
+        $session->logChange(
+            RenewalSession::CHANGE_BUYER_ADDED,
+            $memberId,
+            'member_name',
+            null,
+            $buyer['member_name']
+        );
     }
 
     /**
@@ -515,6 +724,47 @@ class BuyerManager
             return; // nothing to do
         }
 
+        $ops = self::getPendingOps($session);
+
+        // Case 1: pending add (negative tmp_id) — edit lives entirely in
+        // ops.adds, no DB touch, and no CHANGE_BUYER_MODIFIED log entry
+        // (buyer never made it to staff, so the Changes Summary just
+        // reflects the final add).
+        if ($memberId < 0) {
+            $found = false;
+            foreach ($ops['adds'] as &$a) {
+                if ((int) ($a['tmp_id'] ?? 0) !== $memberId) {
+                    continue;
+                }
+                $found = true;
+                foreach ($fields as $field => $newValue) {
+                    if (!array_key_exists($field, self::MODIFIABLE_FIELDS)) {
+                        throw new InvalidArgumentException(
+                            "Field '{$field}' is not modifiable via BuyerManager."
+                        );
+                    }
+                    $cleaned = self::normaliseModifyValue($field, $newValue);
+                    // adds structure uses 'name'/'phone' keys; translate.
+                    $addKey = self::modifyFieldToAddKey($field);
+                    $a[$addKey] = $cleaned;
+                }
+                break;
+            }
+            unset($a);
+
+            if (!$found) {
+                throw new RuntimeException(
+                    "Pending buyer {$memberId} not found in current session."
+                );
+            }
+            self::savePendingOps($session, $ops);
+            return;
+        }
+
+        // Case 2: real committed member. Validate, whitelist, diff against
+        // (committed row overlaid with any pending modifies), and queue the
+        // change in ops.modifies. Actual UPDATE happens in submit-
+        // application.php.
         $buyer = self::assertBelongsToClient($memberId, $session->clientId);
 
         if ($buyer['main_contact']) {
@@ -524,10 +774,8 @@ class BuyerManager
             );
         }
 
-        // Validate field whitelist and build SET clause
-        $setClauses = [];
-        $params      = [];
-        $changes     = []; // [field => [old, new]]
+        $pendingForMember = $ops['modifies'][$memberId] ?? [];
+        $changes          = []; // [field => [old, new]] for the log
 
         foreach ($fields as $field => $newValue) {
             if (!array_key_exists($field, self::MODIFIABLE_FIELDS)) {
@@ -536,36 +784,15 @@ class BuyerManager
                 );
             }
 
-            $maxLen  = self::MODIFIABLE_FIELDS[$field];
-            $cleaned = $newValue !== null ? trim((string) $newValue) : null;
+            $cleaned = self::normaliseModifyValue($field, $newValue);
 
-            if ($cleaned !== null && strlen($cleaned) > $maxLen) {
-                throw new InvalidArgumentException(
-                    "Field '{$field}' must be {$maxLen} characters or fewer."
-                );
-            }
-
-            // Normalise empty string to NULL — keeps modify() consistent with add()
-            // (which uses sanitiseOptional). Customers clearing a field should result
-            // in NULL in the DB, not empty string.
-            if ($cleaned === '') {
-                $cleaned = null;
-            }
-
-            // Phone fields canonicalise to raw digits before both the
-            // diff check and the DB write so the legacy admin form's
-            // phone input mask renders them correctly and the change
-            // log doesn't record a pure format-change diff.
-            if ($field === 'phone1') {
-                $cleaned = pfm_normalize_phone($cleaned);
-            }
-
-            $oldValue = $buyer[$field] ?? null;
-
-            // Skip if value is unchanged. Compare with the same trim+empty→null logic
-            // applied to the existing value (so trailing whitespace doesn't trigger
-            // a spurious "change").
-            $oldNormalised = $oldValue !== null ? trim((string) $oldValue) : null;
+            // Effective "current" value = pending override if present, else
+            // committed DB value. Compare the same trim+phone-normalise
+            // way the old code did.
+            $oldRaw = array_key_exists($field, $pendingForMember)
+                ? $pendingForMember[$field]
+                : ($buyer[$field] ?? null);
+            $oldNormalised = $oldRaw !== null ? trim((string) $oldRaw) : null;
             if ($oldNormalised === '') {
                 $oldNormalised = null;
             }
@@ -576,22 +803,17 @@ class BuyerManager
                 continue;
             }
 
-            $setClauses[]  = "{$field} = ?";
-            $params[]      = $cleaned;
-            $changes[$field] = [$oldValue, $cleaned];
+            $pendingForMember[$field] = $cleaned;
+            $changes[$field]          = [$buyer[$field] ?? null, $cleaned];
         }
 
-        if (empty($setClauses)) {
-            return; // all values were identical — nothing to update
+        if (empty($changes)) {
+            return; // all values were identical — nothing to do
         }
 
-        $params[] = $memberId;
-        Db::exec(
-            'UPDATE members SET ' . implode(', ', $setClauses) . ' WHERE member_id = ?',
-            $params
-        );
+        $ops['modifies'][$memberId] = $pendingForMember;
+        self::savePendingOps($session, $ops);
 
-        // Log each changed field separately
         foreach ($changes as $field => [$old, $new]) {
             $session->logChange(
                 RenewalSession::CHANGE_BUYER_MODIFIED,
@@ -601,6 +823,169 @@ class BuyerManager
                 $new
             );
         }
+    }
+
+    /**
+     * Trim + null-normalise + phone-canonicalise one incoming modify()
+     * value. Extracted so both modify()-of-committed and modify()-of-
+     * pending-add can share the same rules.
+     */
+    private static function normaliseModifyValue(string $field, $rawValue)
+    {
+        $maxLen  = self::MODIFIABLE_FIELDS[$field] ?? 255;
+        $cleaned = $rawValue !== null ? trim((string) $rawValue) : null;
+
+        if ($cleaned !== null && strlen($cleaned) > $maxLen) {
+            throw new InvalidArgumentException(
+                "Field '{$field}' must be {$maxLen} characters or fewer."
+            );
+        }
+        if ($cleaned === '') {
+            $cleaned = null;
+        }
+        if ($field === 'phone1') {
+            $cleaned = pfm_normalize_phone($cleaned);
+        }
+        return $cleaned;
+    }
+
+    /**
+     * Map a public modifiable field name (matches the members column)
+     * to the corresponding key in the ops.adds struct — the adds
+     * dictionary uses shorter camel-ish names (name/email/phone/note)
+     * because it's serialised into JSON on every save.
+     */
+    private static function modifyFieldToAddKey(string $field): string
+    {
+        return [
+            'member_name' => 'name',
+            'email'       => 'email',
+            'phone1'      => 'phone',
+            'note'        => 'note',
+        ][$field] ?? $field;
+    }
+
+    /**
+     * Drain the pending buyer-op queue on Step 6 submit. Called by
+     * submit-application.php inside its main transaction so the members
+     * table snapshot, the change-log rewrite, and the payment-record
+     * INSERT all live or die together.
+     *
+     * Order of operations:
+     *   1. Adds → INSERT INTO members. Capture (tmp_id → real_id) map so
+     *      the change log's negative target_ids can be rewritten below.
+     *   2. Rewrite renewal_changes rows whose target_id is one of our
+     *      tmp_ids to the newly-minted real member_id. Also rewrite the
+     *      B1-a downstream log consumers automatically (they read from
+     *      renewal_changes).
+     *   3. Modifies → UPDATE members. Merged patch per member — one SQL
+     *      per member, not per field, because each ops entry already
+     *      collapses to the most recent value.
+     *   4. Removes → soft-delete via wizard_removed_at = NOW() +
+     *      include = b'0'. Mirrors the pre-refactor remove() side-effect
+     *      exactly, so purgeRemovedBuyers() and the legacy admin's
+     *      CURRENT BUYERS grid see the same shape they used to.
+     *   5. Clear buyer_ops from draft_data so a repeat submit is a no-op.
+     */
+    public static function commitPendingOps(RenewalSession $session): void
+    {
+        $ops = self::getPendingOps($session);
+        if (empty($ops['adds']) && empty($ops['removes']) && empty($ops['modifies'])) {
+            // Nothing queued (e.g. customer only edited Step 3 contact) —
+            // still clear the key so a future re-submit stays idempotent.
+            self::clearPendingOps($session);
+            return;
+        }
+
+        $tmpToReal = [];
+
+        // 1. Adds
+        foreach ($ops['adds'] as $a) {
+            $realId = Db::insert(
+                "INSERT INTO members (client_id, member_name, email, phone1, note, include, main_contact)
+                 VALUES (?, ?, ?, ?, ?, b'1', b'0')",
+                [
+                    $session->clientId,
+                    (string) ($a['name'] ?? ''),
+                    self::sanitiseOptional($a['email'] ?? null, 255),
+                    // Already normalised at add() time; re-normalise defensively
+                    // in case modify() on a pending row put it back into
+                    // formatted shape.
+                    pfm_normalize_phone(self::sanitiseOptional($a['phone'] ?? null, 100)),
+                    self::sanitiseOptional($a['note']  ?? null, 255),
+                ]
+            );
+            $tmpToReal[(int) $a['tmp_id']] = (int) $realId;
+        }
+
+        // 2. Rewrite negative target_ids in the change log.
+        foreach ($tmpToReal as $tmpId => $realId) {
+            Db::exec(
+                'UPDATE renewal_changes
+                    SET target_id = ?
+                  WHERE session_id = ? AND target_id = ?',
+                [$realId, $session->id, $tmpId]
+            );
+        }
+
+        // 3. Modifies
+        foreach ($ops['modifies'] as $memberId => $patch) {
+            if (empty($patch) || !is_array($patch)) {
+                continue;
+            }
+            $setClauses = [];
+            $params     = [];
+            foreach ($patch as $col => $val) {
+                if (!array_key_exists($col, self::MODIFIABLE_FIELDS)) {
+                    continue;
+                }
+                $setClauses[] = "{$col} = ?";
+                $params[]     = $val;
+            }
+            if (empty($setClauses)) {
+                continue;
+            }
+            $params[] = (int) $memberId;
+            Db::exec(
+                'UPDATE members SET ' . implode(', ', $setClauses) . ' WHERE member_id = ?',
+                $params
+            );
+        }
+
+        // 4. Removes — soft-delete with dual-flag write, mirroring the
+        //    pre-refactor remove() so purgeRemovedBuyers() and the legacy
+        //    grid see the same state they used to.
+        foreach ($ops['removes'] as $memberId) {
+            $mid = (int) $memberId;
+            if ($mid <= 0) {
+                continue;
+            }
+            Db::exec(
+                "UPDATE members
+                    SET wizard_removed_at = NOW(),
+                        include           = b'0'
+                  WHERE member_id = ?",
+                [$mid]
+            );
+        }
+
+        // 5. Clear the queue so idempotent re-submits don't re-INSERT.
+        self::clearPendingOps($session);
+    }
+
+    /**
+     * Remove the buyer_ops key from draft_data. Called after a successful
+     * commit and also from cancel/reset flows if you ever need to bail
+     * out cleanly without processing.
+     */
+    public static function clearPendingOps(RenewalSession $session): void
+    {
+        if (!isset($session->draftData[self::OPS_KEY])) {
+            return;
+        }
+        $draft = $session->draftData;
+        unset($draft[self::OPS_KEY]);
+        $session->replaceDraft($draft);
     }
 
     // ===== HELPERS =====

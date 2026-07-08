@@ -25,7 +25,9 @@ function PFM_money(float $n): string {
 // ── Gather everything for display ───────────────────────────────────
 $draftOrg     = $session->draftData['org']     ?? [];
 $draftContact = $session->draftData['contact'] ?? [];
-$buyers       = BuyerManager::getActive($session->clientId);
+// $session passed so the review reflects pending buyer_ops (adds /
+// removes / modifies queued at Step 4 but not yet drained to members).
+$buyers       = BuyerManager::getActive($session->clientId, $session);
 $buyerCount   = count($buyers);
 $docs         = DocumentUpload::getAll($session);
 $customerNote = $session->draftData['customer_note'] ?? '';

@@ -46,7 +46,11 @@ if ($session->status === RenewalSession::STATUS_AWAITING_PAYMENT) {
     $session->resetForPaymentRetry();
 }
 
-$buyerCount    = BuyerManager::countActive($session->clientId);
+// By the time create-payment.php runs, submit-application.php has
+// already drained the buyer_ops queue (session is submitted /
+// awaiting_payment). Session arg is a defensive no-op — same shape
+// as the wizard-side call sites.
+$buyerCount    = BuyerManager::countActive($session->clientId, $session);
 $customerEmail = $session->draftData['contact']['email'] ?? '';
 
 try {

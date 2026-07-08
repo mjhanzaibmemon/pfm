@@ -25,7 +25,7 @@ $memberId = api_required_int('member_id');
 
 try {
     BuyerManager::restore($session, $memberId);
-    $buyerCount = BuyerManager::countActive($session->clientId);
+    $buyerCount = BuyerManager::countActive($session->clientId, $session);
 
     api_ok([
         'member_id'   => $memberId,

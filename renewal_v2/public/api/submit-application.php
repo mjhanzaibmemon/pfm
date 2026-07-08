@@ -59,8 +59,11 @@ foreach ($requiredSections as $key => $label) {
     }
 }
 
-// At least one active buyer
-$buyerCount = BuyerManager::countActive($session->clientId);
+// At least one active buyer — evaluated against the EFFECTIVE roster
+// (committed members overlaid with the pending buyer_ops queue) so a
+// customer who just added their first buyer in this session doesn't
+// get bounced before we've had a chance to persist that add.
+$buyerCount = BuyerManager::countActive($session->clientId, $session);
 if ($buyerCount < 1) {
     api_error('You must have at least one active buyer before submitting.', 422, 'no_buyers');
 }
@@ -71,6 +74,17 @@ if ($buyerCount < 1) {
 // ───────────────────────────────────────────────────────────────────
 
 Db::transaction(function () use ($session, $draft, $customerNote): void {
+
+    // 2a. Drain the pending buyer-op queue FIRST so downstream steps
+    //     (contact mirror, purgeRemovedBuyers, Stripe pricing) see a
+    //     consistent members table. This is the write half of the
+    //     deferred-commit refactor: BuyerManager::add/remove/modify at
+    //     Step 4 only stage into draft_data.buyer_ops; the actual
+    //     INSERT/UPDATE/soft-delete lands here on Submit so a customer
+    //     who bails mid-wizard leaves zero orphan rows behind in the
+    //     legacy PFM admin's CURRENT BUYERS grid.
+    BuyerManager::commitPendingOps($session);
+
 
     // Persist org info changes if present.
     // Step 2 fields (as of Phase 6 fix, 2026-06-14):

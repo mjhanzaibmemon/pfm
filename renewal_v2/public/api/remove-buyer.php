@@ -25,7 +25,8 @@ $memberId = api_required_int('member_id');
 
 try {
     BuyerManager::remove($session, $memberId);
-    $buyerCount = BuyerManager::countActive($session->clientId);
+    // $session so the count reflects the just-queued pending remove.
+    $buyerCount = BuyerManager::countActive($session->clientId, $session);
 
     api_ok([
         'member_id'   => $memberId,

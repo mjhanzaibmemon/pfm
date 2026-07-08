@@ -23,7 +23,10 @@ require_once __DIR__ . '/../../lib/PhoneFormat.php';
 // intentionally NOT shown here — they would just be confusing noise. If the
 // customer wants to bring an old buyer back, they can simply add them fresh
 // with the same name (and staff can merge in admin if needed).
-$buyers      = BuyerManager::getActive($session->clientId);
+// Pass $session so the deferred-commit buyer_ops queue (pending adds /
+// removes / modifies from the customer's Step-4 actions this session)
+// is overlaid on the committed members roster.
+$buyers      = BuyerManager::getActive($session->clientId, $session);
 $activeCount = count($buyers);
 $maxBuyers   = BuyerManager::MAX_BUYERS;
 

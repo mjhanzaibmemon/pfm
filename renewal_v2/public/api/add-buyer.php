@@ -30,9 +30,16 @@ $note  = api_optional_post('note');
 
 try {
     $memberId   = BuyerManager::add($session, $name, $email, $phone, $note);
-    $buyerCount = BuyerManager::countActive($session->clientId);
+    // Pass $session so the count reflects the just-queued pending add
+    // (deferred-commit refactor — nothing hit `members` yet).
+    $buyerCount = BuyerManager::countActive($session->clientId, $session);
 
     api_ok([
+        // member_id is negative for pending buyers (tmp id in
+        // draft_data.buyer_ops). The Step 4 UI treats it as an opaque
+        // identifier — it can still be sent back to remove-buyer.php or
+        // modify-buyer.php — and gets rewritten to the real positive id
+        // by submit-application.php on Step 6 submit.
         'member_id'   => $memberId,
         'name'        => $name,
         'buyer_count' => $buyerCount,
