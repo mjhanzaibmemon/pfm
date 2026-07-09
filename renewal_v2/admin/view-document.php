@@ -63,6 +63,58 @@ if ($session === null) {
     exit;
 }
 
+// ── 3a. Legacy carry-over shortcut ─────────────────────────────────
+// Special key 'legacy_main_contact_id' streams the raw BLOB from
+// clients.main_contact_img_id — the wizard's Bug 2 fallback (Step 3 /
+// 5 / 6) recognises this on-file image, but until Larissa's Round 5
+// item 1 (2026-07-08) admin review had no way to open it, so staff
+// couldn't visually verify the ID against the customer's registration
+// before Confirm Receipt. Same admin-token auth as the disk path.
+if ($docKey === 'legacy_main_contact_id') {
+    $row = Db::one(
+        'SELECT main_contact_img_id, main_contact_img_file, main_contact_img_size
+           FROM clients
+          WHERE client_id = ?
+            AND main_contact_img_id IS NOT NULL
+            AND OCTET_LENGTH(main_contact_img_id) > 0',
+        [$session->clientId]
+    );
+    if ($row === null) {
+        http_response_code(404);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'Not found: no legacy Main Contact ID on file for this client.';
+        exit;
+    }
+
+    $blob = (string) $row['main_contact_img_id'];
+    $safeName = (string) ($row['main_contact_img_file'] ?? '');
+    $safeName = preg_replace('/[\r\n"\\\\]+/', '', $safeName);
+    if ($safeName === '' || $safeName === null) {
+        $safeName = 'main-contact-id';
+    }
+
+    // Legacy admin never stored a MIME column — detect from magic bytes.
+    $mime = 'application/octet-stream';
+    if (function_exists('finfo_buffer')) {
+        $fi = finfo_open(FILEINFO_MIME_TYPE);
+        if ($fi) {
+            $detected = finfo_buffer($fi, $blob);
+            finfo_close($fi);
+            if (is_string($detected) && $detected !== '') {
+                $mime = $detected;
+            }
+        }
+    }
+
+    header('Content-Type: ' . $mime);
+    header('Content-Length: ' . strlen($blob));
+    header('Content-Disposition: inline; filename="' . $safeName . '"');
+    header('Cache-Control: private, no-store');
+    header('X-Content-Type-Options: nosniff');
+    echo $blob;
+    exit;
+}
+
 // ── 3. Find the document record + on-disk path ────────────────────
 $record = DocumentUpload::getByKey($session, $docKey);
 if ($record === null) {

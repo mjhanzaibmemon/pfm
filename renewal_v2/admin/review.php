@@ -569,6 +569,24 @@ $alreadyConfirmed = ($session->adminConfirmedAt !== null);
 // Confirm Receipt — this panel exists for exactly that.
 $documents = DocumentUpload::getAll($session);
 
+// Legacy carry-over ID surface — mirror of the Bug 2 fallback the
+// wizard uses on Step 3 / 5 / 6. When a customer has an existing ID
+// stored directly in clients.main_contact_img_id (uploaded via legacy
+// admin, not via a prior wizard run) they can skip the ID re-upload
+// on Step 3. Until Larissa's Round 5 item 1 (2026-07-08) this panel
+// had no way to open that on-file image, so staff couldn't verify the
+// ID against the customer's registration before Confirm Receipt.
+// Adds a synthetic list entry with a View link pointing at
+// view-document.php's legacy_main_contact_id branch.
+$hasCarryOverIdOnly = false;
+if (!isset($documents['main_contact_id'])) {
+    $hasCarryOverIdOnly = (int) (Db::scalar(
+        'SELECT IF(main_contact_img_id IS NULL OR OCTET_LENGTH(main_contact_img_id) = 0, 0, 1)
+           FROM clients WHERE client_id = ?',
+        [$session->clientId]
+    ) ?? 0) === 1;
+}
+
 $docLabels = [
     'main_contact_id'  => 'Main Contact ID',
     'business_license' => 'Business Registry',
@@ -592,8 +610,11 @@ $humaniseSize = static function (int $bytes): string {
 };
 $adminTok = htmlspecialchars($session->adminReviewToken ?? '', ENT_QUOTES);
 ?>
+<?php
+$totalDocCount = count($documents) + ($hasCarryOverIdOnly ? 1 : 0);
+?>
 <div class="pfm-card pfm-mt-2">
-    <h2 class="pfm-card__title pfm-mt-0">Uploaded Documents (<?= count($documents) ?>)</h2>
+    <h2 class="pfm-card__title pfm-mt-0">Uploaded Documents (<?= $totalDocCount ?>)</h2>
     <p class="pfm-text-muted pfm-mt-0">
         Open each file in a new tab and verify the ID, the business
         registration with the Secretary of State, and any additional
@@ -601,7 +622,7 @@ $adminTok = htmlspecialchars($session->adminReviewToken ?? '', ENT_QUOTES);
         clicked once every required document checks out.
     </p>
 
-    <?php if (empty($documents)): ?>
+    <?php if ($totalDocCount === 0): ?>
         <div class="pfm-alert pfm-alert--warning">
             <strong>No documents are attached to this renewal.</strong>
             This is unusual — the wizard requires the customer's ID on
@@ -646,6 +667,26 @@ $adminTok = htmlspecialchars($session->adminReviewToken ?? '', ENT_QUOTES);
                 </a>
             </li>
         <?php endforeach; ?>
+
+        <?php if ($hasCarryOverIdOnly): ?>
+            <?php $legacyUrl = '/renewal_v2/admin/view-document.php?token=' . $adminTok . '&key=legacy_main_contact_id'; ?>
+            <li style="display:flex; gap:14px; align-items:center; padding:12px 0; border-bottom:1px solid #eef2f7;">
+                <a href="<?= $legacyUrl ?>" target="_blank" rel="noopener" title="Open Main Contact ID">
+                    <img src="<?= $legacyUrl ?>" alt="Main Contact ID (on file)"
+                         style="width:72px; height:72px; object-fit:cover; border-radius:4px; border:1px solid #eef2f7; background:#fafbfe;">
+                </a>
+                <div style="flex:1; min-width:0;">
+                    <div><strong>Main Contact ID</strong></div>
+                    <div class="pfm-text-muted" style="font-size:0.85rem;">
+                        On file from a previous renewal &mdash; customer did not re-upload this cycle.
+                    </div>
+                </div>
+                <a class="pfm-btn pfm-btn--ghost pfm-btn--sm"
+                   href="<?= $legacyUrl ?>" target="_blank" rel="noopener">
+                    View &nearr;
+                </a>
+            </li>
+        <?php endif; ?>
         </ul>
     <?php endif; ?>
 </div>
