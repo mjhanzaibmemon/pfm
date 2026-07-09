@@ -114,22 +114,29 @@ require __DIR__ . '/../_includes/progress-bar.php';
     <p class="pfm-text-muted pfm-mb-1">A clear photo or scan of your current business registry.</p>
 
     <?php if ($hasLegacyBusinessReg && !$businessDoc): ?>
-        <!-- Legacy Business Registry on file from a prior renewal — show as a carry-over
-             badge with a View link, same pattern as the ID carry-over on Step 3. The
-             customer can either keep this one or drop a new file below to replace it. -->
-        <div class="pfm-alert pfm-alert--success">
+        <!-- Business Registry from a prior renewal is retained on the client
+             record for reference, but per Larissa's 2026-07-08 Round 5 item 3
+             ("The Business Registry / Secretary of State document should be
+             required annually for each renewal and should only be satisfied
+             by uploading a current Business Registry / Secretary of State
+             document for that renewal cycle") the customer must upload a
+             fresh one this cycle. We surface the on-file version as a
+             reference-only alert with a View link so the customer can see
+             what they filed last year, but the required-check below still
+             fires until a new upload lands in the business_license slot. -->
+        <div class="pfm-alert pfm-alert--info">
             <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                 <div style="flex:1; min-width:200px;">
-                    <strong>Business Registry on file</strong>
-                    <span class="pfm-text-muted"> &mdash; carried over from your last renewal.</span>
+                    <strong>Reference only:</strong>
+                    <span class="pfm-text-muted"> we still have last year's Business Registry on file.</span>
                 </div>
                 <a class="pfm-btn pfm-btn--ghost pfm-btn--sm"
                    href="<?= htmlspecialchars($viewLink('legacy_business_registry'), ENT_QUOTES) ?>"
-                   target="_blank" rel="noopener">View &nearr;</a>
+                   target="_blank" rel="noopener">View last year&rsquo;s &nearr;</a>
             </div>
             <p class="pfm-mt-0" style="margin-bottom:0;">
-                You don't need to re-upload your Business Registry unless it has changed since
-                your last renewal. Drop a new file below if it needs replacing.
+                Please upload a current copy for this renewal cycle even if the document
+                hasn't changed &mdash; PFM requires a fresh Business Registry every year.
             </p>
         </div>
     <?php endif; ?>
@@ -211,18 +218,15 @@ require __DIR__ . '/../_includes/progress-bar.php';
     // Auto-save the customer_note field
     PFM.autosave.attach(document.getElementById('pfm-form-note'), { step: 5 });
 
-    // Track whether the Business Registry slot is satisfied. Per
-    // Larissa's 2026-06-22 Round 3 QA ("Business Registry MUST be a
-    // required field"), the slot is satisfied if EITHER:
-    //   - the customer uploaded a fresh file under the business_license
-    //     slot in this wizard session, OR
-    //   - they had a Business Registry on file from a prior renewal
-    //     (clients.doc_sec_of_state BLOB has bytes) and have not chosen
-    //     to remove the carry-over.
-    // Additional documents no longer count toward the requirement —
-    // they're a separate optional bucket.
+    // Track whether the Business Registry slot is satisfied. Larissa's
+    // 2026-07-08 Round 5 item 3 tightened this: the requirement is now
+    // strictly annual — a Business Registry on file from a previous
+    // renewal (clients.doc_sec_of_state) does NOT satisfy the current
+    // cycle. Only a fresh upload in the business_license slot counts.
+    // The prior-year copy is still surfaced above as a reference-only
+    // alert with a View link so the customer can reproduce it if it
+    // hasn't changed.
     var hasBusinessReg     = <?= !empty($businessDoc) ? 'true' : 'false' ?>;
-    var hasLegacyBusReg    = <?= $hasLegacyBusinessReg ? 'true' : 'false' ?>;
 
     function refreshBusinessRegFlag() {
         // Live DOM recount of the business_license slot — fresh uploads
@@ -231,12 +235,12 @@ require __DIR__ . '/../_includes/progress-bar.php';
         hasBusinessReg = document.querySelectorAll('#pfm-license-list .pfm-file').length > 0;
     }
 
-    // Next button — block until the Business Registry slot has either a
-    // fresh upload or a legacy carry-over.
+    // Next button — block until a fresh Business Registry upload lands
+    // in the business_license slot. Carry-over is no longer accepted.
     var nextBtn = document.getElementById('pfm-next');
     nextBtn.addEventListener('click', function () {
         refreshBusinessRegFlag();
-        if (!hasBusinessReg && !hasLegacyBusReg) {
+        if (!hasBusinessReg) {
             PFM.toast.show(
                 'Please upload your Business Registry to continue.',
                 'danger',

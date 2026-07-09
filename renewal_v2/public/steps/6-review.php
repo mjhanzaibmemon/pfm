@@ -43,17 +43,16 @@ $hasLegacyId = (int) (Db::scalar(
        FROM clients WHERE client_id = ?',
     [$session->clientId]
 ) ?? 0) === 1;
-$hasLegacyBusinessReg = (int) (Db::scalar(
-    'SELECT IF(doc_sec_of_state IS NULL OR OCTET_LENGTH(doc_sec_of_state) = 0, 0, 1)
-       FROM clients WHERE client_id = ?',
-    [$session->clientId]
-) ?? 0) === 1;
+// Business Registry carry-over is intentionally NOT surfaced here.
+// Larissa's 2026-07-08 Round 5 item 3 tightened the policy to require
+// a fresh upload every renewal cycle, so if the customer reaches Step 6
+// there IS a business_license upload in this session — the Step 5 gate
+// would have blocked them otherwise. Showing a "on file — carried over"
+// line here would be misleading.
 
 // Which wizard-uploaded slots do we already have this session, so the
-// "on file" line-items don't duplicate anything the customer just
-// re-uploaded?
+// Main Contact ID "on file" line-item doesn't duplicate a fresh upload.
 $uploadedIdThisSession = isset($docs['main_contact_id']);
-$uploadedBusinessThisSession = isset($docs['business_license']);
 
 // Overlay draft_data.contact onto the main_contact row in $buyers so
 // the Active Buyers section renders the customer's Step 3 edits before
@@ -274,13 +273,16 @@ require __DIR__ . '/../_includes/progress-bar.php';
                 <a href="<?= htmlspecialchars(pfm_step_url(5)) ?>" class="pfm-review__edit">Edit &rarr;</a>
             </div>
             <?php
-            // Build a combined list: session uploads first, then any
-            // carry-over slots we haven't just replaced. Only show the
-            // empty-state message when the customer has neither uploaded
-            // anything nor has a carry-over BLOB to fall back on.
-            $showLegacyId       = $hasLegacyId       && !$uploadedIdThisSession;
-            $showLegacyBusiness = $hasLegacyBusinessReg && !$uploadedBusinessThisSession;
-            $hasAnything        = !empty($docs) || $showLegacyId || $showLegacyBusiness;
+            // Build a combined list. Main Contact ID may be carried over
+            // from clients.main_contact_img_id, so include it as an "on
+            // file" line item when no fresh ID was uploaded this session.
+            // Business Registry is intentionally NOT surfaced here as a
+            // carry-over — Larissa's 2026-07-08 Round 5 policy requires
+            // a fresh Business Registry upload every renewal cycle, so
+            // if the customer reached this page the business_license
+            // slot already has a fresh file in $docs.
+            $showLegacyId = $hasLegacyId && !$uploadedIdThisSession;
+            $hasAnything  = !empty($docs) || $showLegacyId;
             ?>
             <?php if (!$hasAnything): ?>
                 <div class="pfm-text-muted">No documents uploaded.</div>
@@ -300,15 +302,6 @@ require __DIR__ . '/../_includes/progress-bar.php';
                             <span>&#128206;</span>
                             <span class="pfm-file__name">
                                 Main Contact ID
-                            </span>
-                            <span class="pfm-file__meta">on file &mdash; carried over from previous renewal</span>
-                        </li>
-                    <?php endif; ?>
-                    <?php if ($showLegacyBusiness): ?>
-                        <li class="pfm-file">
-                            <span>&#128206;</span>
-                            <span class="pfm-file__name">
-                                Business Registry
                             </span>
                             <span class="pfm-file__meta">on file &mdash; carried over from previous renewal</span>
                         </li>
