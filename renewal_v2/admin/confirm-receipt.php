@@ -65,6 +65,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
 
 $postedCsrf = (string) ($_POST['csrf_token'] ?? '');
 $sessionCsrf = (string) ($_SESSION['csrf_token'] ?? '');
+// BEFORE_WRITE_CLOSE snapshot — captures the exact $_SESSION state that
+// will be persisted to disk. If any key that ScriptCase relies on (sc_session,
+// scriptcase.sc_apl_seg.menu_main, scriptcase.sc_apl_seg.form_clients_staff)
+// is missing here, that's the corruption point. Round 5 Item 2 diagnostic.
+pfm_admin_session_snapshot('BEFORE_WRITE_CLOSE');
 // Release the session lock immediately after pulling the CSRF token —
 // confirm-receipt runs a multi-step DB transaction plus a Stripe API
 // poll and a couple of MailerSend sends, and a held lock would force a
@@ -497,6 +502,13 @@ error_log(sprintf(
 ));
 
 /* ─── 6. Success screen ────────────────────────────────────────────────── */
+// BEFORE_RENDER_SUCCESS snapshot — captures $_SESSION as it stands after
+// all the DB / Stripe / email / client_docs work has completed. Session is
+// already closed (session_write_close ran at line 72) but the array is
+// still in memory; comparing this to BEFORE_WRITE_CLOSE tells us whether
+// anything in steps 5b-5h mutated $_SESSION in a way that could affect
+// the NEXT admin request. Round 5 Item 2 diagnostic.
+pfm_admin_session_snapshot('BEFORE_RENDER_SUCCESS');
 pfm_admin_header('Receipt confirmed — Renewal completed');
 ?>
 <div class="pfm-card">

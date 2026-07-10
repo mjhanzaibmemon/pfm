@@ -47,6 +47,105 @@ declare(strict_types=1);
  * (this handles the rare PHP_SAPI = cli-server path under
  * development).
  */
+if (!function_exists('pfm_admin_session_snapshot')) {
+
+    // Round 5 Item 2 diagnostic — unconditionally log the full shape of
+    // $_SESSION at every admin-page checkpoint (ENTRY, BEFORE_WRITE_CLOSE,
+    // BEFORE_RENDER_SUCCESS, EXIT). Larissa's logout-on-refresh reproduces
+    // only intermittently and our earlier conditional "no scriptcase keys"
+    // log never fired for her, so we need the full picture — which keys are
+    // present in $_SESSION at each transition, especially sc_session and
+    // sc_apl_seg — to pinpoint which page hit drops the ScriptCase state.
+    // One grep on /home/pfm-app/logs/php/error.log for "[SESSDIAG " will
+    // reconstruct the lifecycle across her whole flow.
+    // Remove this function + all its call sites once Item 2 is verified
+    // fixed and Larissa signs off on Round 5.
+    function pfm_admin_session_snapshot(string $marker): void
+    {
+        $scriptcase       = $_SESSION['scriptcase'] ?? null;
+        $scriptcaseKeys   = is_array($scriptcase) ? array_keys($scriptcase) : [];
+
+        $scSession        = $_SESSION['sc_session'] ?? null;
+        $scSessionPresent = is_array($scSession);
+        $scSessionKeys    = $scSessionPresent ? array_keys($scSession) : [];
+
+        // sc_apl_seg = which ScriptCase apps the user is currently
+        // authorised for. Losing "menu_main" => "on" here is what triggers
+        // the "unauthorised user" screen in menu_main/index.php (line 584).
+        $aplSeg = [];
+        if (is_array($scriptcase) && isset($scriptcase['sc_apl_seg']) && is_array($scriptcase['sc_apl_seg'])) {
+            foreach ($scriptcase['sc_apl_seg'] as $app => $status) {
+                $aplSeg[$app] = (string) $status;
+            }
+        }
+
+        // session_timeout['redir'] flags for the two ScriptCase apps
+        // that appear in Larissa's failure sequence.
+        $mmTimeout  = isset($scriptcase['menu_main']['session_timeout']['redir']) ? 'SET' : '-';
+        $fcsTimeout = isset($scriptcase['form_clients_staff']['session_timeout']['redir']) ? 'SET' : '-';
+
+        // sem_session = ScriptCase's own "sc_session was missing" signal
+        // set at menu_main_form_php.php line 636 / form_clients_staff line 2537.
+        $semSession = '-';
+        if (is_array($scriptcase) && array_key_exists('sem_session', $scriptcase)) {
+            $semSession = $scriptcase['sem_session'] ? 'true' : 'false';
+        }
+
+        $usrLogin = $_SESSION['usr_login'] ?? '-';
+        if (!is_scalar($usrLogin)) {
+            $usrLogin = '(nonscalar)';
+        }
+
+        $lastSeen  = $_SESSION['pfm_admin_last_seen'] ?? '-';
+        $csrfSet   = isset($_SESSION['csrf_token']) ? 'Y' : 'N';
+        $cookieSet = isset($_COOKIE['PHPSESSID']) ? 'Y' : 'N';
+
+        // Size of what will be written to disk at session_write_close.
+        // A sudden drop between checkpoints = something unset a big key.
+        try {
+            $sessionSize = strlen(serialize($_SESSION));
+        } catch (\Throwable $e) {
+            $sessionSize = -1; // serialiser barfed — itself a signal
+        }
+
+        $ua = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
+        if (strlen($ua) > 60) {
+            $ua = substr($ua, 0, 60) . '..';
+        }
+
+        $ref = (string) ($_SERVER['HTTP_REFERER'] ?? '-');
+        if (strlen($ref) > 120) {
+            $ref = substr($ref, 0, 120) . '..';
+        }
+
+        error_log(sprintf(
+            '[renewal_v2][SESSDIAG %s] method=%s uri=%s ref=%s ip=%s ua="%s" '
+            . 'sid=%s cookie=%s size=%dB usr_login=%s last_seen=%s csrf=%s '
+            . 'scriptcase_keys=%s sc_session=%s sc_session_keys=%s '
+            . 'sc_apl_seg=%s mm_timeout=%s fcs_timeout=%s sem_session=%s',
+            $marker,
+            (string) ($_SERVER['REQUEST_METHOD'] ?? '?'),
+            (string) ($_SERVER['REQUEST_URI'] ?? '?'),
+            $ref,
+            (string) ($_SERVER['REMOTE_ADDR'] ?? '?'),
+            $ua,
+            session_id(),
+            $cookieSet,
+            $sessionSize,
+            (string) $usrLogin,
+            (string) $lastSeen,
+            $csrfSet,
+            json_encode($scriptcaseKeys),
+            $scSessionPresent ? 'YES' : 'NO',
+            json_encode($scSessionKeys),
+            json_encode($aplSeg),
+            $mmTimeout,
+            $fcsTimeout,
+            $semSession
+        ));
+    }
+}
+
 if (!function_exists('pfm_admin_session_start')) {
 
     function pfm_admin_session_start(): void
@@ -74,6 +173,11 @@ if (!function_exists('pfm_admin_session_start')) {
         ]);
 
         session_start();
+
+        // ENTRY snapshot — captures $_SESSION as read from the file, before
+        // our code has mutated anything. Round 5 Item 2 diagnostic; remove
+        // once Larissa signs off on Round 5.
+        pfm_admin_session_snapshot('ENTRY');
 
         // Keep the session file fresh on every /renewal_v2/admin/* hit.
         // PHP's default session GC (gc_maxlifetime = 1440s = 24 min)
@@ -219,6 +323,14 @@ if (!function_exists('pfm_admin_header')) {
 
     function pfm_admin_footer(): void
     {
+        // EXIT snapshot — captures $_SESSION as it will be written back to
+        // the session file (or as it stands post- session_write_close for
+        // confirm-receipt). Pair with the ENTRY snapshot in
+        // pfm_admin_session_start to see what our page changed during the
+        // request. Round 5 Item 2 diagnostic; remove once Larissa signs off.
+        if (function_exists('pfm_admin_session_snapshot')) {
+            pfm_admin_session_snapshot('EXIT');
+        }
         ?>
         </div>
     </main>
