@@ -128,10 +128,9 @@ require __DIR__ . '/../_includes/progress-bar.php';
             <strong>What happens next?</strong>
             <ul style="margin: 8px 0 0 18px; padding: 0;">
                 <li>Our team will review your renewal within 1&ndash;2 business days.</li>
-                <li>You'll receive our standard "Thank You for Your Buyer's Pass Application"
-                    confirmation email at <strong><?= htmlspecialchars($session->draftData['contact']['email'] ?? '') ?></strong>.</li>
-                <li>Once approved, your new membership card &amp; buyer passes will be ready
-                    for pickup or shipping per your usual arrangement.</li>
+                <li>Once approved, you will receive an email stating that your buyer&rsquo;s
+                    pass has been approved. Buyers can then stop by the Buyer&rsquo;s Pass
+                    Desk for renewal stickers or replacement buyer&rsquo;s passes.</li>
             </ul>
         </div>
     </div>

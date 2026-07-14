@@ -76,8 +76,8 @@ require __DIR__ . '/../_includes/progress-bar.php';
     <div class="pfm-card__header">
         <h2 class="pfm-card__title">Supporting Documents</h2>
         <p class="pfm-card__subtitle">
-            Upload your business registry and any additional documents that support your membership.
-            Accepted formats: PDF, JPG, PNG (max 10&nbsp;MB each, up to 10 files total).
+            Upload your current Secretary of State registration and any additional
+            documents needed to support your renewal. Accepted formats: PDF, JPG, PNG.
         </p>
     </div>
 
@@ -111,7 +111,7 @@ require __DIR__ . '/../_includes/progress-bar.php';
          already uploaded under this slot remain retrievable. Only the
          customer-facing label is changed (per Larissa's Phase 6 video). -->
     <h3 class="pfm-mt-2">Business Registry <span class="pfm-required">*</span></h3>
-    <p class="pfm-text-muted pfm-mb-1">A clear photo or scan of your current business registry.</p>
+    <p class="pfm-text-muted pfm-mb-1">Upload a current copy of your Secretary of State business registration.</p>
 
     <?php if ($hasLegacyBusinessReg && !$businessDoc): ?>
         <!-- Business Registry from a prior renewal is retained on the client
@@ -165,7 +165,9 @@ require __DIR__ . '/../_includes/progress-bar.php';
     <!-- ── 3. Additional documents ───────────────────────────────── -->
     <h3 class="pfm-mt-2">Additional Documents (optional)</h3>
     <p class="pfm-text-muted pfm-mb-1">
-        Examples: nursery license, resale certificate, photo of storefront, or any other supporting document.
+        Examples: documentation showing the main contact&rsquo;s relationship to the
+        company, or written authorization allowing the main contact to renew or
+        manage the account.
     </p>
 
     <label class="pfm-upload" id="pfm-upload-extra">
@@ -192,7 +194,7 @@ require __DIR__ . '/../_includes/progress-bar.php';
     <!-- ── 4. Comments / notes ───────────────────────────────────── -->
     <h3 class="pfm-mt-2">Comments / Notes (optional)</h3>
     <p class="pfm-text-muted pfm-mb-1">
-        Anything PFM staff should know about your membership? E.g. <em>"Please send invoices to our AP contact at ap@example.com"</em>.
+        Is there anything PFM staff should know when reviewing your renewal?
     </p>
     <form id="pfm-form-note" autocomplete="off">
         <div class="pfm-field">

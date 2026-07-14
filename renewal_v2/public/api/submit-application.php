@@ -50,7 +50,7 @@ $draft = $session->draftData;
 
 // Required sections
 $requiredSections = [
-    'org'     => 'Organisation Information (Step 2)',
+    'org'     => 'Organization Information (Step 2)',
     'contact' => 'Main Contact (Step 3)',
 ];
 foreach ($requiredSections as $key => $label) {

@@ -136,14 +136,13 @@ require __DIR__ . '/../_includes/progress-bar.php';
 <div class="pfm-card">
     <div class="pfm-card__header">
         <h2 class="pfm-card__title">Main Contact Person</h2>
-        <p class="pfm-card__subtitle">Please confirm or update the primary contact for your membership.</p>
+        <p class="pfm-card__subtitle">Please confirm the main contact for this membership.</p>
     </div>
 
     <div class="pfm-alert pfm-alert--info">
-        <strong>Review and update your information.</strong>
-        If the main contact&rsquo;s name, email, or phone has changed since
-        your last renewal, please update them here. You can also upload a
-        new ID below if needed.
+        The main contact should be listed on the Secretary of State
+        registration. If not, please upload documentation showing their
+        relationship to the company and authorization to renew.
     </div>
 
     <form id="pfm-form-contact" autocomplete="off" novalidate>
@@ -188,8 +187,8 @@ require __DIR__ . '/../_includes/progress-bar.php';
                    placeholder="Owner"
                    value="<?= htmlspecialchars($values['title'], ENT_QUOTES) ?>">
             <div class="pfm-field__hint">
-                The contact&rsquo;s role at the company &mdash; usually Owner, sometimes
-                Administrator or similar.
+                Enter the main contact&rsquo;s role with the company, such as
+                Owner, Manager, or Floral Designer.
             </div>
             <div class="pfm-field__error">Please enter the contact's title.</div>
         </div>

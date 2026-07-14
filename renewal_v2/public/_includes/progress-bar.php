@@ -5,7 +5,7 @@
  */
 $pfmSteps = [
     1 => 'Welcome',
-    2 => 'Organisation',
+    2 => 'Organization',
     3 => 'Contact',
     4 => 'Buyers',
     5 => 'Documents',

@@ -160,7 +160,7 @@ require __DIR__ . '/../_includes/progress-bar.php';
         <!-- Organisation -->
         <section class="pfm-review__section">
             <div class="pfm-review__head">
-                <h3 class="pfm-review__title">Organisation</h3>
+                <h3 class="pfm-review__title">Organization</h3>
                 <a href="<?= htmlspecialchars(pfm_step_url(2)) ?>" class="pfm-review__edit">Edit &rarr;</a>
             </div>
             <div class="pfm-review__row">

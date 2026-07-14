@@ -156,7 +156,7 @@ require __DIR__ . '/../_includes/progress-bar.php';
     <?php if (!$blockedTooExpired): ?>
         <p>
             This renewal takes about <strong>5&ndash;10 minutes</strong>. You'll confirm your
-            organisation details, your main contact, your list of buyers, upload any required documents,
+            organization details, your main contact, your list of buyers, upload any required documents,
             and then complete payment securely through Stripe.
         </p>
         <p class="pfm-text-muted">

@@ -102,7 +102,7 @@ require __DIR__ . '/../_includes/progress-bar.php';
     <div class="pfm-card__header">
         <h2 class="pfm-card__title">Your Buyers</h2>
         <p class="pfm-card__subtitle">
-            Add, update, or remove the people who buy on behalf of your organisation.
+            Add, update, or remove the people who buy on behalf of your organization.
             Your main contact (set on Step 3) is also counted as a buyer.
             You can have up to <?= (int) $maxBuyers ?> active members in total.
         </p>

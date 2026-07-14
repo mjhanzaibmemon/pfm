@@ -33,7 +33,7 @@
 declare(strict_types=1);
 
 $PFM_STEP       = 2;
-$PFM_STEP_TITLE = 'Organisation Information';
+$PFM_STEP_TITLE = 'Organization Information';
 $PFM_REQUIRES   = 'draft';
 
 require __DIR__ . '/../_includes/step_bootstrap.php';
@@ -110,7 +110,7 @@ require __DIR__ . '/../_includes/progress-bar.php';
 
 <div class="pfm-card">
     <div class="pfm-card__header">
-        <h2 class="pfm-card__title">Organisation Information</h2>
+        <h2 class="pfm-card__title">Organization Information</h2>
         <p class="pfm-card__subtitle">Please confirm or update your company details below.</p>
     </div>
 
@@ -124,7 +124,7 @@ require __DIR__ . '/../_includes/progress-bar.php';
     <form id="pfm-form-org" autocomplete="off" novalidate>
         <div class="pfm-field">
             <label for="co_name" class="pfm-field__label">
-                Company / Organisation Name <span class="pfm-required">*</span>
+                Company / Organization Name <span class="pfm-required">*</span>
             </label>
             <input type="text" id="co_name" name="co_name"
                    class="pfm-input" data-pfm-required maxlength="255"
@@ -162,10 +162,6 @@ require __DIR__ . '/../_includes/progress-bar.php';
 
         <!-- ── Mailing address ──────────────────────────────────────── -->
         <h3 class="pfm-card__subtitle pfm-mt-2">Mailing Address</h3>
-        <p class="pfm-text-muted pfm-mb-1">
-            Where we send your membership card and any mailed correspondence.
-            Update this if it has changed since your last renewal.
-        </p>
 
         <div class="pfm-field">
             <label for="mailing_address" class="pfm-field__label">
