@@ -781,28 +781,40 @@ class StripeClient
         return $ok;
     }
 
-    // ===== CUSTOMER RENEWAL-CONFIRMED EMAIL (Phase 4 polish) =====
+    // ===== CUSTOMER RENEWAL-CONFIRMED EMAIL (Round 7 — Bucket B template alignment) =====
 
     /**
-     * Send the customer a "your renewal is approved and active" email AFTER
-     * staff click "Confirm Receipt" in admin/review.php. Closes the loop on
+     * Send the customer a "your renewal is approved" email AFTER staff
+     * click "Confirm Receipt" in admin/review.php. Closes the loop on
      * the renewal flow:
      *
      *   1. Customer pays               → "Application received" email (sendCustomerConfirmationEmail)
      *   2. Staff reviews + confirms    → "Renewal approved / active" email (THIS method)
      *
-     * Hardcoded body (not from members_status) — there is no existing
-     * approval-email template in the legacy PFM data, and adding a new
-     * memb_status_id row would risk affecting other existing PFM admin
-     * workflows that read from members_status. Larissa can adjust the
-     * copy later by editing this method or moving it to a config.
+     * Per Larissa's 2026-07-11 Bucket B video + written instruction, this
+     * email must use the existing PFM template stored in the
+     * `notifications` table row where notif_id = 2, subject
+     * "Congratulations! Your Buyer's Pass Application Has Been Approved".
+     * The template body already references the Buyer's Pass Desk pickup
+     * location (3624 N. Leverman St., Portland, OR 97217), matches the
+     * Round 6 confirmation-page wording, and is editable by staff via
+     * ScriptCase admin's "Security → Email Notifications" form (item_24)
+     * — so wording changes never require a code redeploy.
      *
-     * Recipient:  clients.main_contact_email (fallback to clients.email)
-     * From:       PFM_RNW_NOTIFY_FROM (MailerSend-verified domain)
-     * Subject:    "Your Portland Flower Market Buyer's Pass renewal is confirmed"
-     *             (prefixed with [STAGING TEST] on staging only)
-     * Body:       HTML, includes reference number, amount, payment date,
-     *             approval date, contact info, brand-matched purple accents
+     * Recipient: clients.main_contact_email (fallback to clients.email).
+     * From:      PFM_RNW_NOTIFY_FROM (must be MailerSend-verified domain).
+     * Subject:   notifications.msg_subject (with [STAGING TEST] prefix on
+     *            staging only).
+     * Body:      notifications.msg_body (HTML), with ~COMPANY NAME~ replaced.
+     *
+     * Reading the template from the DB (not hardcoding) means Larissa can
+     * edit the email content via the existing admin's Email Notifications
+     * grid and the change flows through automatically — no code redeploy
+     * needed. Prior to Round 7 this method built a hardcoded HTML body
+     * with reference / amount / dates; that mismatched Larissa's ask
+     * ("please use the existing templates already in the system") and
+     * carried the incorrect "membership card & shipping" line that
+     * Round 6 removed from the wizard confirmation page.
      *
      * Non-fatal: caller wraps in try/catch so payment confirmation in
      * confirm-receipt.php is never blocked by an email-send failure.
@@ -812,7 +824,27 @@ class StripeClient
      */
     public static function sendCustomerRenewalConfirmedEmail(RenewalSession $session): bool
     {
-        // ── 1. Look up the customer's company + email ─────────────────────
+        // ── 1. Fetch the email template from notifications ────────────────
+        // notif_id = 2 = "approved_membership" per Larissa's Bucket B spec.
+        // Migration 010 grants SELECT on `notifications` to pfm_renewal.
+        $template = Db::one(
+            'SELECT msg_subject, msg_body
+               FROM notifications
+              WHERE notif_id = 2',
+            []
+        );
+        if (!$template || empty($template['msg_subject']) || empty($template['msg_body'])) {
+            error_log(sprintf(
+                '[renewal_v2] Customer renewal-confirmed email skipped for session %d: '
+                . 'notifications row for notif_id=2 is missing or empty.',
+                $session->id
+            ));
+            return false;
+        }
+
+        // ── 2. Look up the customer's company name + email address ────────
+        // Prefer main_contact_email (person managing the renewal); fall
+        // back to clients.email if it's empty. Matches sendCustomerConfirmationEmail.
         $client = Db::one(
             'SELECT co_name, main_contact_email, email AS company_email
                FROM clients
@@ -822,7 +854,7 @@ class StripeClient
         if (!$client) {
             error_log(sprintf(
                 '[renewal_v2] Customer renewal-confirmed email skipped for session %d: '
-                . 'client_id %d not found.',
+                . 'client_id %d not found in clients table.',
                 $session->id, $session->clientId
             ));
             return false;
@@ -835,7 +867,7 @@ class StripeClient
         if ($toEmail === '') {
             error_log(sprintf(
                 '[renewal_v2] Customer renewal-confirmed email skipped for session %d: '
-                . 'no email on client %d.',
+                . 'no main_contact_email or email on client %d.',
                 $session->id, $session->clientId
             ));
             return false;
@@ -843,60 +875,22 @@ class StripeClient
 
         $companyName = trim((string) ($client['co_name'] ?? '')) ?: 'Customer';
 
-        // ── 2. Build display values ───────────────────────────────────────
-        $reference   = $session->getReferenceNumber();
-        $amount      = $session->amountCharged !== null
-            ? '$' . number_format((float) $session->amountCharged, 2)
-            : '(amount unknown)';
-        $paymentDate = $session->paidAt
-            ? date('F j, Y', strtotime((string) $session->paidAt))
-            : '—';
-        $approvedDate = $session->adminConfirmedAt
-            ? date('F j, Y', strtotime((string) $session->adminConfirmedAt))
-            : date('F j, Y');
+        // ── 3. Replace ~COMPANY NAME~ placeholder ─────────────────────────
+        // Existing PFM convention — see notifications.msg_body for "Dear
+        // ~COMPANY NAME~,". Both subject and body get the substitution in
+        // case staff later adds the placeholder to the subject too. No
+        // ~LINK~ substitution here — the approval email has no action
+        // link (the pass is picked up at the Buyer's Pass Desk).
+        $subject = str_replace('~COMPANY NAME~', $companyName, (string) $template['msg_subject']);
+        $body    = str_replace('~COMPANY NAME~', $companyName, (string) $template['msg_body']);
 
-        // ── 3. Subject (with staging prefix) ──────────────────────────────
-        $subject = "Your Portland Flower Market Buyer's Pass renewal is confirmed";
+        // Prefix subject with [STAGING TEST] on staging only (matches the
+        // sibling sendCustomerConfirmationEmail behaviour for consistency).
         if (defined('PFM_RNW_NOTIFY_SUBJECT_PREFIX') && PFM_RNW_NOTIFY_SUBJECT_PREFIX !== '') {
             $subject = PFM_RNW_NOTIFY_SUBJECT_PREFIX . $subject;
         }
 
-        // ── 4. HTML body (brand-matched purple #727cf5 accents) ──────────
-        $companyEsc   = htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8');
-        $referenceEsc = htmlspecialchars($reference,   ENT_QUOTES, 'UTF-8');
-        $amountEsc    = htmlspecialchars($amount,      ENT_QUOTES, 'UTF-8');
-        $payDateEsc   = htmlspecialchars($paymentDate, ENT_QUOTES, 'UTF-8');
-        $apvDateEsc   = htmlspecialchars($approvedDate, ENT_QUOTES, 'UTF-8');
-
-        $body = '<html><body style="font-family: Roboto, Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #313a46; max-width: 600px; margin: 0 auto; padding: 20px;">'
-              . '<p>Dear ' . $companyEsc . ',</p>'
-              . '<p>Great news — your Portland Flower Market Buyer&rsquo;s Pass renewal has '
-              . 'been reviewed and approved by our team.</p>'
-              . '<p style="background: #f0f4ff; border-left: 4px solid #727cf5; padding: 14px 18px; margin: 20px 0; font-size: 15px;">'
-              . '<strong style="color: #727cf5;">Your membership is now active.</strong>'
-              . '</p>'
-              . '<table cellpadding="6" cellspacing="0" style="margin: 16px 0; border-collapse: collapse;">'
-              . '<tr><td style="color: #6c757d; padding-right: 16px;">Renewal reference</td>'
-              . '<td style="font-family: monospace; font-weight: 600;">' . $referenceEsc . '</td></tr>'
-              . '<tr><td style="color: #6c757d; padding-right: 16px;">Amount paid</td>'
-              . '<td>' . $amountEsc . '</td></tr>'
-              . '<tr><td style="color: #6c757d; padding-right: 16px;">Payment date</td>'
-              . '<td>' . $payDateEsc . '</td></tr>'
-              . '<tr><td style="color: #6c757d; padding-right: 16px;">Approved on</td>'
-              . '<td>' . $apvDateEsc . '</td></tr>'
-              . '</table>'
-              . '<p>Your new membership card and buyer passes will be ready for pickup or '
-              . 'shipping per your usual arrangement.</p>'
-              . '<p>If you have any questions, please reach out to us at '
-              . '<strong>503-289-1500</strong> or '
-              . '<a href="mailto:info@ofgaflowers.com" style="color: #727cf5;">info@ofgaflowers.com</a>.</p>'
-              . '<p style="margin-top: 24px;">Welcome back to the Portland Flower Market community!</p>'
-              . '<p style="margin-top: 24px;">Best regards,<br>'
-              . 'Buyers Pass Team<br>'
-              . 'Portland Flower Market</p>'
-              . '</body></html>';
-
-        // ── 5. Send via MailerSend SMTP ───────────────────────────────────
+        // ── 4. Send via MailerSend SMTP (HTML body — template uses <p> tags) ──
         require_once __DIR__ . '/Mailer.php';
         [$ok, $detail] = Mailer::send($toEmail, $subject, $body, /* isHtml */ true);
 
@@ -907,7 +901,7 @@ class StripeClient
             $session->id,
             $toEmail,
             $companyName,
-            $reference,
+            $session->getReferenceNumber(),
             $detail
         ));
 
