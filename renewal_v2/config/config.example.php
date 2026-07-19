@@ -94,7 +94,7 @@ define('PFM_RNW_MAX_BUYERS_PER_MEMBERSHIP', 50);
 
 // ---------- PFM Contact / Support ----------
 
-define('PFM_RNW_SUPPORT_EMAIL', 'info@pfm-app.com');
+define('PFM_RNW_SUPPORT_EMAIL', 'info@ofgaflowers.com');
 
 // ---------- Staff Notifications (Phase 4) ----------
 // Comma-separated list of staff inboxes that should receive a notification
