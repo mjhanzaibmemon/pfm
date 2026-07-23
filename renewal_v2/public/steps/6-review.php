@@ -273,16 +273,16 @@ require __DIR__ . '/../_includes/progress-bar.php';
                 <a href="<?= htmlspecialchars(pfm_step_url(5)) ?>" class="pfm-review__edit">Edit &rarr;</a>
             </div>
             <?php
-            // Build a combined list. Main Contact ID may be carried over
-            // from clients.main_contact_img_id, so include it as an "on
-            // file" line item when no fresh ID was uploaded this session.
-            // Business Registry is intentionally NOT surfaced here as a
-            // carry-over — Larissa's 2026-07-08 Round 5 policy requires
-            // a fresh Business Registry upload every renewal cycle, so
-            // if the customer reached this page the business_license
-            // slot already has a fresh file in $docs.
-            $showLegacyId = $hasLegacyId && !$uploadedIdThisSession;
-            $hasAnything  = !empty($docs) || $showLegacyId;
+            // Round 7 (2026-07-17): the Main Contact ID carry-over is no
+            // longer surfaced as a satisfied requirement on the review
+            // page — Larissa's temporary annual-fresh rule requires the
+            // customer to upload a fresh ID on Step 3 for this cycle, so
+            // by the time they reach Step 6 the id_upload slot has a
+            // fresh file in $docs. Same treatment as the Business
+            // Registry from Round 5 Item 3 (commit 16d188d). To restore
+            // the carry-over line after Larissa flips the rule back,
+            // re-introduce the $showLegacyId branch.
+            $hasAnything = !empty($docs);
             ?>
             <?php if (!$hasAnything): ?>
                 <div class="pfm-text-muted">No documents uploaded.</div>
@@ -297,15 +297,6 @@ require __DIR__ . '/../_includes/progress-bar.php';
                             </span>
                         </li>
                     <?php endforeach; ?>
-                    <?php if ($showLegacyId): ?>
-                        <li class="pfm-file">
-                            <span>&#128206;</span>
-                            <span class="pfm-file__name">
-                                Main Contact ID
-                            </span>
-                            <span class="pfm-file__meta">on file &mdash; carried over from previous renewal</span>
-                        </li>
-                    <?php endif; ?>
                 </ul>
             <?php endif; ?>
         </section>

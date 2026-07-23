@@ -82,6 +82,12 @@ require __DIR__ . '/../_includes/progress-bar.php';
     </div>
 
     <!-- ── 1. Main contact ID (already uploaded in Step 3) ───────── -->
+    <!-- Round 7 (2026-07-17): Larissa asked for a temporary annual-fresh
+         rule for the Driver's License / Photo ID to reset the pipeline
+         after staff uploads of stock photos. The legacy-on-file case
+         no longer satisfies the requirement — customers must always
+         upload a fresh copy on Step 3. This mirrors the Business
+         Registry treatment from Round 5 Item 3 (commit 16d188d). -->
     <h3>Main Contact ID</h3>
     <?php if ($idDoc): ?>
         <ul class="pfm-file-list">
@@ -95,14 +101,16 @@ require __DIR__ . '/../_includes/progress-bar.php';
                 <span class="pfm-text-muted" style="font-size: 0.8rem;">Uploaded in Step 3</span>
             </li>
         </ul>
-    <?php elseif ($hasLegacyId): ?>
-        <div class="pfm-alert pfm-alert--info">
-            <strong>ID on file.</strong> We already have a main contact ID on record from a previous renewal.
-            You don't need to re-upload unless it has changed &mdash; if it has, use Step 3 to replace it.
-        </div>
     <?php else: ?>
         <div class="pfm-alert pfm-alert--warning">
-            We don't see a main contact ID on file. Please <a href="<?= htmlspecialchars(pfm_step_url(3)) ?>">go back to Step 3</a> and upload it.
+            <strong>Fresh ID required for this cycle.</strong>
+            <?php if ($hasLegacyId): ?>
+                We have an ID on file from a previous renewal, but PFM now requires
+                a fresh Driver&rsquo;s License / Photo ID upload every renewal cycle.
+            <?php else: ?>
+                We don&rsquo;t see a main contact ID uploaded yet.
+            <?php endif; ?>
+            Please <a href="<?= htmlspecialchars(pfm_step_url(3)) ?>">go back to Step 3</a> and upload one.
         </div>
     <?php endif; ?>
 

@@ -127,7 +127,14 @@ if (!$hasLegacyId) {
     }
 }
 
-$idRequired = !$uploaded && !$hasLegacyId;
+// Round 7 (2026-07-17): Larissa asked for a temporary "annual fresh ID"
+// rule to reset the pipeline after staff had been uploading stock photos
+// into the legacy main_contact_img_id column. For this renewal cycle
+// every customer must upload a fresh Driver's License / Photo ID even
+// if one is on file. Same shape as the Business Registry annual-fresh
+// rule from Round 5 Item 3 (commit 16d188d). After a full cycle collects
+// clean IDs, flip this back to `!$uploaded && !$hasLegacyId`.
+$idRequired = !$uploaded;
 
 require __DIR__ . '/../_includes/header.php';
 require __DIR__ . '/../_includes/progress-bar.php';
@@ -203,26 +210,28 @@ require __DIR__ . '/../_includes/progress-bar.php';
     </h3>
 
     <?php if ($hasLegacyId && !$uploaded): ?>
-        <!-- Case 2: legacy ID on file — show as a carry-over badge + View link -->
-        <div class="pfm-alert pfm-alert--success">
+        <!-- Round 7 (2026-07-17): legacy ID on file is shown as reference
+             only — customer must still upload a fresh copy this cycle. Same
+             visual shape as the Business Registry reference-only alert on
+             Step 5 (Round 5 Item 3, commit 16d188d). Same info style, not
+             the earlier green success style, so the customer reads it as
+             "yes we still see it, but please upload a fresh one anyway". -->
+        <div class="pfm-alert pfm-alert--info">
             <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                 <div style="flex:1; min-width:200px;">
-                    <strong>ID on file:</strong>
-                    <span style="font-family:monospace;"><?= htmlspecialchars($legacyIdName) ?></span>
-                    <?php if ($legacyIdSize > 0): ?>
-                        <span class="pfm-text-muted">(<?= number_format($legacyIdSize / 1024, 0) ?>&nbsp;KB)</span>
-                    <?php endif; ?>
+                    <strong>Reference only:</strong>
+                    <span class="pfm-text-muted"> we have last year&rsquo;s ID on file (<span style="font-family:monospace;"><?= htmlspecialchars($legacyIdName) ?></span><?php if ($legacyIdSize > 0): ?>, <?= number_format($legacyIdSize / 1024, 0) ?>&nbsp;KB<?php endif; ?>).</span>
                 </div>
                 <a class="pfm-btn pfm-btn--ghost pfm-btn--sm"
                    href="/renewal_v2/public/api/view-document.php?token=<?= urlencode($session->token) ?>&amp;key=legacy_main_contact_id"
                    target="_blank" rel="noopener">
-                    View &nearr;
+                    View last year&rsquo;s &nearr;
                 </a>
             </div>
             <p class="pfm-mt-0" style="margin-bottom:0;">
-                You don't need to re-upload your ID unless it has changed since your
-                last renewal. Use the View button above to check which file we have on
-                file, then drop a new file below if it needs replacing.
+                Please upload a current copy for this renewal cycle even if the
+                document hasn&rsquo;t changed &mdash; PFM requires a fresh Driver&rsquo;s
+                License / Photo ID every year.
             </p>
         </div>
     <?php else: ?>
@@ -235,9 +244,7 @@ require __DIR__ . '/../_includes/progress-bar.php';
 
     <label class="pfm-upload" id="pfm-upload-id">
         <input type="file" id="pfm-id-file" accept="application/pdf,image/jpeg,image/png">
-        <strong>
-            <?= $hasLegacyId && !$uploaded ? 'Upload a replacement ID' : 'Click or drop a file here to upload' ?>
-        </strong>
+        <strong>Click or drop a file here to upload</strong>
         <div class="pfm-upload__hint">Your ID image is stored securely and only used to verify your membership.</div>
     </label>
 
@@ -410,12 +417,13 @@ require __DIR__ . '/../_includes/progress-bar.php';
             PFM.toast.show('Please enter a valid email address.', 'danger');
             return;
         }
-        // ID slot is satisfied if EITHER a fresh upload exists for this
-        // session OR the customer already has a legacy ID on file from a
-        // previous renewal. The "Remove" action on a fresh upload clears
-        // hasIdUploaded but the legacy fallback remains, so the customer
-        // can still proceed without re-uploading.
-        if (!hasIdUploaded && !hasLegacyId) {
+        // Round 7 (2026-07-17): the ID slot is satisfied ONLY by a fresh
+        // upload this session. The legacy on-file file no longer counts
+        // per Larissa's temporary annual-fresh rule (same treatment as
+        // the Business Registry from Round 5 Item 3). To restore the
+        // carry-over behaviour after a full renewal cycle, add
+        // `|| hasLegacyId` back into the guard.
+        if (!hasIdUploaded) {
             PFM.toast.show('Please upload a photo of the main contact\'s driver\'s license or ID before continuing.', 'danger');
             return;
         }
