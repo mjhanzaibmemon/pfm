@@ -36,10 +36,22 @@
 --
 -- Idempotency guard
 -- -----------------
--- The WHERE clause fires only when the current msg_body still has
--- ~LINK~ BEFORE the docs-intro paragraph. If someone (Larissa or a
--- re-run) has already moved the button, the UPDATE affects 0 rows
--- and is a no-op. Verify with the SELECT at the bottom.
+-- The WHERE clause fires in two cases so this migration handles both
+-- deployment paths cleanly:
+--   1. ~LINK~ is completely missing from the body — the case on real
+--      production, where Larissa manually removed the CTA at some
+--      point before Round 6 ("we removed the link that took them to
+--      the renewal portal", from her 2026-07-11 video). Our new body
+--      restores the button in the correct position below the docs
+--      list.
+--   2. ~LINK~ is present but positioned BEFORE the docs-intro
+--      paragraph — the case on staging where the button was already
+--      there in the wrong position. Our new body moves it below.
+--
+-- Both cases converge on the same target state. If the button is
+-- already positioned correctly (post-migration state), neither
+-- condition fires and the UPDATE affects 0 rows — safe no-op on
+-- re-run. Verify with the SELECT at the bottom.
 --
 -- Apply on production during Phase 7 deploy AFTER migration 010 and
 -- BEFORE swapping the wizard cutover (order is not strictly load-
@@ -69,8 +81,8 @@ UPDATE `pfm`.`members_status`
 <p>Best regards,</p>
 <p>Buyers Pass Team<br />Portland Flower Market</p>'
  WHERE `memb_status_id` = 3
-   AND LOCATE('~LINK~', `msg_body`) > 0
-   AND LOCATE('~LINK~', `msg_body`) < LOCATE('please ensure you have the following documents', `msg_body`);
+   AND (LOCATE('~LINK~', `msg_body`) = 0
+         OR LOCATE('~LINK~', `msg_body`) < LOCATE('please ensure you have the following documents', `msg_body`));
 
 -- Verify after running:
 --   SELECT
