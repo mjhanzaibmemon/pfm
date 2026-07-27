@@ -68,6 +68,40 @@ if ($buyerCount < 1) {
     api_error('You must have at least one active buyer before submitting.', 422, 'no_buyers');
 }
 
+// Required documents — Larissa's 2026-07-27 clone rehearsal on session 5
+// (client 738023) surfaced a race condition: user clicked Continue on
+// Step 5 while the business_license upload's XHR was still in flight;
+// nginx logged HTTP 499 (client aborted request), draft_data.documents
+// never received the entry, but the wizard happily proceeded to Stripe
+// and completed a paid renewal with the document missing. Real customer
+// scenarios that could hit this on production: slow mobile connection,
+// distracted user, tab restore mid-upload, or dev-tools bypass of the
+// Step 5 disabled-Next button. The Step 5 UX now tracks in-flight
+// uploads and keeps Continue disabled while activeUploads > 0, but
+// that is a client-side hint — this block is the authoritative gate.
+//
+// Both docs are strictly annual with no legacy carry-over:
+//   - main_contact_id  → Round 7 (2026-07-17, commit fecb8b8): fresh
+//                        upload every cycle, on-file no longer counts.
+//   - business_license → Round 5 Item 3 (2026-07-08, commit 16d188d):
+//                        clients.doc_sec_of_state kept for reference
+//                        only, does not satisfy the required check.
+$submittedDocs = $draft['documents'] ?? [];
+if (empty($submittedDocs['main_contact_id'])) {
+    api_error(
+        'Main Contact ID is missing from your submission. Please return to Step 3 and upload a fresh photo ID, then continue back through the wizard.',
+        422,
+        'missing_document'
+    );
+}
+if (empty($submittedDocs['business_license'])) {
+    api_error(
+        'Business Registry document is missing from your submission. Please return to Step 5 and re-upload — your previous upload may not have finished before you clicked Continue.',
+        422,
+        'missing_document'
+    );
+}
+
 // ───────────────────────────────────────────────────────────────────
 // Step 2: Apply changes from draft_data to the clients table
 //         (company name, contact info, address changes)

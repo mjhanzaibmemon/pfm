@@ -238,17 +238,56 @@ require __DIR__ . '/../_includes/progress-bar.php';
     // hasn't changed.
     var hasBusinessReg     = <?= !empty($businessDoc) ? 'true' : 'false' ?>;
 
+    // In-flight upload counter — every uploader increments on start and
+    // decrements on resolve/reject. Larissa's 2026-07-27 clone rehearsal
+    // caught a race condition where a user could click "Continue" while
+    // an upload's XHR was still mid-flight: nginx logged HTTP 499
+    // (client aborted request) on the in-flight POST, draft_data never
+    // received the business_license entry, and the wizard silently
+    // proceeded to payment with the document missing. The pending
+    // spinner row was counted by refreshBusinessRegFlag() as a
+    // completed upload, so nothing blocked the transition. Fix has two
+    // layers: this counter disables Continue while >0, and the pending
+    // row is now class-marked so the DOM count excludes it. The
+    // authoritative gate is server-side in submit-application.php.
+    var activeUploads = 0;
+    var NEXT_BTN_LABEL_READY  = 'Continue to Review →';
+    var NEXT_BTN_LABEL_UPLOAD = 'Uploading… please wait';
+
     function refreshBusinessRegFlag() {
-        // Live DOM recount of the business_license slot — fresh uploads
-        // populate #pfm-license-list, so any .pfm-file row inside that
-        // list means the slot now has a fresh upload.
-        hasBusinessReg = document.querySelectorAll('#pfm-license-list .pfm-file').length > 0;
+        // Live DOM recount of the business_license slot — only rows
+        // that finished uploading count. Pending rows are marked with
+        // .pfm-file--pending and excluded from the check.
+        hasBusinessReg = document.querySelectorAll(
+            '#pfm-license-list .pfm-file:not(.pfm-file--pending)'
+        ).length > 0;
+    }
+
+    function refreshNextButtonState() {
+        if (activeUploads > 0) {
+            nextBtn.disabled = true;
+            nextBtn.textContent = NEXT_BTN_LABEL_UPLOAD;
+        } else {
+            nextBtn.disabled = false;
+            nextBtn.textContent = NEXT_BTN_LABEL_READY;
+        }
     }
 
     // Next button — block until a fresh Business Registry upload lands
     // in the business_license slot. Carry-over is no longer accepted.
     var nextBtn = document.getElementById('pfm-next');
     nextBtn.addEventListener('click', function () {
+        // Guard: if any upload is still in flight, refuse to advance.
+        // The button is normally disabled in this state, but a keyboard
+        // dispatch or dev-tools click could still fire the handler.
+        if (activeUploads > 0) {
+            PFM.toast.show(
+                'Please wait for your document upload to finish before continuing.',
+                'warning',
+                5000
+            );
+            return;
+        }
         refreshBusinessRegFlag();
         if (!hasBusinessReg) {
             PFM.toast.show(
@@ -296,10 +335,15 @@ require __DIR__ . '/../_includes/progress-bar.php';
 
             var key = keyFn();
             var pending = document.createElement('li');
-            pending.className = 'pfm-file';
+            // Marker class keeps this row out of refreshBusinessRegFlag's
+            // "completed uploads" count until the response lands.
+            pending.className = 'pfm-file pfm-file--pending';
             pending.innerHTML = '<span class="pfm-spinner"></span>' +
                 '<span class="pfm-file__name">Uploading ' + escapeHtml(file.name) + '…</span>';
             listEl.appendChild(pending);
+
+            activeUploads++;
+            refreshNextButtonState();
 
             PFM.api.upload(file, key)
                 .then(function (data) {
@@ -326,6 +370,10 @@ require __DIR__ . '/../_includes/progress-bar.php';
                 .catch(function (err) {
                     pending.remove();
                     PFM.toast.show(err.message || 'Upload failed.', 'danger');
+                })
+                .finally(function () {
+                    activeUploads = Math.max(0, activeUploads - 1);
+                    refreshNextButtonState();
                 });
         }
     }
