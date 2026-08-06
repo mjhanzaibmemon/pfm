@@ -1,0 +1,161 @@
+-- ─────────────────────────────────────────────────────────────────────
+-- Migration 013: demote the extra primary rows on the 11 clients
+--                where Larissa kept 2 or 3 rows as KEEP in her
+--                2026-07-30 workbook review.
+--
+-- Context
+-- -------
+-- Companion to migration 012 (which soft-deleted the 151 DROP-marked
+-- rows). 012 left 11 clients still holding 2 or 3 primary rows each
+-- because Larissa had marked those rows as KEEP. In her follow-up on
+-- 2026-07-30 she clarified:
+--
+--   "Each client should only have one primary contact. The primary
+--    contact should be the person listed on the main Primary Contact
+--    screen, not multiple people from the buyer/member list. Everyone
+--    else should remain as a buyer/contact if appropriate, but should
+--    not be marked as primary."
+--
+-- She acknowledged that on some of those rows her KEEP mark meant
+-- "keep this person on the account as a buyer" rather than "keep as
+-- primary". So the extras stay in the members table but their
+-- main_contact flag flips off and they surface as regular buyers.
+--
+-- For each of the 11 clients, the row that stays as primary is the
+-- one whose email or name matches `clients.main_contact_email` /
+-- `clients.main_contact_name` (Larissa's "Main Primary Contact
+-- screen" source of truth). Muhammad emailed Larissa the resulting
+-- pick table on 2026-07-30 and she replied "Looks good, Thank you
+-- so much!!" — recorded approval for the exact picks below.
+--
+-- Per-client canonical picks (Larissa-approved 2026-07-30):
+-- (member_id in parens is the one that STAYS as main_contact=1)
+--
+--   client 2760 — Ambius
+--     PRIMARY:  (17502) Bonnie Schramm
+--     demote → (36611) Jen Gordon
+--   client 736102 — Mis Tacones
+--     PRIMARY:  (37069) Carlos Reynoso & Polo Banuelos
+--     demote → (33417) Polo Banuelos
+--   client 737223 — Kraft Masonry
+--     PRIMARY:  (38950) Samantha Alfano
+--     demote → (36744) Jessica Eastman
+--     demote → (36747) Emily Strunk
+--   client 737450 — North Star Construction, LLC
+--     PRIMARY:  (37521) Loren Hatfield
+--     demote → (37518) Nancy Hatfield
+--   client 737547 — Olivia's Emporium
+--     PRIMARY:  (38611) Olivia Nogueira
+--     demote → (37844) Gail Owen
+--   client 737162 — Oregon Rheumatology Clinic
+--     PRIMARY:  (36535) Shawn Macalaster
+--     demote → (36539) Anne Lundsgaard
+--   client 31547 — Paradise Restored Landscaping
+--     PRIMARY:  (37347) Caitlin Severino
+--     demote → (37346) Desiree Dennis
+--   client 733672 — Portland Building and Remodeling
+--     PRIMARY:  (38230) Ross Doyle
+--     demote → (26044) Joanne Doyle
+--   client 737655 — Sira Fleur
+--     PRIMARY:  (38156) Dianna Cervantes
+--     demote → (38157) Madhelyn Tercero
+--   client 731261 — Soter Vineyards
+--     PRIMARY:  (17705) Julia Bandy-Smith
+--     demote → (37839) Rachel Pendragon Gibeau
+--   client 30092 — Z Callas
+--     PRIMARY:  (10164) Patrick Zweifel
+--     demote → (36652) Michael Lowenstein
+--
+-- What this migration does
+-- ------------------------
+-- For the 12 non-canonical KEEP rows across the 11 clients above:
+--   SET main_contact = b'0'  (no longer primary)
+--   SET include      = b'1'  (visible as an active buyer)
+--
+-- The canonical primary row on each client is not touched. The
+-- clients.main_contact_* mirror fields are not touched. The 12 rows
+-- keep their names, emails, phones — only their role changes from
+-- primary to buyer.
+--
+-- What this migration does NOT do
+-- -------------------------------
+-- 1. Does not touch the 82 already-clean clients (handled by 012).
+-- 2. Does not touch the 2 test-file / broken-record clients (client 4
+--    Flowers by Donna and client 737971) — 012 soft-deleted both
+--    their rows, intentional zero-primary state per Muhammad's call.
+-- 3. Does not hard-delete anything.
+-- 4. Does not touch wizard_removed_at — those rows were never soft-
+--    deleted, they were kept, so we leave that column alone.
+--
+-- Idempotency
+-- -----------
+-- Re-running is safe: the UPDATE targets specific member_ids and
+-- sets main_contact = b'0' + include = b'1'. On a second run the
+-- rows already match those values, so the UPDATE affects 0 rows
+-- and nothing changes.
+--
+-- Rollback
+-- --------
+-- Split into two UPDATEs because the pre-migration include value
+-- was not the same on all 12 rows (snapshot on testing 2026-07-30):
+--   6 rows had include = NULL before demote
+--   6 rows had include = 0    before demote
+-- The reverse block at the bottom restores each row to its exact
+-- prior state.
+--
+-- Verification query is at the bottom (commented). Run it after
+-- this migration completes to confirm all 11 clients now have
+-- exactly 1 primary each and the 12 demoted rows all show up as
+-- active buyers.
+-- ─────────────────────────────────────────────────────────────────────
+
+UPDATE `pfm`.`members`
+   SET `main_contact` = b'0',
+       `include`      = b'1'
+ WHERE `member_id` IN (26044, 33417, 36539, 36611, 36652, 36744, 36747, 37346, 37518, 37839, 37844, 38157);
+
+-- Expected rows affected on a fresh apply: 12
+-- (0 if re-run against an already-migrated DB)
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Verification — run manually after the UPDATE above completes.
+-- All 11 clients should now show live_primaries = 1.
+-- ─────────────────────────────────────────────────────────────────────
+-- SELECT c.client_id, c.co_name, COUNT(m.member_id) AS live_primaries
+--   FROM `pfm`.`clients` c
+--   LEFT JOIN `pfm`.`members` m
+--     ON m.client_id = c.client_id
+--    AND m.main_contact = b'1'
+--    AND m.wizard_removed_at IS NULL
+--  WHERE c.client_id IN (2760, 30092, 31547, 731261, 733672, 736102,
+--                        737162, 737223, 737450, 737547, 737655)
+--  GROUP BY c.client_id, c.co_name
+--  ORDER BY c.co_name;
+--
+-- Expected: all 11 clients show live_primaries = 1.
+--
+-- And the 12 demoted rows should now appear as active buyers:
+-- SELECT member_id, member_name, main_contact+0 AS main, include+0 AS incl
+--   FROM `pfm`.`members`
+--  WHERE member_id IN (26044, 33417, 36539, 36611, 36652, 36744, 36747, 37346, 37518, 37839, 37844, 38157)
+--  ORDER BY client_id, member_id;
+--
+-- Expected: main = 0, incl = 1 for all 12.
+
+-- ─────────────────────────────────────────────────────────────────────
+-- ROLLBACK (commented). To undo migration 013, uncomment BOTH blocks
+-- below and run them. This restores each demoted row to its exact
+-- pre-013 state (main_contact = 1, and the original include value —
+-- NULL for 6 rows, 0 for the other 6).
+-- ─────────────────────────────────────────────────────────────────────
+-- Rollback part A: rows that had include = NULL before demote
+-- UPDATE `pfm`.`members`
+--    SET `main_contact` = b'1',
+--        `include`      = NULL
+--  WHERE `member_id` IN (36611, 36744, 36747, 37346, 37518, 37844);
+--
+-- Rollback part B: rows that had include = 0 before demote
+-- UPDATE `pfm`.`members`
+--    SET `main_contact` = b'1',
+--        `include`      = b'0'
+--  WHERE `member_id` IN (26044, 33417, 36539, 36652, 37839, 38157);
