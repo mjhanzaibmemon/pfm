@@ -319,6 +319,99 @@ Db::transaction(function () use ($session, $draft, $customerNote): void {
                     $clientsParams
                 );
             }
+        } else {
+            // ── Self-heal: no committed primary members row exists ──
+            //
+            // This client is in the "0 live primary" state — its canonical
+            // primary contact lives only on clients.main_contact_* mirror
+            // columns (or in the draft the customer just filled). Testing
+            // scan on 2026-08-05 found 1,488 active real customers in this
+            // shape (pre-existing legacy from years of ScriptCase admin
+            // edits), plus 2 test files we intentionally zeroed during the
+            // duplicate-primary cleanup.
+            //
+            // BuyerManager::getActive() already synthesises a virtual
+            // primary at read time so the wizard renders and prices
+            // correctly. Here on submit we complete the loop by INSERTing
+            // a real members row so the client stops relying on the
+            // fallback for its next renewal — a lazy migration that
+            // heals the legacy data one submit at a time without touching
+            // any customer we haven't confirmed can renew.
+            //
+            // Data source, in fallthrough order:
+            //   1. Step 3 draft edits (customer's just-typed values)
+            //   2. clients.main_contact_* mirror (legacy canonical)
+            //   3. skip synthesis entirely if we have neither
+            //
+            // The 18 "both mirror fields empty" clients on prod hit case 3
+            // if they also skip Step 3 — but the wizard's Step 3 form is
+            // required, so any customer that gets this far has typed at
+            // least the required name. Guard defensively anyway.
+            $mirrorForInsert = Db::one(
+                'SELECT main_contact_name, main_contact_email, main_contact_phone
+                   FROM clients WHERE client_id = ?',
+                [$session->clientId]
+            ) ?? [];
+
+            $finalName  = trim((string) ($contact['name']
+                ?? $mirrorForInsert['main_contact_name']  ?? ''));
+            $finalEmail = trim((string) ($contact['email']
+                ?? $mirrorForInsert['main_contact_email'] ?? ''));
+            $finalPhoneRaw = trim((string) ($contact['phone']
+                ?? $mirrorForInsert['main_contact_phone'] ?? ''));
+            $finalPhone = (string) (pfm_normalize_phone($finalPhoneRaw) ?? '');
+
+            if ($finalName !== '' || $finalEmail !== '') {
+                $newMainMemberId = Db::insert(
+                    "INSERT INTO members
+                        (client_id, member_name, email, phone1, main_contact, include)
+                     VALUES (?, ?, ?, ?, b'1', b'1')",
+                    [
+                        $session->clientId,
+                        $finalName,
+                        $finalEmail !== '' ? $finalEmail : null,
+                        $finalPhone !== '' ? $finalPhone : null,
+                    ]
+                );
+
+                // Sync clients mirror in the same transaction so the
+                // legacy admin's Main Contact tab agrees with what we
+                // just wrote to members. Only fields that differ.
+                $mirrorInsertUpdates = [];
+                $mirrorInsertParams  = [];
+                foreach ([
+                    ['main_contact_name',  $finalName],
+                    ['main_contact_email', $finalEmail],
+                    ['main_contact_phone', $finalPhone],
+                ] as [$col, $finalVal]) {
+                    $oldMirror = trim((string) ($mirrorForInsert[$col] ?? ''));
+                    if ($col === 'main_contact_phone') {
+                        $oldMirror = (string) (pfm_normalize_phone($oldMirror) ?? '');
+                    }
+                    if ($finalVal !== $oldMirror) {
+                        $mirrorInsertUpdates[] = "{$col} = ?";
+                        $mirrorInsertParams[]  = $finalVal !== '' ? $finalVal : null;
+                    }
+                }
+                if (!empty($mirrorInsertUpdates)) {
+                    $mirrorInsertParams[] = $session->clientId;
+                    Db::exec(
+                        'UPDATE clients SET ' . implode(', ', $mirrorInsertUpdates)
+                            . ' WHERE client_id = ?',
+                        $mirrorInsertParams
+                    );
+                }
+
+                // Log the self-heal as a contact change so the admin
+                // review summary shows what happened.
+                $session->logChange(
+                    RenewalSession::CHANGE_CONTACT_CHANGED,
+                    (int) $newMainMemberId,
+                    'member_name',
+                    null,
+                    $finalName
+                );
+            }
         }
 
         // ── title → clients.main_contact_title ───────────────────────

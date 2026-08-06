@@ -192,6 +192,75 @@ class BuyerManager
         // Normalise BIT fields — PDO returns them as raw byte strings
         $rows = array_map([self::class, 'normaliseRow'], $rows);
 
+        // ── Synthetic-primary fallback (Larissa 2026-08-05 bug fix) ─────
+        //
+        // Some clients in prod carry their canonical primary contact ONLY on
+        // the clients.main_contact_* mirror columns — there is no matching
+        // main_contact=b'1' row in members. Legacy admin's "Main Contact"
+        // tab reads directly from the mirror, so staff never noticed the
+        // gap, but every wizard surface (Step 4, Step 6, pricing) reads
+        // from members and so silently dropped the primary from the
+        // roster, undercounted buyers, and orphaned Step 3 edits.
+        //
+        // Larissa's 2026-08-05 report on Donna (client 4, a test file the
+        // duplicate-primary cleanup had zeroed out) surfaced the symptom.
+        // A follow-up scan of testing (2026-07-26 prod clone) found 1,488
+        // active real customers pre-existing in the same shape — a legacy
+        // ScriptCase-admin data pattern accumulated over years, not
+        // introduced by any wizard or migration change.
+        //
+        // Fix: if the committed roster has no main_contact row, synthesise
+        // one from clients.main_contact_* and prepend it. The synthesis is
+        // read-only — nothing is written to members. On successful submit,
+        // submit-application.php INSERTs a real primary row so the client
+        // self-heals for the next cycle. member_id = 0 is a safe sentinel
+        // (auto-increment ids are always positive; BuyerManager::add()
+        // uses negative tmp_ids for pending inserts).
+        //
+        // The synthesised row respects the existing overlay chain — Step 4
+        // and Step 6 already merge draft_data.contact onto whichever row
+        // has main_contact = 1, so a customer's Step 3 edits land on the
+        // synthetic row without any change to the overlay code.
+        //
+        // The "18 clients on prod with neither mirror name nor mirror
+        // email" edge case falls through here with no synthesis — those
+        // records genuinely have no contact info anywhere and can't
+        // self-serve a renewal. submit-application.php's existing "at
+        // least one active buyer" check still catches them at submit.
+        $hasCommittedPrimary = false;
+        foreach ($rows as $r) {
+            if (!empty($r['main_contact'])) {
+                $hasCommittedPrimary = true;
+                break;
+            }
+        }
+        if (!$hasCommittedPrimary) {
+            $mirror = Db::one(
+                'SELECT main_contact_name, main_contact_email, main_contact_phone
+                   FROM clients WHERE client_id = ?',
+                [$clientId]
+            );
+            $mirrorName  = trim((string) ($mirror['main_contact_name']  ?? ''));
+            $mirrorEmail = trim((string) ($mirror['main_contact_email'] ?? ''));
+            $mirrorPhone = trim((string) ($mirror['main_contact_phone'] ?? ''));
+
+            if ($mirrorName !== '' || $mirrorEmail !== '') {
+                $synthetic = self::normaliseRow([
+                    'member_id'    => 0,   // sentinel — see comment above
+                    'member_name'  => $mirrorName,
+                    'email'        => $mirrorEmail !== '' ? $mirrorEmail : null,
+                    'phone1'       => $mirrorPhone !== '' ? $mirrorPhone : null,
+                    'note'         => null,
+                    'include'      => 1,
+                    'main_contact' => 1,
+                    'is_active'    => 1,
+                ]);
+                // Prepend so primary sits at the top, matching the
+                // ORDER BY main_contact DESC of the committed-row query.
+                array_unshift($rows, $synthetic);
+            }
+        }
+
         // Overlay pending buyer ops from the current draft session (if any).
         // Admin surfaces that call getActive() without a session — like
         // admin/review.php post-Confirm-Receipt — see committed state only,
@@ -202,6 +271,37 @@ class BuyerManager
         }
 
         return $rows;
+    }
+
+    /**
+     * Return 1 if this client's roster has NO committed main_contact = 1
+     * row but clients.main_contact_* mirror has name or email — i.e. the
+     * conditions under which getActive() will synthesise a virtual primary.
+     * Returns 0 otherwise.
+     *
+     * Exposed as a helper so countActive() and other callers can factor
+     * the synthetic primary into their totals without duplicating the
+     * check. Introduced with the 2026-08-05 synthetic-primary fallback;
+     * see getActive() for the full rationale.
+     */
+    public static function hasSyntheticPrimary(int $clientId): int
+    {
+        $realPrimaries = (int) Db::scalar(
+            "SELECT COUNT(*) FROM members
+              WHERE client_id = ? AND main_contact = b'1' AND wizard_removed_at IS NULL",
+            [$clientId]
+        );
+        if ($realPrimaries > 0) {
+            return 0;
+        }
+        $mirror = Db::one(
+            'SELECT main_contact_name, main_contact_email
+               FROM clients WHERE client_id = ?',
+            [$clientId]
+        );
+        $mirrorName  = trim((string) ($mirror['main_contact_name']  ?? ''));
+        $mirrorEmail = trim((string) ($mirror['main_contact_email'] ?? ''));
+        return ($mirrorName !== '' || $mirrorEmail !== '') ? 1 : 0;
     }
 
     /**
@@ -290,6 +390,13 @@ class BuyerManager
                 AND wizard_removed_at IS NULL",
             [$clientId]
         );
+
+        // Add 1 for the synthetic primary if getActive() would inject one.
+        // Keeps pricing (StripeClient::pricingForClient), Step 4's live
+        // count line, and the "at least one active buyer" submit gate all
+        // consistent with what the customer actually sees in Active
+        // Buyers. See getActive() and hasSyntheticPrimary() for context.
+        $committed += self::hasSyntheticPrimary($clientId);
 
         if ($session === null) {
             return $committed;
