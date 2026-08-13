@@ -28,25 +28,37 @@ $mainContact = Db::one(
 
 // Prefill priority — each field falls through this chain in order:
 //   1. draft_data.contact value (so partial edits survive a refresh)
-//   2. members main_contact row value
-//   3. clients.main_contact_* column (legacy storage, written by the
-//      existing PFM admin form_clients_staff)
+//   2. clients.main_contact_* column (CANONICAL — Legacy admin's
+//      Main Contact tab reads AND writes here; treated as source of
+//      truth for the person's current name / email / phone)
+//   3. members main_contact row value (fallback if the mirror is
+//      empty — some very old imports left the mirror unset)
 //   4. empty string
 //
-// The ?? null-coalesce was widening the wrong way here: if Step 3's
-// auto-save fired with a cleared email field, draft_data.contact.email
-// became '' (empty string, NOT null), and ?? happily returned the
-// empty string instead of falling through to the DB. User's manual
-// test on 2026-06-17 hit this exact scenario — members.email had
-// the right address but the form rendered blank because the draft
-// blanked it. Switched to a helper that treats empty string as
-// missing, matching the user's expectation that a refresh shouldn't
-// wipe a field that was filled in the existing record.
+// Priority reversed 2026-08-07 (Larissa's clone-rehearsal report on
+// Ambius): the old order preferred the members row over the clients
+// mirror, but the members row is arbitrary when duplicate primaries
+// exist (`SELECT ... WHERE main_contact = b'1' LIMIT 1` picks a
+// non-deterministic row), and it can also lag the mirror when Legacy
+// admin's Main Contact tab is edited — ScriptCase's form updates the
+// mirror columns but does NOT sync back to existing members rows.
+// On Ambius Larissa updated the Main Contact tab to
+// "Melissa St Mars / mjhanzaibmemon123@gmail.com" but the wizard's
+// Step 3 form kept rendering "Bonnie Schramm / bonnie.schramm@ambius.com"
+// because MySQL returned Bonnie's row (member_id 17502, the lower id)
+// from the LIMIT 1 query. Preferring the mirror first fixes that and
+// matches the exact string Larissa sees on Legacy admin.
 //
-// title comes from clients.main_contact_title (the members row has
-// no title column). Added 2026-06-17 per Larissa's request to capture
-// the main contact's title (Owner / Administrator / etc.) during
-// renewal.
+// The empty-string handling (below) comes from a separate 2026-06-17
+// bug on client 737841: auto-save fired with a blank email; ??
+// happily returned '' from draft_data.contact.email instead of
+// falling through to the DB — form rendered blank. $pick treats
+// empty string as missing, matching the user's expectation that a
+// refresh shouldn't wipe a field that was filled in the existing
+// record.
+//
+// title lives only on clients.main_contact_title (the members table
+// has no title column). Added 2026-06-17 per Larissa's request.
 $draftContact = $session->draftData['contact'] ?? [];
 $pick = static function (...$candidates): string {
     foreach ($candidates as $v) {
@@ -58,14 +70,14 @@ $pick = static function (...$candidates): string {
 };
 $values = [
     'name'  => $pick(
-        $draftContact['name']  ?? null,
-        $mainContact['member_name'] ?? null,
-        $client['main_contact_name'] ?? null
+        $draftContact['name']         ?? null,
+        $client['main_contact_name']  ?? null,
+        $mainContact['member_name']   ?? null
     ),
     'email' => $pick(
-        $draftContact['email'] ?? null,
-        $mainContact['email']  ?? null,
-        $client['main_contact_email'] ?? null
+        $draftContact['email']        ?? null,
+        $client['main_contact_email'] ?? null,
+        $mainContact['email']         ?? null
     ),
     // Phone is formatted with pfm_format_phone() so US numbers render in
     // (XXX) XXX-XXXX form on initial paint, matching what Step 6 and the
@@ -75,13 +87,13 @@ $values = [
     // back unchanged — phone1 storage is varchar(100), and downstream
     // displays normalise on read.
     'phone' => pfm_format_phone($pick(
-        $draftContact['phone'] ?? null,
-        $mainContact['phone1'] ?? null,
-        $client['main_contact_phone'] ?? null
+        $draftContact['phone']        ?? null,
+        $client['main_contact_phone'] ?? null,
+        $mainContact['phone1']        ?? null
     )),
     'title' => $pick(
-        $draftContact['title'] ?? null,
-        $client['main_contact_title'] ?? null
+        $draftContact['title']            ?? null,
+        $client['main_contact_title']     ?? null
     ),
 ];
 
