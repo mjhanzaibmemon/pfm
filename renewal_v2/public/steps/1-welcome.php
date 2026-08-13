@@ -43,27 +43,35 @@ $statusRow = Db::one(
 $daysSinceExpiry = null;
 $newRenewalDate  = null;
 
-// expiration_date isn't always set on the clients row — staff who add a
-// member through the legacy "Add Member" form often only fill in
-// renewal_date and leave expiration_date blank. In the PFM data model
-// renewal_date and expiration_date actually represent the same concept
-// (the date the current period ends / the member is due to renew by);
-// confirm-receipt.php's existing UPDATE advances renewal_date by one
-// year on each completed renewal. So when expiration_date is missing,
-// fall back to renewal_date directly — NOT renewal_date minus one year
-// (an earlier draft of this fallback did the subtraction and made
-// Step 1 read the date a full year early, which falsely tripped the
-// >90-day staff-handling gate for any member whose renewal_date was
-// just a few weeks in the past — Larissa's 2026-06-26 Round 4 test
-// caught that on client 737836 with renewal_date = 2026-05-31).
+// In the PFM data model renewal_date and expiration_date nominally
+// represent the same concept — the date the current period ends / the
+// member is due to renew by. In practice only renewal_date is
+// authoritative: staff maintain it through the legacy "Add Member" /
+// "Renewals" flow, and confirm-receipt.php's UPDATE advances it by one
+// year on each completed renewal. expiration_date is a stale legacy
+// column that is often unset, sometimes set once at signup, and never
+// touched again — Larissa's 2026-08-07 clone-rehearsal report on
+// Ambius (client 2760) showed the wizard displaying "expired
+// 10367 days ago" using expiration_date = 1998-03-13 (original signup
+// date) even though the Legacy admin profile showed the true renewal
+// date = 2026-08-01. Priority order reversed here so the wizard
+// prefers the staff-maintained truth and only falls back to
+// expiration_date if renewal_date is somehow missing.
+//
+// Historical note (Larissa's 2026-06-26 Round 4 test on client
+// 737836 with renewal_date = 2026-05-31): an earlier fallback draft
+// did renewal_date minus one year, which falsely tripped the
+// >90-day staff-handling gate for members whose renewal_date was
+// just a few weeks in the past. This iteration keeps renewal_date as
+// the raw effective expiry — no subtraction.
 $effExpirationDate = null;
 if ($statusRow) {
     $rawExp = trim((string) ($statusRow['expiration_date'] ?? ''));
     $rawRen = trim((string) ($statusRow['renewal_date']    ?? ''));
-    if ($rawExp !== '' && $rawExp !== '0000-00-00 00:00:00') {
-        $effExpirationDate = $rawExp;
-    } elseif ($rawRen !== '' && $rawRen !== '0000-00-00 00:00:00') {
+    if ($rawRen !== '' && $rawRen !== '0000-00-00 00:00:00') {
         $effExpirationDate = $rawRen;
+    } elseif ($rawExp !== '' && $rawExp !== '0000-00-00 00:00:00') {
+        $effExpirationDate = $rawExp;
     }
 }
 

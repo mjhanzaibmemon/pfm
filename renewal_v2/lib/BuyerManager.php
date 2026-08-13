@@ -192,6 +192,67 @@ class BuyerManager
         // Normalise BIT fields — PDO returns them as raw byte strings
         $rows = array_map([self::class, 'normaliseRow'], $rows);
 
+        // Count committed primary rows in the raw roster. Both the
+        // multi-primary dedup below and the synthetic-primary fallback
+        // key off this — and both need the clients.main_contact_* mirror
+        // when they fire — so hoist the count + mirror-load out of the
+        // two conditional blocks and share.
+        $primaryCount = 0;
+        foreach ($rows as $r) {
+            if (!empty($r['main_contact'])) {
+                $primaryCount++;
+            }
+        }
+        $mirror = null;
+        if ($primaryCount !== 1) {
+            // primaryCount 0 → synthetic fallback needs mirror
+            // primaryCount >1 → multi-primary dedup needs mirror
+            // primaryCount = 1 (the happy path) → no mirror needed
+            $mirror = Db::one(
+                'SELECT main_contact_name, main_contact_email, main_contact_phone
+                   FROM clients WHERE client_id = ?',
+                [$clientId]
+            );
+        }
+
+        // ── Multi-primary dedup (Larissa 2026-08-07 bug fix) ────────────
+        //
+        // Larissa's 2026-08-07 clone-rehearsal test on Ambius (client 2760)
+        // ended up with TWO members rows carrying main_contact = b'1'
+        // simultaneously — the pre-existing canonical primary (Bonnie
+        // Schramm, member_id 17502) plus a fresh row (Melissa St Mars,
+        // member_id 39231) that ScriptCase's Legacy-admin Main Contact
+        // form INSERTed when Larissa edited the name during testing.
+        // ScriptCase's "create-if-missing" pattern fires whenever no
+        // main_contact = b'1' row matches the current
+        // clients.main_contact_name value — it does NOT demote the old
+        // primary, so both rows sit at main = b'1' afterwards. This is
+        // pre-existing 5-year ScriptCase behaviour outside the wizard-
+        // rebuild scope; the fix here is display-side.
+        //
+        // Fix: pick the canonical primary row in-memory and demote the
+        // other main = b'1' rows to main = b'0' before Step 4 / Step 6 /
+        // pricing sees them. Priority:
+        //   1. members.email matches clients.main_contact_email (mirror)
+        //   2. members.member_name matches clients.main_contact_name
+        //   3. Highest member_id (latest wins)
+        //
+        // Nothing is written to the members table — the flag flip is
+        // in-memory only. The DB may still have multiple main = 1 rows
+        // for other surfaces (Legacy admin) to display, but the wizard
+        // sees exactly one primary.
+        if ($primaryCount > 1 && $mirror !== null) {
+            $canonical = self::pickCanonicalPrimary($rows, $mirror);
+            $canonicalId = (int) $canonical['member_id'];
+            foreach ($rows as &$r) {
+                if (!empty($r['main_contact']) && (int) $r['member_id'] !== $canonicalId) {
+                    // Demote in-memory only — no DB write.
+                    $r['main_contact'] = false;
+                }
+            }
+            unset($r);
+        }
+
         // ── Synthetic-primary fallback (Larissa 2026-08-05 bug fix) ─────
         //
         // Some clients in prod carry their canonical primary contact ONLY on
@@ -227,19 +288,7 @@ class BuyerManager
         // records genuinely have no contact info anywhere and can't
         // self-serve a renewal. submit-application.php's existing "at
         // least one active buyer" check still catches them at submit.
-        $hasCommittedPrimary = false;
-        foreach ($rows as $r) {
-            if (!empty($r['main_contact'])) {
-                $hasCommittedPrimary = true;
-                break;
-            }
-        }
-        if (!$hasCommittedPrimary) {
-            $mirror = Db::one(
-                'SELECT main_contact_name, main_contact_email, main_contact_phone
-                   FROM clients WHERE client_id = ?',
-                [$clientId]
-            );
+        if ($primaryCount === 0 && $mirror !== null) {
             $mirrorName  = trim((string) ($mirror['main_contact_name']  ?? ''));
             $mirrorEmail = trim((string) ($mirror['main_contact_email'] ?? ''));
             $mirrorPhone = trim((string) ($mirror['main_contact_phone'] ?? ''));
@@ -261,6 +310,72 @@ class BuyerManager
             }
         }
 
+        // ── Same-name / same-email buyer dedup (Larissa 2026-08-07 bug fix) ──
+        //
+        // Larissa's 2026-08-07 clone-rehearsal test on Spore (client 737865)
+        // ended up with Beatrice Gorsuch showing twice in Active Buyers —
+        // once as Primary (a fresh row 39232 ScriptCase INSERTed when
+        // Larissa edited Main Contact) and again as a regular buyer
+        // (the old row 38786 that had always been on the account).
+        // Same person, counted twice, over-charging by one buyer slot.
+        //
+        // The same pattern also cleaned up Ambius in a subtler way — Bonnie
+        // Schramm's row was demoted from primary to buyer by the multi-
+        // primary block above, but its email matched the canonical primary
+        // (Melissa's row 39231, which had inherited Bonnie's email at
+        // ScriptCase INSERT time). Skipping her here keeps the Active
+        // Buyers list clean.
+        //
+        // Fix: drop any non-primary row whose email OR name matches the
+        // primary's. Exact-match only (case-insensitive, trimmed) — deliberately
+        // conservative so two REAL different people with the same name are
+        // not silently deduped. If that turns out to over-collide in practice
+        // (Larissa can rename one to distinguish), tighten later.
+        //
+        // Skips are display-only — nothing is written to members. Pending
+        // buyer_ops applied AFTER this so a customer's Step 4 add of the
+        // same name as the primary still lands (their explicit action
+        // beats defensive dedup).
+        $primary = null;
+        foreach ($rows as $r) {
+            if (!empty($r['main_contact'])) {
+                $primary = $r;
+                break;
+            }
+        }
+        if ($primary !== null) {
+            $primaryId    = (int) $primary['member_id'];
+            $primaryEmail = strtolower(trim((string) ($primary['email']       ?? '')));
+            $primaryName  = strtolower(trim((string) ($primary['member_name'] ?? '')));
+
+            $rows = array_values(array_filter(
+                $rows,
+                static function (array $r) use ($primaryId, $primaryEmail, $primaryName): bool {
+                    // Always keep the primary row itself.
+                    if ((int) $r['member_id'] === $primaryId) {
+                        return true;
+                    }
+                    // Defensive — should not fire after multi-primary dedup,
+                    // but if any other main=1 row survives, keep it (dedup
+                    // never removes primaries).
+                    if (!empty($r['main_contact'])) {
+                        return true;
+                    }
+                    $rEmail = strtolower(trim((string) ($r['email']       ?? '')));
+                    $rName  = strtolower(trim((string) ($r['member_name'] ?? '')));
+                    // Skip if this buyer's email matches the primary's.
+                    if ($primaryEmail !== '' && $rEmail === $primaryEmail) {
+                        return false;
+                    }
+                    // Skip if this buyer's name matches the primary's.
+                    if ($primaryName !== '' && $rName === $primaryName) {
+                        return false;
+                    }
+                    return true;
+                }
+            ));
+        }
+
         // Overlay pending buyer ops from the current draft session (if any).
         // Admin surfaces that call getActive() without a session — like
         // admin/review.php post-Confirm-Receipt — see committed state only,
@@ -271,6 +386,55 @@ class BuyerManager
         }
 
         return $rows;
+    }
+
+    /**
+     * From a roster containing more than one row flagged main_contact = 1,
+     * pick the one that should be treated as the canonical primary.
+     * Priority chain:
+     *   1. members.email matches clients.main_contact_email
+     *   2. members.member_name matches clients.main_contact_name
+     *   3. Highest member_id (newest wins)
+     *
+     * Passed the mirror row already loaded in getActive() so it doesn't
+     * re-query.
+     */
+    private static function pickCanonicalPrimary(array $rows, array $mirror): array
+    {
+        $canonicalEmail = strtolower(trim((string) ($mirror['main_contact_email'] ?? '')));
+        $canonicalName  = strtolower(trim((string) ($mirror['main_contact_name']  ?? '')));
+
+        $primaries = array_values(array_filter(
+            $rows,
+            static fn(array $r): bool => !empty($r['main_contact'])
+        ));
+
+        // Priority 1 — email match with canonical mirror.
+        if ($canonicalEmail !== '') {
+            foreach ($primaries as $r) {
+                $rEmail = strtolower(trim((string) ($r['email'] ?? '')));
+                if ($rEmail !== '' && $rEmail === $canonicalEmail) {
+                    return $r;
+                }
+            }
+        }
+
+        // Priority 2 — name match with canonical mirror.
+        if ($canonicalName !== '') {
+            foreach ($primaries as $r) {
+                $rName = strtolower(trim((string) ($r['member_name'] ?? '')));
+                if ($rName !== '' && $rName === $canonicalName) {
+                    return $r;
+                }
+            }
+        }
+
+        // Priority 3 — highest member_id (latest wins).
+        usort(
+            $primaries,
+            static fn(array $a, array $b): int => (int) $b['member_id'] - (int) $a['member_id']
+        );
+        return $primaries[0];
     }
 
     /**
@@ -384,53 +548,20 @@ class BuyerManager
      */
     public static function countActive(int $clientId, ?RenewalSession $session = null): int
     {
-        $committed = (int) Db::scalar(
-            "SELECT COUNT(*) FROM members
-              WHERE client_id = ?
-                AND wizard_removed_at IS NULL",
-            [$clientId]
-        );
-
-        // Add 1 for the synthetic primary if getActive() would inject one.
-        // Keeps pricing (StripeClient::pricingForClient), Step 4's live
-        // count line, and the "at least one active buyer" submit gate all
-        // consistent with what the customer actually sees in Active
-        // Buyers. See getActive() and hasSyntheticPrimary() for context.
-        $committed += self::hasSyntheticPrimary($clientId);
-
-        if ($session === null) {
-            return $committed;
-        }
-
-        // Adjust for pending ops. Removes subtract, adds add.
-        // Modifies don't affect count. Guard against a remove targeting
-        // a member that isn't currently active (already soft-deleted in
-        // the DB, or belongs to a different client — defensive; caller
-        // should have validated) so the count can never go negative.
-        $ops = self::getPendingOps($session);
-
-        $activeMemberIds = array_column(
-            Db::all(
-                "SELECT member_id FROM members
-                  WHERE client_id = ?
-                    AND wizard_removed_at IS NULL",
-                [$clientId]
-            ),
-            'member_id'
-        );
-        $activeSet = [];
-        foreach ($activeMemberIds as $mid) {
-            $activeSet[(int) $mid] = true;
-        }
-
-        $effectiveRemoves = 0;
-        foreach ($ops['removes'] as $mid) {
-            if (isset($activeSet[(int) $mid])) {
-                $effectiveRemoves++;
-            }
-        }
-
-        return $committed - $effectiveRemoves + count($ops['adds']);
+        // Delegate to getActive() so the count reflects the exact set the
+        // customer sees in Active Buyers after all of getActive()'s
+        // in-memory transforms (multi-primary dedup, synthetic primary
+        // fallback, same-name / same-email buyer dedup, pending-ops
+        // overlay). Prior implementation was a raw COUNT + synthetic
+        // adjustment that quietly over-counted on any client whose DB
+        // still carried Larissa 2026-08-07 dedup-eligible rows —
+        // pricing and the "at least 1 buyer" submit gate would then
+        // disagree with what the wizard actually rendered.
+        //
+        // getActive() caps at MAX_BUYERS worth of rows in practice, so
+        // the extra load over a bare COUNT is negligible (single-digit
+        // to low-double-digit rows per client).
+        return count(self::getActive($clientId, $session));
     }
 
     /**
