@@ -122,7 +122,7 @@ function pfm_stream_csv(string $type, ?string $from = null, ?string $to = null):
                 v.state                  AS `State`,
                 v.zip_code               AS `Zip Code`,
                 COALESCE(v.main_phone, v.main_contact_phone) AS `Phone Number`,
-                COALESCE(v.main_email, v.main_contact_email) AS `Email Address`,
+                COALESCE(v.main_contact_email, v.main_email) AS `Email Address`,
                 COALESCE(ml.descript, ml.pricing_level, '') AS `Membership Level`,
                 v.bus_cat                AS `Business Category`,
                 v.bus_subcategory        AS `Subcategory`,
