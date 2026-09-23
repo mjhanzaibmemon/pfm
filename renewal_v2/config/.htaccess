@@ -1,0 +1,3 @@
+# Deny ALL web access to config directory
+# Config contains database credentials and Stripe API keys
+Require all denied

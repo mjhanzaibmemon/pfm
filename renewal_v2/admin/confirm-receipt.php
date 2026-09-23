@@ -1,0 +1,540 @@
+<?php
+/**
+ * Phase 4 — Confirm Receipt gate endpoint.
+ *
+ * POST /renewal_v2/admin/confirm-receipt.php
+ *   csrf_token=<from form>
+ *   admin_review_token=<session.admin_review_token>
+ *
+ * This is THE gate — it is the only place in the codebase that writes a
+ * row into client_pmts for a renewal payment. Until staff click "Confirm
+ * Receipt" on review.php and this endpoint runs successfully, the
+ * Stripe payment exists ONLY in renewal_sessions.payment_id and is
+ * invisible to the existing PFM admin grids.
+ *
+ * What this does on success (atomic, idempotent):
+ *   1. INSERT INTO client_pmts (the payment row that PFM staff sees)
+ *   2. UPDATE renewal_sessions.admin_confirmed_at = NOW()
+ *   3. UPDATE renewal_sessions.status = 'completed'
+ *   4. UPDATE sec_renewals.applied = NOW() for the token used (renewal closed out)
+ *
+ * Idempotency: if admin_confirmed_at is already set, we return success
+ * without re-inserting. Reload-safe.
+ *
+ * Spec ref: larissa_rebuild.md → "Staff clicks Confirm Receipt → ONLY THEN
+ *   does client_pmts get the row (the gate)."
+ */
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../lib/Db.php';
+require_once __DIR__ . '/../lib/RenewalSession.php';
+require_once __DIR__ . '/../lib/StripeClient.php';
+require_once __DIR__ . '/../lib/DocumentUpload.php';
+require_once __DIR__ . '/../lib/RenewalHistoryNote.php';
+require_once __DIR__ . '/_includes/admin_layout.php';
+
+pfm_admin_session_start();
+
+/* ─── Small helper: render the error/success terminal screens ──────────── */
+function pfm_admin_terminal(string $title, string $alertClass, string $bodyHtml, ?int $sessionId = null): void
+{
+    pfm_admin_header($title);
+    echo '<div class="pfm-card">';
+    echo '<div class="pfm-alert pfm-alert--' . htmlspecialchars($alertClass) . '">';
+    echo $bodyHtml;
+    echo '</div>';
+    echo '<p class="pfm-text-muted pfm-text-center pfm-mt-2">';
+    echo '<a href="/renewal_v2/admin/dashboard.php">&larr; Back to pending reviews dashboard</a>';
+    echo '</p>';
+    echo '</div>';
+    pfm_admin_footer();
+    exit;
+}
+
+/* ─── 1. Method + CSRF guards ──────────────────────────────────────────── */
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    pfm_admin_terminal(
+        'Confirm Receipt — Method not allowed',
+        'danger',
+        '<strong>This endpoint only accepts POST.</strong><p class="pfm-mt-0">'
+      . 'Please use the Confirm Receipt button on the review page.</p>'
+    );
+}
+
+$postedCsrf = (string) ($_POST['csrf_token'] ?? '');
+$sessionCsrf = (string) ($_SESSION['csrf_token'] ?? '');
+// BEFORE_WRITE_CLOSE snapshot — captures the exact $_SESSION state that
+// will be persisted to disk. If any key that ScriptCase relies on (sc_session,
+// scriptcase.sc_apl_seg.menu_main, scriptcase.sc_apl_seg.form_clients_staff)
+// is missing here, that's the corruption point. Round 5 Item 2 diagnostic.
+pfm_admin_session_snapshot('BEFORE_WRITE_CLOSE');
+// Release the session lock immediately after pulling the CSRF token —
+// confirm-receipt runs a multi-step DB transaction plus a Stripe API
+// poll and a couple of MailerSend sends, and a held lock would force a
+// second admin tab on the same browser to wait for all of that.
+session_write_close();
+if ($postedCsrf === '' || !hash_equals($sessionCsrf, $postedCsrf)) {
+    pfm_admin_terminal(
+        'Confirm Receipt — CSRF mismatch',
+        'danger',
+        '<strong>Your session expired or the form was tampered with.</strong>'
+      . '<p class="pfm-mt-0">Please open the review page again and click '
+      . 'Confirm Receipt without leaving the tab.</p>'
+    );
+}
+
+$adminToken = trim((string) ($_POST['admin_review_token'] ?? ''));
+if ($adminToken === '') {
+    pfm_admin_terminal(
+        'Confirm Receipt — Missing token',
+        'danger',
+        '<strong>No admin review token in request.</strong>'
+    );
+}
+
+/* ─── 2. Load session by admin token ───────────────────────────────────── */
+$session = RenewalSession::loadByAdminToken($adminToken);
+if ($session === null) {
+    pfm_admin_terminal(
+        'Confirm Receipt — Invalid token',
+        'danger',
+        '<strong>This admin review token does not match any renewal session.</strong>'
+      . '<p class="pfm-mt-0">It may have been tampered with, or the renewal was cancelled.</p>'
+    );
+}
+
+/* ─── 3. Idempotent short-circuit ──────────────────────────────────────── */
+if ($session->adminConfirmedAt !== null) {
+    pfm_admin_terminal(
+        'Already confirmed',
+        'success',
+        '<strong>This renewal was already confirmed.</strong>'
+      . '<p class="pfm-mt-0">No further action is needed. The payment row '
+      . 'is already visible in the existing PFM admin.</p>'
+      . '<p class="pfm-mt-2"><a class="pfm-btn pfm-btn--primary" '
+      . 'href="/renewal_v2/admin/review.php?token=' . htmlspecialchars($adminToken)
+      . '">Open review page</a></p>'
+    );
+}
+
+/* ─── 4. Sanity checks before writing client_pmts ──────────────────────── */
+if (!$session->isPaid()) {
+    pfm_admin_terminal(
+        'Cannot confirm — not paid',
+        'danger',
+        '<strong>This renewal session is not marked paid.</strong>'
+      . '<p class="pfm-mt-0">Status: <code>' . htmlspecialchars($session->status) . '</code>. '
+      . 'Confirm Receipt can only be applied to a paid session.</p>'
+    );
+}
+if ($session->amountCharged === null || $session->amountCharged <= 0) {
+    pfm_admin_terminal(
+        'Cannot confirm — no amount',
+        'danger',
+        '<strong>This renewal session has no charged amount recorded.</strong>'
+      . '<p class="pfm-mt-0">Refusing to insert a $0 row into client_pmts. '
+      . 'Contact the dev team before proceeding.</p>'
+    );
+}
+
+/* ─── 5. Apply the write (best-effort transaction) ─────────────────────── */
+$pdo      = Db::pdo();
+$inserted = false;
+try {
+    $pdo->beginTransaction();
+
+    // 5a. INSERT into client_pmts
+    // pmt_mode matches the existing convention used by the legacy renewal
+    // (see client_pmts samples — "Crediit Card" [sic] is in the prod data).
+    // We use the corrected spelling "Credit Card" so reports show clean labels;
+    // amt_received and pmt_date come from the renewal_sessions row.
+    //
+    // reference is a HYBRID format: "RNW-{id} / pi_xxx"
+    //   - "RNW-27"          → human-friendly number customer cites on phone
+    //   - " / pi_3TfzJK..." → full Stripe payment intent ID for reconciliation
+    // Both in one field so existing PFM admin grids show both at once and
+    // staff can search by either.
+    $stripeId  = (string) ($session->paymentId ?? '');
+    $reference = $session->getReferenceNumber()
+               . ($stripeId !== '' ? ' / ' . $stripeId : '');
+
+    $stmt = $pdo->prepare(
+        'INSERT INTO client_pmts (client_id, pmt_mode, reference, pmt_date, amt_received, remarks)
+              VALUES (?,         ?,        ?,         ?,        ?,            ?)'
+    );
+    $stmt->execute([
+        $session->clientId,
+        'Credit Card',
+        $reference,
+        $session->paidAt ?: date('Y-m-d H:i:s'),
+        number_format((float) $session->amountCharged, 2, '.', ''),
+        'Renewal (Stripe via renewal_v2)',
+    ]);
+    $clientPmtId = (int) $pdo->lastInsertId();
+    $inserted    = true;
+
+    // 5b. Mark the renewal session confirmed + completed
+    $pdo->prepare(
+        'UPDATE renewal_sessions
+            SET admin_confirmed_at = NOW(),
+                status             = ?,
+                updated_at         = NOW()
+          WHERE id = ?'
+    )->execute([RenewalSession::STATUS_COMPLETED, $session->id]);
+
+    // 5c. Mark the renewal token "applied" in sec_renewals (close out the
+    //     specific token the customer used). Best-effort — missing row is
+    //     not fatal because some old tokens may have been recycled.
+    $pdo->prepare(
+        'UPDATE sec_renewals
+            SET applied = NOW()
+          WHERE client_id = ? AND token = ?'
+    )->execute([$session->clientId, $session->token]);
+
+    // 5d. Advance the member's membership cycle (the actual "renewal"
+    //     effect that removes them from the Renewing Active grid and
+    //     gives them another year). Per Larissa's 2026-06-10 reply:
+    //       - memb_status_id is set authoritatively to 3 (Active) — this
+    //         flips the status from 9 (Renewing Active) back to normal.
+    //         We set it unconditionally rather than only-if-9 because
+    //         Confirm Receipt is the staff's explicit "this member is
+    //         good" action; whatever the prior state, we want Active.
+    //       - renewal_date math follows Larissa's 90-day split:
+    //           * If expiration_date is 90 days or less in the past
+    //             (or in the future), renewal_date advances 1 year
+    //             from its OWN current value — keeping the yearly
+    //             anniversary stable so on-time renewers don't drift.
+    //           * If expiration_date is more than 90 days in the past,
+    //             renewal_date is reset to today + 1 year — so a
+    //             months-late renewal doesn't immediately re-expire
+    //             after a few weeks. Mirrors the >90-day staff-handling
+    //             gate on Step 1 of the wizard so the rule is applied
+    //             consistently from both sides.
+    //         If renewal_date is NULL (rare legacy hole), we skip the
+    //         date bump rather than store NULL+1Y garbage; staff can
+    //         set it manually via the edit form.
+    // The 90-day decision uses COALESCE(expiration_date, renewal_date)
+    // because expiration_date is frequently NULL in PFM data — the
+    // legacy "Add Member" admin form sets renewal_date but leaves
+    // expiration_date blank. In the PFM data model the two columns
+    // represent the same concept (when the current period ends), so
+    // when expiration_date is missing we evaluate the 90-day rule
+    // against renewal_date itself. Without this coalesce the second
+    // WHEN was skipped whenever expiration_date was NULL, and even a
+    // member who paid years late would have their anniversary
+    // preserved — defeating Larissa's 2026-06-10 instruction that
+    // late-by-more-than-90-days renewals reset to today + 1 year.
+    $pdo->prepare(
+        'UPDATE clients
+            SET memb_status_id = 3,
+                renewal_date   = CASE
+                                   WHEN renewal_date IS NULL THEN renewal_date
+                                   WHEN DATEDIFF(CURDATE(), COALESCE(expiration_date, renewal_date)) > 90
+                                     THEN DATE_ADD(CURDATE(), INTERVAL 1 YEAR)
+                                   ELSE DATE_ADD(renewal_date, INTERVAL 1 YEAR)
+                                 END
+          WHERE client_id = ?'
+    )->execute([$session->clientId]);
+
+    $pdo->commit();
+
+    // Refresh local object so terminal screen shows the new state
+    $session = RenewalSession::loadByAdminToken($adminToken);
+
+    // 5e. Close the loop with the customer — send the "renewal approved /
+    //     membership active" email. Non-fatal: payment confirmation is
+    //     already committed above, so an email failure here must NOT
+    //     undo the DB writes. The earlier sendCustomerConfirmationEmail
+    //     (at payment time) told the customer "application received";
+    //     this one tells them "you're approved and active."
+    try {
+        StripeClient::sendCustomerRenewalConfirmedEmail($session);
+    } catch (\Throwable $e) {
+        error_log(sprintf(
+            '[renewal_v2] Customer renewal-confirmed email send failed for '
+            . 'session %d: %s',
+            $session->id, $e->getMessage()
+        ));
+    }
+
+    // 5f. Append a structured renewal-history entry to the existing PFM
+    //     client_notes table — B1-a per Larissa's 2026-06-17 reply
+    //     ("use the existing Notes area for renewal change history…
+    //     the Notes section is already where staff look for customer/
+    //     member history"). One dated row covers her eight items:
+    //     buyer additions, buyer removals, contact info changes, address
+    //     changes, document uploads, the customer's Step 5 comment,
+    //     payment confirmation, approval date.
+    //     Non-fatal — payment commit must not roll back if a note write
+    //     fails (e.g. DB locked, RenewalHistoryNote bug). On failure we
+    //     log so it can be backfilled later.
+    try {
+        $notesId = RenewalHistoryNote::buildAndStore($session, $clientPmtId);
+        error_log(sprintf(
+            '[renewal_v2] Renewal history note appended for session %d '
+            . '(client_notes #%d).',
+            $session->id, $notesId
+        ));
+    } catch (\Throwable $e) {
+        error_log(sprintf(
+            '[renewal_v2] Renewal history note append FAILED for session %d: %s',
+            $session->id, $e->getMessage()
+        ));
+    }
+
+    // 5g. Copy any wizard-uploaded ID / business registry into the legacy
+    //     clients BLOB columns so future renewals see them as "on file"
+    //     and let the customer carry them over instead of re-uploading
+    //     every year. Without this step, the carry-over only worked for
+    //     customers whose IDs were originally uploaded via the legacy
+    //     admin form — anyone who only renews via the wizard would face
+    //     a forced re-upload every year, defeating Larissa's "we don't
+    //     make customers re-upload ID every year" ask (2026-06-17).
+    //
+    //     Mapping:
+    //       wizard key 'main_contact_id'  → clients.main_contact_img_id (BLOB)
+    //                                       + main_contact_img_file (filename)
+    //                                       + main_contact_img_size (bytes)
+    //       wizard key 'business_license' → clients.doc_sec_of_state (BLOB)
+    //         (the existing PFM admin reference table treats the
+    //          Secretary-of-State / business registration as the same
+    //          doc slot Larissa wants the customer to upload here)
+    //
+    //     Skip-conditions:
+    //       - No fresh upload for that key in this session — the customer
+    //         used the carry-over, the legacy column already holds the
+    //         right bytes, leave it alone.
+    //       - File is missing on disk somehow — log and move on, don't
+    //         clobber the existing legacy value with NULL.
+    //
+    //     Non-fatal: payment commit already happened; a failure here just
+    //     means next year the customer re-uploads, no permanent damage.
+    try {
+        $copyMap = [
+            'main_contact_id' => [
+                'blob_col' => 'main_contact_img_id',
+                'name_col' => 'main_contact_img_file',
+                'size_col' => 'main_contact_img_size',
+            ],
+            'business_license' => [
+                'blob_col' => 'doc_sec_of_state',
+                'name_col' => null, // legacy doc_sec_of_state has no name/size siblings
+                'size_col' => null,
+            ],
+        ];
+
+        foreach ($copyMap as $docKey => $cols) {
+            $doc = DocumentUpload::getByKey($session, $docKey);
+            if (!$doc) {
+                continue; // customer used carry-over, no fresh upload to mirror
+            }
+            try {
+                $absPath = DocumentUpload::getAbsolutePath($session, $docKey);
+            } catch (\Throwable $e) {
+                error_log(sprintf(
+                    '[renewal_v2] Could not resolve %s path for legacy copy: %s',
+                    $docKey, $e->getMessage()
+                ));
+                continue;
+            }
+            if (!is_file($absPath) || !is_readable($absPath)) {
+                continue;
+            }
+            $bytes = file_get_contents($absPath);
+            if ($bytes === false || $bytes === '') {
+                continue;
+            }
+
+            // Build the SET clause based on which sibling columns exist
+            // for this slot.
+            $assigns = [$cols['blob_col'] . ' = ?'];
+            $params  = [$bytes];
+            if ($cols['name_col'] !== null) {
+                $assigns[] = $cols['name_col'] . ' = ?';
+                $params[]  = (string) ($doc['original_name'] ?? 'document');
+            }
+            if ($cols['size_col'] !== null) {
+                $assigns[] = $cols['size_col'] . ' = ?';
+                // legacy main_contact_img_size is varchar in the schema,
+                // so cast to string so PDO doesn't reject the integer.
+                $params[]  = (string) ((int) ($doc['size'] ?? strlen($bytes)));
+            }
+            $params[] = $session->clientId;
+
+            Db::exec(
+                'UPDATE clients SET ' . implode(', ', $assigns) . ' WHERE client_id = ?',
+                $params
+            );
+            error_log(sprintf(
+                '[renewal_v2] Copied wizard %s into clients.%s for client %d '
+                . '(session %d, %d bytes).',
+                $docKey, $cols['blob_col'], $session->clientId, $session->id,
+                strlen($bytes)
+            ));
+        }
+    } catch (\Throwable $e) {
+        error_log(sprintf(
+            '[renewal_v2] Legacy-column copy FAILED for session %d: %s',
+            $session->id, $e->getMessage()
+        ));
+    }
+
+    // 5h. Surface each wizard-uploaded business document (Business
+    //     Registry + any additional docs) in the legacy PFM admin's
+    //     Operational Records tab. The tab reads from the client_docs
+    //     table — Larissa's 2026-06-30 Round 4 screenshot showed
+    //     existing rows shaped as
+    //         doc_type = "Active Secretary of State Registration"
+    //         doc_file = <BLOB>
+    //         doc_filename = <original filename>
+    //         doc_filesize = <bytes, as varchar>
+    //         ts = when it was added
+    //         user = who added it
+    //     with staff typically writing "larisu" or similar in user.
+    //     For wizard uploads we stamp user = "renewal_v2" so staff can
+    //     tell the two apart at a glance without changing the tab UI.
+    //
+    //     Mapping:
+    //       wizard key 'main_contact_id'  → SKIP. Driver's license /
+    //         photo ID belongs on the Main Contact tab (via clients
+    //         .main_contact_img_id, handled in 5g), not Operational
+    //         Records. The tab is for business documents.
+    //       wizard key 'business_license' → doc_type "Active Secretary
+    //         of State Registration" — matches the 1,702 existing
+    //         rows in production's client_docs table, the canonical
+    //         business-registry label PFM staff already use.
+    //       any other key (Step 5 "additional documents") → doc_type
+    //         "Other type of document" — matches the existing catch-
+    //         all label. Staff can retype the doc_type via the tab's
+    //         Edit button later if a more specific label applies.
+    //
+    //     Non-fatal in the same way 5g is: payment commit already
+    //     happened; a failed INSERT here just means the document
+    //     doesn't appear in the tab, and staff can re-upload from
+    //     admin/review.php's Uploaded Documents panel where it is
+    //     still surfaced. Migration 008 grants INSERT + SELECT on
+    //     client_docs to the pfm_renewal MySQL user; without that
+    //     migration this block would 1142 every time.
+    try {
+        $wizardDocs = DocumentUpload::getAll($session);
+        foreach ($wizardDocs as $docKey => $docMeta) {
+            if ($docKey === 'main_contact_id') {
+                continue; // stays on the Main Contact tab, not here
+            }
+            $docType = $docKey === 'business_license'
+                ? 'Active Secretary of State Registration'
+                : 'Other type of document';
+            try {
+                $absPath = DocumentUpload::getAbsolutePath($session, $docKey);
+            } catch (\Throwable $e) {
+                error_log(sprintf(
+                    '[renewal_v2] client_docs: could not resolve path for %s: %s',
+                    $docKey, $e->getMessage()
+                ));
+                continue;
+            }
+            if (!is_file($absPath) || !is_readable($absPath)) {
+                continue;
+            }
+            $bytes = file_get_contents($absPath);
+            if ($bytes === false || $bytes === '') {
+                continue;
+            }
+            $originalName = (string) ($docMeta['original_name'] ?? 'document');
+            $sizeString   = (string) ((int) ($docMeta['size'] ?? strlen($bytes)));
+
+            Db::exec(
+                "INSERT INTO client_docs
+                    (client_id, appn_id, doc_type, doc_file, doc_filename, doc_filesize, ts, user)
+                 VALUES (?, 0, ?, ?, ?, ?, NOW(), 'renewal_v2')",
+                [
+                    $session->clientId,
+                    $docType,
+                    $bytes,
+                    $originalName,
+                    $sizeString,
+                ]
+            );
+            error_log(sprintf(
+                '[renewal_v2] client_docs INSERT: wizard %s (%s) -> client %d '
+                . '(session %d, %d bytes, doc_type="%s").',
+                $docKey, $originalName, $session->clientId, $session->id,
+                strlen($bytes), $docType
+            ));
+        }
+    } catch (\Throwable $e) {
+        error_log(sprintf(
+            '[renewal_v2] client_docs INSERT block FAILED for session %d: %s',
+            $session->id, $e->getMessage()
+        ));
+    }
+} catch (\Throwable $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    error_log(sprintf(
+        '[renewal_v2] confirm-receipt FAILED for session %d (client %d): %s',
+        $session->id,
+        $session->clientId,
+        $e->getMessage()
+    ));
+    pfm_admin_terminal(
+        'Confirm Receipt — Database error',
+        'danger',
+        '<strong>Failed to write the payment row.</strong>'
+      . '<p class="pfm-mt-0">The error has been logged. Please try once more; '
+      . 'if it fails again, contact the dev team. No partial data has been '
+      . 'written (transaction rolled back).</p>'
+      . '<p class="pfm-mt-2" style="font-family:monospace;font-size:0.78rem;color:#6c757d;">'
+      . htmlspecialchars($e->getMessage()) . '</p>'
+    );
+}
+
+error_log(sprintf(
+    '[renewal_v2] confirm-receipt OK: session=%d client=%d amount=%.2f stripe_pi=%s client_pmt_id=%d',
+    $session->id,
+    $session->clientId,
+    (float) $session->amountCharged,
+    (string) $session->paymentId,
+    $clientPmtId
+));
+
+/* ─── 6. Success screen ────────────────────────────────────────────────── */
+// BEFORE_RENDER_SUCCESS snapshot — captures $_SESSION as it stands after
+// all the DB / Stripe / email / client_docs work has completed. Session is
+// already closed (session_write_close ran at line 72) but the array is
+// still in memory; comparing this to BEFORE_WRITE_CLOSE tells us whether
+// anything in steps 5b-5h mutated $_SESSION in a way that could affect
+// the NEXT admin request. Round 5 Item 2 diagnostic.
+pfm_admin_session_snapshot('BEFORE_RENDER_SUCCESS');
+pfm_admin_header('Receipt confirmed — Renewal completed');
+?>
+<div class="pfm-card">
+    <div class="pfm-alert pfm-alert--success">
+        <strong>✓ Payment confirmed and applied.</strong>
+        <p class="pfm-mt-0">
+            <strong>$<?= number_format((float) $session->amountCharged, 2) ?></strong>
+            has been written to <code>client_pmts</code> for client #<?= (int) $session->clientId ?>.
+            The renewal is now <strong>completed</strong>.
+        </p>
+    </div>
+
+    <div class="pfm-mt-2">
+        <h3 class="pfm-card__subtitle">What just happened</h3>
+        <ul style="padding-left:18px; line-height:1.7;">
+            <li><code>client_pmts</code> row <strong>#<?= (int) $clientPmtId ?></strong> created (visible in existing PFM admin)</li>
+            <li><code>renewal_sessions</code> #<?= (int) $session->id ?> status &rarr; <code>completed</code>, admin_confirmed_at set</li>
+            <li><code>sec_renewals</code> token marked applied so it can't be reused</li>
+        </ul>
+    </div>
+
+    <p class="pfm-text-center pfm-mt-2">
+        <a class="pfm-btn pfm-btn--primary" href="/renewal_v2/admin/dashboard.php">
+            Back to pending reviews
+        </a>
+    </p>
+</div>
+<?php
+pfm_admin_footer();

@@ -1,0 +1,4 @@
+# Deny ALL web access to the _includes directory.
+# Files here are meant to be require_once'd from public/api/*.php and
+# public/steps/*.php — they should never be requested directly.
+Require all denied

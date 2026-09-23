@@ -1,0 +1,3 @@
+# Deny ALL web access to library directory
+# Lib contains internal code; nothing here should be requested directly
+Require all denied

@@ -1,0 +1,451 @@
+<?php
+/**
+ * Step 3 — Main Contact
+ *
+ * Pre-fills the existing main_contact=1 row from `members` (name, email, phone).
+ * Customer can update those fields.
+ *
+ * Per v3 spec: driver's licence / ID upload is REQUIRED — the Next button
+ * stays disabled until a file is uploaded for this slot.
+ */
+declare(strict_types=1);
+
+$PFM_STEP       = 3;
+$PFM_STEP_TITLE = 'Main Contact';
+$PFM_REQUIRES   = 'draft';
+
+require __DIR__ . '/../_includes/step_bootstrap.php';
+require_once __DIR__ . '/../../lib/PhoneFormat.php';
+
+// ── Load existing main contact row ──────────────────────────────────
+$mainContact = Db::one(
+    "SELECT member_id, member_name, email, phone1
+       FROM members
+      WHERE client_id = ? AND main_contact = b'1'
+      LIMIT 1",
+    [$session->clientId]
+);
+
+// Prefill priority — each field falls through this chain in order:
+//   1. draft_data.contact value (so partial edits survive a refresh)
+//   2. clients.main_contact_* column (CANONICAL — Legacy admin's
+//      Main Contact tab reads AND writes here; treated as source of
+//      truth for the person's current name / email / phone)
+//   3. members main_contact row value (fallback if the mirror is
+//      empty — some very old imports left the mirror unset)
+//   4. empty string
+//
+// Priority reversed 2026-08-07 (Larissa's clone-rehearsal report on
+// Ambius): the old order preferred the members row over the clients
+// mirror, but the members row is arbitrary when duplicate primaries
+// exist (`SELECT ... WHERE main_contact = b'1' LIMIT 1` picks a
+// non-deterministic row), and it can also lag the mirror when Legacy
+// admin's Main Contact tab is edited — ScriptCase's form updates the
+// mirror columns but does NOT sync back to existing members rows.
+// On Ambius Larissa updated the Main Contact tab to
+// "Melissa St Mars / mjhanzaibmemon123@gmail.com" but the wizard's
+// Step 3 form kept rendering "Bonnie Schramm / bonnie.schramm@ambius.com"
+// because MySQL returned Bonnie's row (member_id 17502, the lower id)
+// from the LIMIT 1 query. Preferring the mirror first fixes that and
+// matches the exact string Larissa sees on Legacy admin.
+//
+// The empty-string handling (below) comes from a separate 2026-06-17
+// bug on client 737841: auto-save fired with a blank email; ??
+// happily returned '' from draft_data.contact.email instead of
+// falling through to the DB — form rendered blank. $pick treats
+// empty string as missing, matching the user's expectation that a
+// refresh shouldn't wipe a field that was filled in the existing
+// record.
+//
+// title lives only on clients.main_contact_title (the members table
+// has no title column). Added 2026-06-17 per Larissa's request.
+$draftContact = $session->draftData['contact'] ?? [];
+$pick = static function (...$candidates): string {
+    foreach ($candidates as $v) {
+        if ($v !== null && $v !== '') {
+            return (string) $v;
+        }
+    }
+    return '';
+};
+$values = [
+    'name'  => $pick(
+        $draftContact['name']         ?? null,
+        $client['main_contact_name']  ?? null,
+        $mainContact['member_name']   ?? null
+    ),
+    'email' => $pick(
+        $draftContact['email']        ?? null,
+        $client['main_contact_email'] ?? null,
+        $mainContact['email']         ?? null
+    ),
+    // Phone is formatted with pfm_format_phone() so US numbers render in
+    // (XXX) XXX-XXXX form on initial paint, matching what Step 6 and the
+    // admin review screen already show. Non-US numbers (e.g. Pakistani
+    // mobile leading 0) pass through untouched per the formatter's
+    // NANPA-aware rules. The submit handler accepts the formatted value
+    // back unchanged — phone1 storage is varchar(100), and downstream
+    // displays normalise on read.
+    'phone' => pfm_format_phone($pick(
+        $draftContact['phone']        ?? null,
+        $client['main_contact_phone'] ?? null,
+        $mainContact['phone1']        ?? null
+    )),
+    'title' => $pick(
+        $draftContact['title']            ?? null,
+        $client['main_contact_title']     ?? null
+    ),
+];
+
+// ── ID document state — three possible cases ───────────────────────
+//
+//   1. Uploaded fresh in THIS session  → $uploaded is set
+//   2. Has a legacy ID on file from a previous renewal / admin entry
+//      → $legacyIdName has the filename (clients.main_contact_img_file)
+//   3. No ID at all                    → both null
+//
+// Larissa requested 2026-06-17: "if an existing ID is already on file,
+// the customer should be able to see that it exists and have the
+// option to upload a replacement, rather than being required to
+// re-upload it every year." Case 2 is what makes that possible. The
+// legacy ID is stored as a BLOB in clients.main_contact_img_id and
+// can't be previewed inline, so we display its filename + size as a
+// "ID on file" badge and let the customer skip the upload unless
+// they want to replace it.
+$idKey      = 'main_contact_id';
+$uploaded   = $session->draftData['documents'][$idKey] ?? null;
+$legacyIdName = (string) ($client['main_contact_img_file'] ?? '');
+$legacyIdSize = (int)    ($client['main_contact_img_size'] ?? 0);
+
+// hasLegacyId falls back to a direct BLOB check when the filename /
+// size sibling columns aren't populated. The legacy PFM admin "Add
+// Member" and edit forms sometimes write clients.main_contact_img_id
+// (the BLOB itself) without ever touching main_contact_img_file /
+// main_contact_img_size — Larissa's 2026-06-30 test on an older
+// customer file (client 12) hit exactly that shape and got asked to
+// re-upload despite the ID BLOB being present. Same defensive pattern
+// dd1beb8 uses for clients.doc_sec_of_state on Step 5.
+$hasLegacyId = ($legacyIdName !== '' && $legacyIdSize > 0);
+if (!$hasLegacyId) {
+    $hasLegacyId = (int) (Db::scalar(
+        'SELECT IF(main_contact_img_id IS NULL OR OCTET_LENGTH(main_contact_img_id) = 0, 0, 1)
+           FROM clients WHERE client_id = ?',
+        [$session->clientId]
+    ) ?? 0) === 1;
+    if ($hasLegacyId && $legacyIdName === '') {
+        // Give the customer a friendly label when the filename column
+        // is empty but the BLOB is there.
+        $legacyIdName = 'ID on file';
+    }
+}
+
+// Round 7 (2026-07-17): Larissa asked for a temporary "annual fresh ID"
+// rule to reset the pipeline after staff had been uploading stock photos
+// into the legacy main_contact_img_id column. For this renewal cycle
+// every customer must upload a fresh Driver's License / Photo ID even
+// if one is on file. Same shape as the Business Registry annual-fresh
+// rule from Round 5 Item 3 (commit 16d188d). After a full cycle collects
+// clean IDs, flip this back to `!$uploaded && !$hasLegacyId`.
+$idRequired = !$uploaded;
+
+require __DIR__ . '/../_includes/header.php';
+require __DIR__ . '/../_includes/progress-bar.php';
+?>
+
+<div class="pfm-card">
+    <div class="pfm-card__header">
+        <h2 class="pfm-card__title">Main Contact Person</h2>
+        <p class="pfm-card__subtitle">Please confirm the main contact for this membership.</p>
+    </div>
+
+    <div class="pfm-alert pfm-alert--info">
+        The main contact should be listed on the Secretary of State
+        registration. If not, please upload documentation showing their
+        relationship to the company and authorization to renew.
+    </div>
+
+    <form id="pfm-form-contact" autocomplete="off" novalidate>
+        <div class="pfm-field">
+            <label for="contact_name" class="pfm-field__label">
+                Full Name <span class="pfm-required">*</span>
+            </label>
+            <input type="text" id="contact_name" name="name"
+                   class="pfm-input" data-pfm-required maxlength="255"
+                   value="<?= htmlspecialchars($values['name'], ENT_QUOTES) ?>">
+            <div class="pfm-field__error">Please enter the contact's full name.</div>
+        </div>
+
+        <div class="pfm-grid pfm-grid--2">
+            <div class="pfm-field">
+                <label for="contact_email" class="pfm-field__label">
+                    Email <span class="pfm-required">*</span>
+                </label>
+                <input type="email" id="contact_email" name="email"
+                       class="pfm-input" data-pfm-required maxlength="255"
+                       value="<?= htmlspecialchars($values['email'], ENT_QUOTES) ?>">
+                <div class="pfm-field__error">Please enter a valid email.</div>
+            </div>
+
+            <div class="pfm-field">
+                <label for="contact_phone" class="pfm-field__label">
+                    Phone <span class="pfm-required">*</span>
+                </label>
+                <input type="tel" id="contact_phone" name="phone"
+                       class="pfm-input" data-pfm-required maxlength="100"
+                       value="<?= htmlspecialchars($values['phone'], ENT_QUOTES) ?>">
+                <div class="pfm-field__error">Please enter a phone number.</div>
+            </div>
+        </div>
+
+        <div class="pfm-field">
+            <label for="contact_title" class="pfm-field__label">
+                Title <span class="pfm-required">*</span>
+            </label>
+            <input type="text" id="contact_title" name="title"
+                   class="pfm-input" data-pfm-required maxlength="100"
+                   placeholder="Owner"
+                   value="<?= htmlspecialchars($values['title'], ENT_QUOTES) ?>">
+            <div class="pfm-field__hint">
+                Enter the main contact&rsquo;s role with the company, such as
+                Owner, Manager, or Floral Designer.
+            </div>
+            <div class="pfm-field__error">Please enter the contact's title.</div>
+        </div>
+    </form>
+
+    <!-- ── ID upload (required only when there's no ID on file yet) ── -->
+    <h3 class="pfm-mt-2">
+        Driver's License or Photo ID
+        <?php if ($idRequired): ?>
+            <span class="pfm-required">*</span>
+        <?php endif; ?>
+    </h3>
+
+    <?php if ($hasLegacyId && !$uploaded): ?>
+        <!-- Round 7 (2026-07-17): legacy ID on file is shown as reference
+             only — customer must still upload a fresh copy this cycle. Same
+             visual shape as the Business Registry reference-only alert on
+             Step 5 (Round 5 Item 3, commit 16d188d). Same info style, not
+             the earlier green success style, so the customer reads it as
+             "yes we still see it, but please upload a fresh one anyway". -->
+        <div class="pfm-alert pfm-alert--info">
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <div style="flex:1; min-width:200px;">
+                    <strong>Reference only:</strong>
+                    <span class="pfm-text-muted"> we have last year&rsquo;s ID on file (<span style="font-family:monospace;"><?= htmlspecialchars($legacyIdName) ?></span><?php if ($legacyIdSize > 0): ?>, <?= number_format($legacyIdSize / 1024, 0) ?>&nbsp;KB<?php endif; ?>).</span>
+                </div>
+                <a class="pfm-btn pfm-btn--ghost pfm-btn--sm"
+                   href="/renewal_v2/public/api/view-document.php?token=<?= urlencode($session->token) ?>&amp;key=legacy_main_contact_id"
+                   target="_blank" rel="noopener">
+                    View last year&rsquo;s &nearr;
+                </a>
+            </div>
+            <p class="pfm-mt-0" style="margin-bottom:0;">
+                Please upload a current copy for this renewal cycle even if the
+                document hasn&rsquo;t changed &mdash; PFM requires a fresh Driver&rsquo;s
+                License / Photo ID every year.
+            </p>
+        </div>
+    <?php else: ?>
+        <p class="pfm-text-muted pfm-mb-1">
+            We require a photo of your driver's license or government-issued
+            ID for the main contact. Accepted formats: PDF, JPG, PNG
+            (max 10&nbsp;MB).
+        </p>
+    <?php endif; ?>
+
+    <label class="pfm-upload" id="pfm-upload-id">
+        <input type="file" id="pfm-id-file" accept="application/pdf,image/jpeg,image/png">
+        <strong>Click or drop a file here to upload</strong>
+        <div class="pfm-upload__hint">Your ID image is stored securely and only used to verify your membership.</div>
+    </label>
+
+    <ul class="pfm-file-list" id="pfm-id-filelist" aria-live="polite">
+        <?php if ($uploaded): ?>
+            <li class="pfm-file" data-id-uploaded="1">
+                <span>&#128206;</span>
+                <span class="pfm-file__name"><?= htmlspecialchars($uploaded['original_name']) ?></span>
+                <span class="pfm-file__meta"><?= number_format(($uploaded['size'] ?? 0) / 1024, 0) ?>&nbsp;KB</span>
+                <a class="pfm-btn pfm-btn--ghost pfm-btn--sm"
+                   href="/renewal_v2/public/api/view-document.php?token=<?= urlencode($session->token) ?>&amp;key=<?= urlencode($idKey) ?>"
+                   target="_blank" rel="noopener">View &nearr;</a>
+                <button type="button" class="pfm-btn pfm-btn--danger pfm-btn--sm" data-pfm-delete-id>Remove</button>
+            </li>
+        <?php endif; ?>
+    </ul>
+
+    <div class="pfm-nav">
+        <a href="<?= htmlspecialchars(pfm_step_url(2)) ?>" class="pfm-btn pfm-btn--ghost" data-pfm-back>
+            &larr; Back
+        </a>
+        <span data-pfm-savestate class="pfm-nav__save"></span>
+        <button type="button" id="pfm-next" class="pfm-btn pfm-btn--primary">
+            Save &amp; Continue &rarr;
+        </button>
+    </div>
+</div>
+
+<script>
+(function () {
+    var form     = document.getElementById('pfm-form-contact');
+    var nextBtn  = document.getElementById('pfm-next');
+    var upload   = document.getElementById('pfm-upload-id');
+    var fileIn   = document.getElementById('pfm-id-file');
+    var fileList = document.getElementById('pfm-id-filelist');
+    var idKey    = <?= json_encode($idKey) ?>;
+
+    var hasIdUploaded = <?= $uploaded ? 'true' : 'false' ?>;
+    // If the customer already has a legacy ID on file we treat the slot as
+    // satisfied — Next is allowed without a fresh upload, matching Larissa's
+    // 2026-06-17 ask. A fresh upload still works and replaces the legacy
+    // image when stored.
+    var hasLegacyId   = <?= $hasLegacyId ? 'true' : 'false' ?>;
+
+    // Auto-save contact fields → draft_data.contact.*
+    var saver = PFM.autosave.attach(form, { section: 'contact', step: 3 });
+
+    // Live phone formatting on input. Mirrors lib/PhoneFormat.php's
+    // format-if-not-starting-with-0 rule: a 10-digit number whose first
+    // digit is not "0" renders as (XXX) XXX-XXXX, an 11-digit leading
+    // "1" (US country-code form) renders as 1 (XXX) XXX-XXXX, and
+    // anything else (Pakistani 0…, partial entries) is left as-is so
+    // international numbers stay readable and mid-typing doesn't get
+    // mangled. Same formatter runs server-side on first paint.
+    var phoneIn = document.getElementById('contact_phone');
+    if (phoneIn) {
+        phoneIn.addEventListener('input', function () {
+            var raw    = phoneIn.value;
+            var digits = raw.replace(/\D/g, '');
+            var formatted;
+            if (digits.length === 10 && digits.charAt(0) !== '0') {
+                formatted = '(' + digits.slice(0, 3) + ') ' + digits.slice(3, 6) + '-' + digits.slice(6);
+            } else if (digits.length === 11 && digits.charAt(0) === '1' && digits.charAt(1) !== '0') {
+                formatted = '1 (' + digits.slice(1, 4) + ') ' + digits.slice(4, 7) + '-' + digits.slice(7);
+            } else {
+                // Partial entry or leading-zero international — leave
+                // the raw input alone so the cursor and user-typed
+                // format stay intact.
+                return;
+            }
+            if (formatted !== raw) {
+                phoneIn.value = formatted;
+                // Cursor at end — phone fields are short enough that
+                // mid-string editing isn't worth the cursor-preservation
+                // complexity.
+                phoneIn.setSelectionRange(formatted.length, formatted.length);
+            }
+        });
+    }
+
+    // Drag-drop visual feedback
+    ['dragenter', 'dragover'].forEach(function (ev) {
+        upload.addEventListener(ev, function (e) { e.preventDefault(); upload.classList.add('pfm-upload--dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+        upload.addEventListener(ev, function (e) { e.preventDefault(); upload.classList.remove('pfm-upload--dragover'); });
+    });
+    upload.addEventListener('drop', function (e) {
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+            doUpload(e.dataTransfer.files[0]);
+        }
+    });
+    fileIn.addEventListener('change', function () {
+        if (fileIn.files && fileIn.files[0]) doUpload(fileIn.files[0]);
+    });
+
+    function doUpload(file) {
+        // Quick client-side sanity check
+        var allowed = ['application/pdf', 'image/jpeg', 'image/png'];
+        if (allowed.indexOf(file.type) === -1) {
+            PFM.toast.show('Only PDF, JPG, or PNG files are allowed.', 'danger');
+            return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            PFM.toast.show('Maximum file size is 10 MB.', 'danger');
+            return;
+        }
+
+        // Show "uploading" placeholder
+        fileList.innerHTML = '<li class="pfm-file"><span class="pfm-spinner"></span>' +
+            '<span class="pfm-file__name">Uploading ' + escapeHtml(file.name) + '…</span></li>';
+
+        PFM.api.upload(file, idKey)
+            .then(function (data) {
+                hasIdUploaded = true;
+                var viewHref = '/renewal_v2/public/api/view-document.php?token=' +
+                    encodeURIComponent(<?= json_encode($session->token) ?>) +
+                    '&key=' + encodeURIComponent(idKey);
+                fileList.innerHTML = '<li class="pfm-file" data-id-uploaded="1">' +
+                    '<span>&#128206;</span>' +
+                    '<span class="pfm-file__name">' + escapeHtml(data.original_name) + '</span>' +
+                    '<span class="pfm-file__meta">' + PFM.format.bytes(data.size) + '</span>' +
+                    '<a class="pfm-btn pfm-btn--ghost pfm-btn--sm" target="_blank" rel="noopener" href="' +
+                        escapeHtml(viewHref) + '">View &nearr;</a>' +
+                    '<button type="button" class="pfm-btn pfm-btn--danger pfm-btn--sm" data-pfm-delete-id>Remove</button>' +
+                '</li>';
+                bindDelete();
+                PFM.toast.show('ID uploaded successfully.', 'success');
+            })
+            .catch(function (err) {
+                fileList.innerHTML = '';
+                PFM.toast.show(err.message || 'Upload failed.', 'danger');
+            });
+    }
+
+    function bindDelete() {
+        var btn = fileList.querySelector('[data-pfm-delete-id]');
+        if (!btn) return;
+        btn.addEventListener('click', function () {
+            if (!confirm('Remove uploaded ID?')) return;
+            PFM.api.post('delete-document.php', { key: idKey })
+                .then(function () {
+                    hasIdUploaded = false;
+                    fileList.innerHTML = '';
+                    PFM.toast.show('ID removed.', 'info');
+                })
+                .catch(function (err) {
+                    PFM.toast.show(err.message || 'Could not delete file.', 'danger');
+                });
+        });
+    }
+
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    bindDelete();
+
+    nextBtn.addEventListener('click', function () {
+        if (!PFM.validate.required(form)) {
+            PFM.toast.show('Please fill in the required fields highlighted in red.', 'danger');
+            return;
+        }
+        // Email format check
+        var emailEl = document.getElementById('contact_email');
+        if (emailEl && emailEl.value && !PFM.validate.email(emailEl.value)) {
+            emailEl.closest('.pfm-field').classList.add('pfm-field--error');
+            PFM.toast.show('Please enter a valid email address.', 'danger');
+            return;
+        }
+        // Round 7 (2026-07-17): the ID slot is satisfied ONLY by a fresh
+        // upload this session. The legacy on-file file no longer counts
+        // per Larissa's temporary annual-fresh rule (same treatment as
+        // the Business Registry from Round 5 Item 3). To restore the
+        // carry-over behaviour after a full renewal cycle, add
+        // `|| hasLegacyId` back into the guard.
+        if (!hasIdUploaded) {
+            PFM.toast.show('Please upload a photo of the main contact\'s driver\'s license or ID before continuing.', 'danger');
+            return;
+        }
+
+        if (saver && saver.flush) saver.flush();
+        setTimeout(function () {
+            window.location.href = <?= json_encode(pfm_step_url(4)) ?>;
+        }, 250);
+    });
+})();
+</script>
+
+<?php require __DIR__ . '/../_includes/footer.php'; ?>
