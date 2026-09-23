@@ -182,3 +182,7 @@ $PFM_STEP        = $PFM_STEP        ?? 1;
 $PFM_STEP_TITLE  = $PFM_STEP_TITLE  ?? 'Membership Application';
 $PFM_FLOW_LABEL  = 'New Membership Application';
 $PFM_PAGE_TITLE  = $PFM_STEP_TITLE . ' — Portland Flower Market Membership Application';
+// Points the shared wizard.js (unmodified) at THIS module's own API
+// endpoints instead of the renewal wizard's — see header.php's
+// $PFM_API_BASE doc comment for the full mechanism.
+$PFM_API_BASE    = '/renewal_v2/public/apply/api';
