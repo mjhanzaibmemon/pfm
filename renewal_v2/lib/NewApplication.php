@@ -219,13 +219,26 @@ class NewApplication
                 'SELECT * FROM new_applications WHERE token = ? LIMIT 1',
                 [$token]
             );
-            if ($row !== null && $row['status'] === self::STATUS_DRAFT) {
-                return new self($row);
+            if ($row !== null) {
+                // Resume for ANY non-dead-end status — not just draft.
+                // A customer who paid and is now sitting in
+                // 'awaiting_payment' / 'awaiting_review' / 'completed'
+                // must see THEIR status when they revisit (index.php's
+                // status-based routing sends them to Step 7 or Step 8,
+                // same as the renewal wizard) — creating a second fresh
+                // application here would be wrong and would look like
+                // their payment "disappeared." Only a genuinely
+                // dead-end status (cancelled/declined) falls through to
+                // start fresh, since there is nothing left to resume
+                // into for those.
+                if (!in_array($row['status'], [self::STATUS_CANCELLED, self::STATUS_DECLINED], true)) {
+                    return new self($row);
+                }
             }
-            // Row exists but isn't a draft (already submitted/paid/
-            // reviewed/declined) — fall through to create a fresh
-            // application. The old one is untouched and stays in the
-            // Application Reviews queue on its own terms.
+            // No row, or a cancelled/declined dead-end — fall through
+            // to create a fresh application. Any old row is untouched
+            // and stays in the Application Reviews queue on its own
+            // terms (audit trail preserved per Section 6).
         }
 
         $newToken = self::generateToken();

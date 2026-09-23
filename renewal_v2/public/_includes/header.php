@@ -2,7 +2,15 @@
 /**
  * Shared <head> + visible header for wizard step pages.
  * Expects: $PFM_PAGE_TITLE, $PFM_STEP, $PFM_STEP_TITLE, $_SESSION['csrf_token']
+ * Optional: $PFM_FLOW_LABEL — subtitle text next to "Step N of 8".
+ *   Defaults to 'Annual Membership Renewal' (the renewal wizard never
+ *   sets this). The new-customer application wizard
+ *   (public/apply/steps/*) sets it to 'New Membership Application' —
+ *   see apply_bootstrap.php. Added 2026-09-23 for the new-customer
+ *   application module (NEW_CUSTOMER_APPLICATION_SPEC.md Section 8)
+ *   rather than duplicating this whole file for one string.
  */
+$PFM_FLOW_LABEL = $PFM_FLOW_LABEL ?? 'Annual Membership Renewal';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -34,7 +42,7 @@
                  class="pfm-header__logo">
             <div>
                 <h1 class="pfm-header__title">Portland Flower Market</h1>
-                <div class="pfm-header__subtitle">Annual Membership Renewal &middot; Step <?= (int) ($PFM_STEP ?? 1) ?> of 8</div>
+                <div class="pfm-header__subtitle"><?= htmlspecialchars($PFM_FLOW_LABEL) ?> &middot; Step <?= (int) ($PFM_STEP ?? 1) ?> of 8</div>
             </div>
         </div>
     </header>
