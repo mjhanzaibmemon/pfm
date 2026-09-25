@@ -92,6 +92,9 @@ final class ApplicationStripe
                 "Cannot create Stripe session: application {$app->id} is in state '{$app->status}' (must be submitted)."
             );
         }
+        if ($app->applicationType !== NewApplication::TYPE_ANNUAL) {
+            throw new RuntimeException("Application {$app->id}: '{$app->applicationType}' applications are not supported yet.");
+        }
         self::assertSafeEnvironment();
 
         $catId = (int) ($app->draftData['org']['bus_cat_id'] ?? 0);

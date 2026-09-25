@@ -53,6 +53,12 @@ class NewApplication
     public const STATUS_CANCELLED        = 'cancelled';
     public const STATUS_DECLINED         = 'declined';
 
+    // Application types (migration 024). Only 'annual' is implemented;
+    // 'day_pass' is reserved for the future day-pass project (Section 7) and
+    // is refused by pricing/checkout and approval until that is built.
+    public const TYPE_ANNUAL   = 'annual';
+    public const TYPE_DAY_PASS = 'day_pass';
+
     // Which statuses allow the applicant to still edit the form
     private const EDITABLE_STATUSES = [self::STATUS_DRAFT];
 
@@ -73,6 +79,7 @@ class NewApplication
     public int $id;
     public string $token;
     public string $status;
+    public string $applicationType;
     public int $currentStep;
     public array $draftData;
     public ?string $customerNote;
@@ -109,6 +116,8 @@ class NewApplication
         $this->id               = (int) $row['id'];
         $this->token            = (string) $row['token'];
         $this->status           = (string) $row['status'];
+        // Absent before migration 024 runs; every existing application is annual.
+        $this->applicationType  = (string) ($row['application_type'] ?? self::TYPE_ANNUAL);
         $this->currentStep      = (int) $row['current_step'];
         $this->draftData        = $row['draft_data'] ? (json_decode((string) $row['draft_data'], true) ?: []) : [];
         $this->customerNote     = $row['customer_note'] ?? null;
@@ -526,16 +535,14 @@ class NewApplication
     }
 
     /**
-     * Statuses in which an application counts as "a claim on a company
-     * name". Drafts don't (someone typing a name must not block anyone,
-     * and drafts get abandoned); cancelled/declined don't (walked away /
-     * refused); completed ones are already `clients` rows.
+     * How long an UNPAID submitted application keeps claiming its company
+     * name. A paid application (awaiting_review) claims it until staff
+     * decide; an unpaid one (submitted / awaiting_payment) that nobody has
+     * touched for this many days is treated as abandoned so it can't block
+     * a legitimate applicant forever (there is no staff tool to cancel
+     * unpaid applications, and Stripe Checkout links expire within a day).
      */
-    private const NAME_CLAIMING_STATUSES = [
-        self::STATUS_SUBMITTED,
-        self::STATUS_AWAITING_PAYMENT,
-        self::STATUS_AWAITING_REVIEW,
-    ];
+    public const UNPAID_CLAIM_DAYS = 7;
 
     /**
      * Full duplicate-name check: existing customers (clients) AND other
@@ -548,14 +555,27 @@ class NewApplication
      * with the application's own id excluded so staff can never create a
      * second customer record with the same name.
      *
-     * @param  int $excludeApplicationId  The caller's own application id
-     *                                    (0 = exclude nothing).
+     * Which other applications count as a claim: paid ones awaiting review
+     * always; unpaid submitted ones only while recent (UNPAID_CLAIM_DAYS).
+     * Drafts never (someone typing a name must not block anyone);
+     * cancelled/declined never; completed ones are already `clients` rows.
+     *
+     * @param  int  $excludeApplicationId  The caller's own application id
+     *                                     (0 = exclude nothing).
+     * @param  bool $includeUnpaid         false at APPROVAL time: an unpaid
+     *                                     application can't be approved, so
+     *                                     it must not block approving a paid
+     *                                     one (if it pays later, it will hit
+     *                                     the customer conflict in review).
      * @return array|null  ['source' => 'customer', 'client_id' => int] or
      *                     ['source' => 'application', 'application_id' => int],
      *                     null when the name is clear.
      */
-    public static function findNameConflict(string $companyName, int $excludeApplicationId = 0): ?array
-    {
+    public static function findNameConflict(
+        string $companyName,
+        int $excludeApplicationId = 0,
+        bool $includeUnpaid = true
+    ): ?array {
         $normalized = self::normalizeCompanyName($companyName);
         if ($normalized === '') {
             return null;
@@ -566,12 +586,14 @@ class NewApplication
             return ['source' => 'customer', 'client_id' => (int) $client['client_id']];
         }
 
-        $placeholders = implode(',', array_fill(0, count(self::NAME_CLAIMING_STATUSES), '?'));
+        $unpaidClause = $includeUnpaid
+            ? "OR (status IN ('submitted','awaiting_payment') AND updated_at >= NOW() - INTERVAL " . (int) self::UNPAID_CLAIM_DAYS . " DAY)"
+            : '';
         $pending = Db::one(
             "SELECT id FROM new_applications
               WHERE co_name_normalized = ? AND id <> ?
-                AND status IN ({$placeholders}) LIMIT 1",
-            array_merge([$normalized, $excludeApplicationId], self::NAME_CLAIMING_STATUSES)
+                AND (status = 'awaiting_review' {$unpaidClause}) LIMIT 1",
+            [$normalized, $excludeApplicationId]
         );
         if ($pending !== null) {
             return ['source' => 'application', 'application_id' => (int) $pending['id']];

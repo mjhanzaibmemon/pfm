@@ -92,12 +92,17 @@ final class ApplicationReview
                         "Cannot approve: application {$fresh->id} is '{$fresh->status}' (must be awaiting_review)."
                     );
                 }
+                if ($fresh->applicationType !== NewApplication::TYPE_ANNUAL) {
+                    throw new RuntimeException("Cannot approve: '{$fresh->applicationType}' applications are not supported yet.");
+                }
                 if ($fresh->amountCharged === null || $fresh->amountCharged <= 0) {
                     throw new RuntimeException('Refusing to approve: no charged amount is recorded for this application.');
                 }
 
                 // Section 3 hard rule — last line of defence.
-                $conflict = NewApplication::findNameConflict($coName, $fresh->id);
+                // includeUnpaid = false: an unpaid application can't be approved,
+                // so it must not block approving this paid one.
+                $conflict = NewApplication::findNameConflict($coName, $fresh->id, false);
                 if ($conflict !== null) {
                     throw new ApplicationNameConflictException($conflict);
                 }

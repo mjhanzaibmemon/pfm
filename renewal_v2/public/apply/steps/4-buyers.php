@@ -206,19 +206,19 @@ require RNW_ROOT . '/public/_includes/progress-bar.php';
         <h3 class="pfm-mt-0 pfm-mb-1">Add a Buyer</h3>
         <div class="pfm-grid pfm-grid--2">
             <div class="pfm-field">
-                <label class="pfm-field__label">Full Name <span class="pfm-required">*</span></label>
+                <label class="pfm-field__label" for="pfm-new-name">Full Name <span class="pfm-required">*</span></label>
                 <input type="text" id="pfm-new-name" class="pfm-input" maxlength="255">
             </div>
             <div class="pfm-field">
-                <label class="pfm-field__label">Email</label>
+                <label class="pfm-field__label" for="pfm-new-email">Email</label>
                 <input type="email" id="pfm-new-email" class="pfm-input" maxlength="255">
             </div>
             <div class="pfm-field">
-                <label class="pfm-field__label">Phone</label>
+                <label class="pfm-field__label" for="pfm-new-phone">Phone</label>
                 <input type="tel" id="pfm-new-phone" class="pfm-input" maxlength="100">
             </div>
             <div class="pfm-field">
-                <label class="pfm-field__label">Note (optional)</label>
+                <label class="pfm-field__label" for="pfm-new-note">Note (optional)</label>
                 <input type="text" id="pfm-new-note" class="pfm-input" maxlength="255">
             </div>
         </div>

@@ -68,7 +68,7 @@ $isDeclined  = $application->status === NewApplication::STATUS_DECLINED;
 
 // Name conflict (customers + OTHER pending applications) — the same check
 // Approve enforces; surfaced here so staff see WHY before clicking.
-$conflict = ($isPending && $coName !== '') ? NewApplication::findNameConflict($coName, $application->id) : null;
+$conflict = ($isPending && $coName !== '') ? NewApplication::findNameConflict($coName, $application->id, false) : null;
 $conflictOther = null;
 if ($conflict !== null && $conflict['source'] === 'application') {
     $conflictOther = NewApplication::loadById((int) $conflict['application_id']);

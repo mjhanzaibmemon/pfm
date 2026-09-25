@@ -75,6 +75,12 @@ require RNW_ROOT . '/public/_includes/header.php';
 require RNW_ROOT . '/public/_includes/progress-bar.php';
 ?>
 
+<style>
+    /* Long website URLs / email addresses must wrap, not push the page wider than a phone. */
+    .pfm-review__val { overflow-wrap: anywhere; word-break: break-word; min-width: 0; }
+    .pfm-buyer__meta { overflow-wrap: anywhere; }
+</style>
+
 <div class="pfm-card">
     <div class="pfm-card__header">
         <h2 class="pfm-card__title">Review Your Application</h2>
