@@ -75,22 +75,14 @@ $totalCount = 1 + count($buyers); // +1 for the main contact
 $orgDraft = $application->draftData['org'] ?? [];
 $busCatId = (int) ($orgDraft['bus_cat_id'] ?? 0);
 $pricing  = null;
-if ($busCatId > 0) {
-    $levelRow = Db::one(
-        'SELECT ml.pricing_level, ml.curr_price, ml.num_of_buyers, ml.price_after
-           FROM bus_categories bc
-           JOIN members_level ml ON ml.memb_lev_id = bc.memb_lev_id
-          WHERE bc.bus_cat_id = ?',
-        [$busCatId]
-    );
-    if ($levelRow !== null) {
-        $pricing = [
-            'level_name'      => (string) $levelRow['pricing_level'],
-            'base_price'      => (float)  $levelRow['curr_price'],
-            'included_buyers' => (int)    $levelRow['num_of_buyers'],
-            'extra_per_buyer' => (float)  ($levelRow['price_after'] ?? 0),
-        ];
-    }
+$levelRow = NewApplication::getLevelForCategory($busCatId);
+if ($levelRow !== null) {
+    $pricing = [
+        'level_name'      => (string) $levelRow['pricing_level'],
+        'base_price'      => (float)  $levelRow['curr_price'],
+        'included_buyers' => (int)    $levelRow['num_of_buyers'],
+        'extra_per_buyer' => (float)  $levelRow['price_after'],
+    ];
 }
 
 require RNW_ROOT . '/public/_includes/header.php';

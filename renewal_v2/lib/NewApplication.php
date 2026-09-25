@@ -361,6 +361,170 @@ class NewApplication
         );
     }
 
+    /**
+     * Membership level for a business category, shaped exactly like
+     * StripeClient::getClientLevel() so it can be fed straight into
+     * StripeClient::pricingBreakdown(). A new applicant has no
+     * clients.pricing_level_id yet — the level comes from the category
+     * picked on Step 2 (bus_categories.memb_lev_id → members_level).
+     * Single source of truth for Steps 4, 6 and the Stripe amount;
+     * price changes Larissa makes in members_level flow through
+     * automatically.
+     *
+     * @return array|null members_level row (memb_lev_id, pricing_level,
+     *                    curr_price, num_of_buyers, price_after) or null
+     *                    if the category/level can't be resolved
+     */
+    public static function getLevelForCategory(int $busCatId): ?array
+    {
+        if ($busCatId <= 0) {
+            return null;
+        }
+        $level = Db::one(
+            'SELECT ml.memb_lev_id, ml.pricing_level, ml.curr_price,
+                    ml.num_of_buyers, ml.price_after
+               FROM bus_categories bc
+               JOIN members_level ml ON ml.memb_lev_id = bc.memb_lev_id
+              WHERE bc.bus_cat_id = ? LIMIT 1',
+            [$busCatId]
+        );
+        if ($level === null) {
+            return null;
+        }
+        $level['memb_lev_id']   = (int) $level['memb_lev_id'];
+        $level['curr_price']    = (float) $level['curr_price'];
+        $level['num_of_buyers'] = (int) $level['num_of_buyers'];
+        $level['price_after']   = $level['price_after'] !== null ? (float) $level['price_after'] : 0.0;
+        return $level;
+    }
+
+    /**
+     * Total buyers this application will be priced for: the main
+     * contact (always counted) plus every entry in draft_data.buyers.
+     */
+    public function totalBuyerCount(): int
+    {
+        $buyers = $this->draftData['buyers'] ?? [];
+        return 1 + (is_array($buyers) ? count($buyers) : 0);
+    }
+
+    /**
+     * Larissa's EXACT block message for a duplicate company name
+     * (Section 3) — do not paraphrase. Plain-text form for API errors
+     * and server-rendered alerts; Step 2's hidden alert carries the
+     * same wording with a mailto link.
+     */
+    public const DUPLICATE_NAME_MESSAGE =
+        'We may already have a customer record for this business. '
+        . 'Please contact the Portland Flower Market at info@ofgaflowers.com '
+        . 'or 503-289-1500 so we can confirm your account and provide the '
+        . 'correct renewal link.';
+
+    /**
+     * Authoritative pre-submit validation, shared by the Step 6 page
+     * (to show problems and disable Submit) and the submit endpoint
+     * (to actually refuse). The browser-side checks on Steps 2/3/5 are
+     * UX only — this is the gate.
+     *
+     * Re-runs the duplicate-name check on purpose: the applicant may
+     * have passed Step 2 days ago, and a customer with the same name
+     * could have been created since.
+     *
+     * @return array<int, array{step:int, code:string, message:string}>
+     *         Empty when the application is ready to submit.
+     */
+    public function validateForSubmit(): array
+    {
+        $problems = [];
+        $add = static function (int $step, string $code, string $message) use (&$problems): void {
+            $problems[] = ['step' => $step, 'code' => $code, 'message' => $message];
+        };
+
+        $org     = $this->draftData['org']       ?? [];
+        $contact = $this->draftData['contact']   ?? [];
+        $docs    = $this->draftData['documents'] ?? [];
+        $buyers  = $this->draftData['buyers']    ?? [];
+
+        // ── Step 2: organization ──
+        $orgRequired = [
+            'co_name'         => 'Company name',
+            'bus_cat_id'      => 'Business category',
+            'bus_subcat_id'   => 'Business subcategory',
+            'mailing_address' => 'Mailing street address',
+            'city'            => 'City',
+            'state'           => 'State',
+            'zip_code'        => 'ZIP code',
+        ];
+        foreach ($orgRequired as $field => $label) {
+            if (trim((string) ($org[$field] ?? '')) === '') {
+                $add(2, 'missing_org_field', "{$label} is required.");
+            }
+        }
+        $zip = trim((string) ($org['zip_code'] ?? ''));
+        if ($zip !== '' && !preg_match('/^\d{5}(-\d{4})?$/', $zip)) {
+            $add(2, 'invalid_zip', 'ZIP code must be 5 digits (or ZIP+4).');
+        }
+
+        $catId    = (int) ($org['bus_cat_id']    ?? 0);
+        $subcatId = (int) ($org['bus_subcat_id'] ?? 0);
+        if ($catId > 0 && $subcatId > 0) {
+            $match = Db::one(
+                'SELECT 1 AS ok FROM bus_subcats WHERE bus_subcat_id = ? AND bus_cat_id = ? LIMIT 1',
+                [$subcatId, $catId]
+            );
+            if ($match === null) {
+                $add(2, 'subcat_mismatch', 'The selected subcategory does not belong to the selected business category.');
+            }
+        }
+        if ($catId > 0 && self::getLevelForCategory($catId) === null) {
+            $add(2, 'no_pricing_level', 'We could not determine a membership level for your business category.');
+        }
+
+        $coName = trim((string) ($org['co_name'] ?? ''));
+        if ($coName !== '' && self::findDuplicateByCompanyName($coName) !== null) {
+            $add(2, 'duplicate_name', self::DUPLICATE_NAME_MESSAGE);
+        }
+
+        // ── Step 3: main contact ──
+        $contactRequired = [
+            'name'  => 'Main contact name',
+            'phone' => 'Main contact phone',
+            'title' => 'Main contact title',
+        ];
+        foreach ($contactRequired as $field => $label) {
+            if (trim((string) ($contact[$field] ?? '')) === '') {
+                $add(3, 'missing_contact_field', "{$label} is required.");
+            }
+        }
+        $email = trim((string) ($contact['email'] ?? ''));
+        if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            $add(3, 'invalid_contact_email', 'A valid main contact email is required.');
+        }
+
+        // ── Step 4: buyers ──
+        if (!is_array($buyers)) {
+            $buyers = [];
+        }
+        if ($this->totalBuyerCount() > 50) {
+            $add(4, 'too_many_buyers', 'A membership can include at most 50 buyers (including the main contact).');
+        }
+        foreach ($buyers as $i => $b) {
+            if (!is_array($b) || trim((string) ($b['name'] ?? '')) === '') {
+                $add(4, 'buyer_missing_name', 'Buyer #' . ($i + 1) . ' is missing a name.');
+            }
+        }
+
+        // ── Documents (Step 3 ID + Step 5 registry) ──
+        if (empty($docs['main_contact_id'])) {
+            $add(3, 'missing_document', "Main contact's driver's license / photo ID is missing. Please upload it on Step 3.");
+        }
+        if (empty($docs['business_license'])) {
+            $add(5, 'missing_document', 'Business Registry document is missing. Please upload it on Step 5 (a previous upload may not have finished).');
+        }
+
+        return $problems;
+    }
+
     // ===== DRAFT MANAGEMENT (identical shape to RenewalSession) =====
 
     /**
