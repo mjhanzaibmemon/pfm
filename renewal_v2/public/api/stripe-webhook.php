@@ -59,6 +59,24 @@ try {
 try {
     $session = StripeClient::handleCheckoutCompleted($event);
 
+    // Not a renewal payment? It may be a new-customer application
+    // (metadata[application_id]) — same Stripe account, same endpoint,
+    // one signing secret. handleCheckoutCompleted() above returns null
+    // for anything without renewal_session_id, so renewals are unaffected.
+    if ($session === null) {
+        require_once RNW_ROOT . '/lib/ApplicationStripe.php';
+        $application = ApplicationStripe::handleCheckoutCompleted($event);
+        if ($application !== null) {
+            error_log(sprintf(
+                '[new_application webhook] application=%d status=%s amount=%.2f payment=%s',
+                $application->id,
+                $application->status,
+                $application->amountCharged ?? 0,
+                $application->paymentId ?? '-'
+            ));
+        }
+    }
+
     // Log to error_log for audit trail (staging: shows in Apache error log)
     if ($session !== null) {
         error_log(sprintf(

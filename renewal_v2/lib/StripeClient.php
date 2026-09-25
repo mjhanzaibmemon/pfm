@@ -916,7 +916,7 @@ class StripeClient
      * are passed through verbatim — Stripe substitutes them server-side after
      * Checkout completes, so we must NOT urlencode them.
      */
-    private static function buildReturnUrl(string $baseUrl, array $params): string
+    public static function buildReturnUrl(string $baseUrl, array $params): string
     {
         $separator = strpos($baseUrl, '?') === false ? '?' : '&';
         $parts     = [];
@@ -982,7 +982,7 @@ class StripeClient
      * @param  array  $params    Key-value pairs (will be http_build_query encoded)
      * @return array  Decoded JSON response
      */
-    private static function apiPost(string $endpoint, array $params): array
+    public static function apiPost(string $endpoint, array $params): array
     {
         return self::apiRequest('POST', $endpoint, $params);
     }

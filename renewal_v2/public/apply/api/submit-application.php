@@ -68,5 +68,5 @@ if (!empty($problems)) {
 
 api_ok([
     'redirect_url' => '/renewal_v2/public/apply/steps/7-payment.php?token='
-        . urlencode($application->token),
+        . urlencode($application->token) . '&go=1',
 ]);
