@@ -27,7 +27,33 @@ api_require_csrf();
 $application = api_require_application();
 api_require_draft($application);
 
-$problems = $application->validateForSubmit();
+$customerNote = $application->draftData['customer_note'] ?? null;
+if (is_string($customerNote)) {
+    $customerNote = mb_substr(trim($customerNote), 0, 500);
+    if ($customerNote === '') {
+        $customerNote = null;
+    }
+} else {
+    $customerNote = null;
+}
+
+// Validate AND submit under a per-company-name advisory lock: two
+// applicants submitting the same name at the same instant are
+// serialized, so the second one's duplicate re-check sees the first
+// one's committed submission instead of both slipping through.
+// (Problems are returned, not api_error()'d, inside the closure —
+// exit() would skip the lock release in withNameLock's finally.)
+$problems = NewApplication::withNameLock(
+    (string) ($application->draftData['org']['co_name'] ?? ''),
+    static function () use ($application, $customerNote): array {
+        $found = $application->validateForSubmit();
+        if (empty($found)) {
+            $application->submit($customerNote);
+        }
+        return $found;
+    }
+);
+
 if (!empty($problems)) {
     $first   = $problems[0];
     $message = $first['code'] === 'duplicate_name'
@@ -39,18 +65,6 @@ if (!empty($problems)) {
     }
     api_error($message, 422, 'incomplete_application');
 }
-
-$customerNote = $application->draftData['customer_note'] ?? null;
-if (is_string($customerNote)) {
-    $customerNote = mb_substr(trim($customerNote), 0, 500);
-    if ($customerNote === '') {
-        $customerNote = null;
-    }
-} else {
-    $customerNote = null;
-}
-
-$application->submit($customerNote);
 
 api_ok([
     'redirect_url' => '/renewal_v2/public/apply/steps/7-payment.php?token='

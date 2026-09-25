@@ -481,7 +481,7 @@ class NewApplication
         }
 
         $coName = trim((string) ($org['co_name'] ?? ''));
-        if ($coName !== '' && self::findDuplicateByCompanyName($coName) !== null) {
+        if ($coName !== '' && self::findNameConflict($coName, $this->id) !== null) {
             $add(2, 'duplicate_name', self::DUPLICATE_NAME_MESSAGE);
         }
 
@@ -523,6 +523,90 @@ class NewApplication
         }
 
         return $problems;
+    }
+
+    /**
+     * Statuses in which an application counts as "a claim on a company
+     * name". Drafts don't (someone typing a name must not block anyone,
+     * and drafts get abandoned); cancelled/declined don't (walked away /
+     * refused); completed ones are already `clients` rows.
+     */
+    private const NAME_CLAIMING_STATUSES = [
+        self::STATUS_SUBMITTED,
+        self::STATUS_AWAITING_PAYMENT,
+        self::STATUS_AWAITING_REVIEW,
+    ];
+
+    /**
+     * Full duplicate-name check: existing customers (clients) AND other
+     * applications already past the draft stage. Closes the gap where
+     * two applicants with the same company name both pass a clients-only
+     * check because neither is a customer record yet.
+     *
+     * Used by the live Step 2 check, validateForSubmit(), and — REQUIRED
+     * — the approval endpoint (Section 13.8), which must call it again
+     * with the application's own id excluded so staff can never create a
+     * second customer record with the same name.
+     *
+     * @param  int $excludeApplicationId  The caller's own application id
+     *                                    (0 = exclude nothing).
+     * @return array|null  ['source' => 'customer', 'client_id' => int] or
+     *                     ['source' => 'application', 'application_id' => int],
+     *                     null when the name is clear.
+     */
+    public static function findNameConflict(string $companyName, int $excludeApplicationId = 0): ?array
+    {
+        $normalized = self::normalizeCompanyName($companyName);
+        if ($normalized === '') {
+            return null;
+        }
+
+        $client = self::findDuplicateByCompanyName($companyName);
+        if ($client !== null) {
+            return ['source' => 'customer', 'client_id' => (int) $client['client_id']];
+        }
+
+        $placeholders = implode(',', array_fill(0, count(self::NAME_CLAIMING_STATUSES), '?'));
+        $pending = Db::one(
+            "SELECT id FROM new_applications
+              WHERE co_name_normalized = ? AND id <> ?
+                AND status IN ({$placeholders}) LIMIT 1",
+            array_merge([$normalized, $excludeApplicationId], self::NAME_CLAIMING_STATUSES)
+        );
+        if ($pending !== null) {
+            return ['source' => 'application', 'application_id' => (int) $pending['id']];
+        }
+
+        return null;
+    }
+
+    /**
+     * Run $fn while holding a MySQL advisory lock keyed on the
+     * normalized company name, so two simultaneous submits of the same
+     * name are serialized: the second one's validation runs only after
+     * the first one's submit() has committed, and therefore sees it.
+     * (Db uses one non-persistent PDO connection per request, so the
+     * lock is released at the latest when the request ends.)
+     *
+     * @throws \RuntimeException if the lock can't be obtained in 10s
+     */
+    public static function withNameLock(string $companyName, callable $fn)
+    {
+        $normalized = self::normalizeCompanyName($companyName);
+        if ($normalized === '') {
+            return $fn();
+        }
+
+        $lockName = 'pfm_newapp_name_' . md5($normalized);
+        $got = (int) Db::scalar('SELECT GET_LOCK(?, 10)', [$lockName]);
+        if ($got !== 1) {
+            throw new \RuntimeException('Could not acquire company-name lock; please try again.');
+        }
+        try {
+            return $fn();
+        } finally {
+            Db::scalar('SELECT RELEASE_LOCK(?)', [$lockName]);
+        }
     }
 
     // ===== DRAFT MANAGEMENT (identical shape to RenewalSession) =====
@@ -609,12 +693,22 @@ class NewApplication
         $this->status       = self::STATUS_SUBMITTED;
         $this->submittedAt  = date('Y-m-d H:i:s');
         $this->customerNote = $customerNote;
+        // Payment (Step 7) is where the applicant is now.
+        $this->currentStep  = max($this->currentStep, 7);
+
+        // Claim the company name for findNameConflict() (migration 022).
+        $normalizedName = self::normalizeCompanyName((string) ($this->draftData['org']['co_name'] ?? ''));
 
         Db::exec(
             'UPDATE new_applications
-                SET status = ?, submitted_at = NOW(), customer_note = ?, updated_at = NOW()
+                SET status = ?, submitted_at = NOW(), customer_note = ?,
+                    co_name_normalized = ?, current_step = ?, updated_at = NOW()
               WHERE id = ?',
-            [self::STATUS_SUBMITTED, $customerNote, $this->id]
+            [
+                self::STATUS_SUBMITTED, $customerNote,
+                $normalizedName !== '' ? $normalizedName : null,
+                $this->currentStep, $this->id,
+            ]
         );
     }
 

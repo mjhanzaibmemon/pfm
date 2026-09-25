@@ -20,10 +20,10 @@
  * Response (JSON):
  *   { success: true, data: { is_duplicate: true|false } }
  *
- * Uses NewApplication::findDuplicateByCompanyName() (which queries
- * clients.co_name_normalized — migration 019 — not a live on-the-fly
- * string comparison) so this stays fast even as the customer base
- * grows.
+ * Uses NewApplication::findNameConflict(): clients.co_name_normalized
+ * (migration 019) plus new_applications.co_name_normalized (migration
+ * 022, other applications already submitted) — both indexed lookups, not
+ * live string comparisons, so this stays fast as the data grows.
  */
 
 declare(strict_types=1);
@@ -41,6 +41,9 @@ $application = api_require_application();
 
 $companyName = api_required_post('company_name');
 
-$duplicate = NewApplication::findDuplicateByCompanyName($companyName);
+// Existing customers AND other applications already submitted/paid —
+// excluding this applicant's own application so retyping their own name
+// after a reload never blocks them.
+$conflict = NewApplication::findNameConflict($companyName, $application->id);
 
-api_ok(['is_duplicate' => $duplicate !== null]);
+api_ok(['is_duplicate' => $conflict !== null]);
