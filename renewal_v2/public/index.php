@@ -170,6 +170,13 @@ switch ($renewalSession->status) {
         );
         // showError() exits — never falls through
 
+    case RenewalSession::STATUS_DECLINED:
+        showError(
+            'This renewal is no longer active.',
+            'Please contact <a href="mailto:' . PFM_RNW_SUPPORT_EMAIL . '">'
+            . PFM_RNW_SUPPORT_EMAIL . '</a> or call 503-289-1500 for details.'
+        );
+
     default:
         showError('Unknown renewal status. Please contact ' . PFM_RNW_SUPPORT_EMAIL . '.');
 }

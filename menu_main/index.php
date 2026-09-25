@@ -1686,12 +1686,12 @@ if ($_SESSION['scriptcase']['charset'] != "UTF-8" && NM_is_utf8($nm_var_lab[15])
 {
     $nm_var_lab[15] = sc_convert_encoding($nm_var_lab[15], $_SESSION['scriptcase']['charset'], "UTF-8");
 }
- $nm_var_lab[16] = "Renewal Reviews";
+ $nm_var_lab[16] = "Application Reviews";
 if ($_SESSION['scriptcase']['charset'] != "UTF-8" && NM_is_utf8($nm_var_lab[16]))
 {
     $nm_var_lab[16] = sc_convert_encoding($nm_var_lab[16], $_SESSION['scriptcase']['charset'], "UTF-8");
 }
- $nm_var_hint[16] = "Approve paid renewals from the new renewal wizard";
+ $nm_var_hint[16] = "Review paid renewals and new membership applications: approve or decline";
 
 /* -- renewal_v2 hand-edit ------------------------------------------
  * "Reset Renewal" sidebar item — clone of the Renewal Reviews item

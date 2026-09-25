@@ -824,6 +824,49 @@ class StripeClient
      */
     public static function sendCustomerRenewalConfirmedEmail(RenewalSession $session): bool
     {
+        $mail = self::buildApprovedEmail($session->clientId, "session {$session->id}");
+        if ($mail === null) {
+            return false;
+        }
+
+        // Send via MailerSend SMTP (HTML body — template uses <p> tags)
+        require_once __DIR__ . '/Mailer.php';
+        [$ok, $detail] = Mailer::send($mail['to'], $mail['subject'], $mail['body'], /* isHtml */ true);
+
+        error_log(sprintf(
+            '[renewal_v2] Customer renewal-confirmed email %s for session %d to %s: '
+            . 'company="%s" reference=%s detail=%s',
+            $ok ? 'sent' : 'FAILED',
+            $session->id,
+            $mail['to'],
+            $mail['company'],
+            $session->getReferenceNumber(),
+            $detail
+        ));
+
+        return $ok;
+    }
+
+    /**
+     * Compose the "Your Buyer's Pass Application Has Been Approved" email
+     * for a customer — the single implementation shared by renewal
+     * approval (sendCustomerRenewalConfirmedEmail above) and new-customer
+     * approval (ApplicationReview::approve), so the two flows can never
+     * drift apart (Section 5 / 13.7: "the same confirmation email … no
+     * new template for new applicants"). Split from sending so callers can
+     * decide whether to actually deliver.
+     *
+     * Template: notifications.notif_id = 2 ("approved_membership"),
+     * editable by staff in the existing admin. Recipient: clients.
+     * main_contact_email, falling back to clients.email.
+     *
+     * @param  string $logRef  Free-text tag for log lines, e.g. "session 12"
+     * @return array{to:string, subject:string, body:string, company:string}|null
+     *         null (with an error_log line) when the template, client or
+     *         recipient address is missing
+     */
+    public static function buildApprovedEmail(int $clientId, string $logRef): ?array
+    {
         // ── 1. Fetch the email template from notifications ────────────────
         // notif_id = 2 = "approved_membership" per Larissa's Bucket B spec.
         // Migration 010 grants SELECT on `notifications` to pfm_renewal.
@@ -835,29 +878,29 @@ class StripeClient
         );
         if (!$template || empty($template['msg_subject']) || empty($template['msg_body'])) {
             error_log(sprintf(
-                '[renewal_v2] Customer renewal-confirmed email skipped for session %d: '
+                '[renewal_v2] Customer approved email skipped for %s: '
                 . 'notifications row for notif_id=2 is missing or empty.',
-                $session->id
+                $logRef
             ));
-            return false;
+            return null;
         }
 
         // ── 2. Look up the customer's company name + email address ────────
-        // Prefer main_contact_email (person managing the renewal); fall
+        // Prefer main_contact_email (person managing the membership); fall
         // back to clients.email if it's empty. Matches sendCustomerConfirmationEmail.
         $client = Db::one(
             'SELECT co_name, main_contact_email, email AS company_email
                FROM clients
               WHERE client_id = ?',
-            [$session->clientId]
+            [$clientId]
         );
         if (!$client) {
             error_log(sprintf(
-                '[renewal_v2] Customer renewal-confirmed email skipped for session %d: '
+                '[renewal_v2] Customer approved email skipped for %s: '
                 . 'client_id %d not found in clients table.',
-                $session->id, $session->clientId
+                $logRef, $clientId
             ));
-            return false;
+            return null;
         }
 
         $toEmail = trim((string) ($client['main_contact_email'] ?? ''));
@@ -866,11 +909,11 @@ class StripeClient
         }
         if ($toEmail === '') {
             error_log(sprintf(
-                '[renewal_v2] Customer renewal-confirmed email skipped for session %d: '
+                '[renewal_v2] Customer approved email skipped for %s: '
                 . 'no main_contact_email or email on client %d.',
-                $session->id, $session->clientId
+                $logRef, $clientId
             ));
-            return false;
+            return null;
         }
 
         $companyName = trim((string) ($client['co_name'] ?? '')) ?: 'Customer';
@@ -890,22 +933,7 @@ class StripeClient
             $subject = PFM_RNW_NOTIFY_SUBJECT_PREFIX . $subject;
         }
 
-        // ── 4. Send via MailerSend SMTP (HTML body — template uses <p> tags) ──
-        require_once __DIR__ . '/Mailer.php';
-        [$ok, $detail] = Mailer::send($toEmail, $subject, $body, /* isHtml */ true);
-
-        error_log(sprintf(
-            '[renewal_v2] Customer renewal-confirmed email %s for session %d to %s: '
-            . 'company="%s" reference=%s detail=%s',
-            $ok ? 'sent' : 'FAILED',
-            $session->id,
-            $toEmail,
-            $companyName,
-            $session->getReferenceNumber(),
-            $detail
-        ));
-
-        return $ok;
+        return ['to' => $toEmail, 'subject' => $subject, 'body' => $body, 'company' => $companyName];
     }
 
     /**

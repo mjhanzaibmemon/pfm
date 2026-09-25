@@ -216,6 +216,24 @@ if (!function_exists('pfm_admin_session_start')) {
     }
 }
 
+if (!function_exists('pfm_admin_actor')) {
+
+    /**
+     * Who is acting, for audit fields (e.g. declined_by): the PFM admin
+     * login when the staff member arrived through the PFM admin session,
+     * otherwise a generic label (they came in via the review link /
+     * shared dashboard password). Read it BEFORE session_write_close().
+     */
+    function pfm_admin_actor(): string
+    {
+        $login = $_SESSION['usr_login'] ?? '';
+        if (is_scalar($login) && trim((string) $login) !== '') {
+            return mb_substr(trim((string) $login), 0, 100);
+        }
+        return 'staff (review link)';
+    }
+}
+
 if (!function_exists('pfm_admin_header')) {
 
     function pfm_admin_header(string $title, ?string $subtitle = null): void
@@ -310,7 +328,7 @@ if (!function_exists('pfm_admin_header')) {
             <div>
                 <h1 class="pfm-header__title">PFM Renewal Admin <?= $envBadge ?></h1>
                 <div class="pfm-header__subtitle">
-                    <?= htmlspecialchars($subtitle ?? 'Internal review &amp; payment confirmation') ?>
+                    <?= htmlspecialchars($subtitle ?? 'Internal review & payment confirmation') ?>
                 </div>
             </div>
         </div>

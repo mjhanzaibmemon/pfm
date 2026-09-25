@@ -296,7 +296,20 @@ pfm_admin_header($pageTitle, $subtitle);
 
 // ── If already confirmed, lock the form and show a banner ─────────────
 $alreadyConfirmed = ($session->adminConfirmedAt !== null);
+$isDeclined       = ($session->status === RenewalSession::STATUS_DECLINED);
 ?>
+
+<?php if ($isDeclined): ?>
+    <div class="pfm-alert pfm-alert--danger">
+        <strong>This renewal was declined.</strong>
+        <p class="pfm-mt-0">
+            <?= $session->declinedAt ? htmlspecialchars(date('F j, Y \a\t g:ia', strtotime($session->declinedAt))) : '' ?>
+            by <?= htmlspecialchars((string) $session->declinedBy) ?>.
+            <br><strong>Reason:</strong> <?= nl2br(htmlspecialchars((string) $session->declineReason)) ?>
+        </p>
+        <p class="pfm-mt-0">The decline itself changed nothing on the customer's record, dates, status or payment history.</p>
+    </div>
+<?php endif; ?>
 
 <?php if ($alreadyConfirmed): ?>
     <div class="pfm-alert pfm-alert--success">
@@ -758,6 +771,7 @@ $totalDocCount = count($documents) + ($hasCarryOverIdOnly ? 1 : 0);
     <?php endif; ?>
 </div>
 
+<?php if (!$isDeclined): ?>
 <!-- ── Confirm Receipt button (the gate) ── -->
 <div class="pfm-card pfm-mt-2 pfm-text-center">
     <h2 class="pfm-card__title pfm-mt-0">
@@ -786,8 +800,13 @@ $totalDocCount = count($documents) + ($hasCarryOverIdOnly ? 1 : 0);
                 ✓ Confirm Receipt &amp; Apply Payment
             </button>
         </form>
+        <p class="pfm-mt-2 pfm-mb-0">
+            <a class="pfm-btn" style="border:1px solid #fa5c7c;color:#fa5c7c;"
+               href="/renewal_v2/admin/decline.php?type=renewal&amp;token=<?= htmlspecialchars($session->adminReviewToken ?? '', ENT_QUOTES) ?>">✕ Decline this renewal…</a>
+        </p>
     <?php endif; ?>
 </div>
+<?php endif; /* !$isDeclined */ ?>
 
 <p class="pfm-text-muted pfm-text-center pfm-mt-2" style="font-size:0.85rem;">
     <a href="/renewal_v2/admin/dashboard.php">&larr; Back to pending reviews dashboard</a>

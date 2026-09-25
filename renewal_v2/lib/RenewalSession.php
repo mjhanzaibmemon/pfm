@@ -22,6 +22,9 @@ class RenewalSession
     public const STATUS_AWAITING_REVIEW  = 'awaiting_review';
     public const STATUS_COMPLETED        = 'completed';
     public const STATUS_CANCELLED        = 'cancelled';
+    // Staff-declined after review (migration 020). Distinct from
+    // 'cancelled' (customer walked away / superseded).
+    public const STATUS_DECLINED         = 'declined';
 
     // Change types (matching DB ENUM)
     public const CHANGE_BUYER_ADDED      = 'buyer_added';
@@ -69,6 +72,11 @@ class RenewalSession
     public ?string $stripeCardBrand;
     public ?string $stripeCardLast4;
 
+    // Decline audit fields (migration 020) — NULL unless staff declined it
+    public ?string $declinedAt;
+    public ?string $declineReason;
+    public ?string $declinedBy;
+
     private function __construct(array $row)
     {
         $this->id              = (int) $row['id'];
@@ -96,6 +104,11 @@ class RenewalSession
         $this->stripeReceiptUrl = $row['stripe_receipt_url'] ?? null;
         $this->stripeCardBrand  = $row['stripe_card_brand']  ?? null;
         $this->stripeCardLast4  = $row['stripe_card_last4']  ?? null;
+
+        // Decline audit (migration 020) — absent before that migration runs
+        $this->declinedAt    = $row['declined_at']    ?? null;
+        $this->declineReason = $row['decline_reason'] ?? null;
+        $this->declinedBy    = $row['declined_by']    ?? null;
     }
 
     /**
@@ -247,6 +260,7 @@ class RenewalSession
             self::STATUS_AWAITING_PAYMENT,
             self::STATUS_AWAITING_REVIEW,
             self::STATUS_COMPLETED,
+            self::STATUS_DECLINED,
         ];
         $inList = implode(',', array_fill(0, count($nonCancelledStates), '?'));
         $row = Db::one(
@@ -255,6 +269,28 @@ class RenewalSession
              ORDER BY updated_at DESC LIMIT 1",
             array_merge([$clientId], $nonCancelledStates)
         );
+
+        // Staff-declined session. If this link is the one the customer was
+        // declined on (or older), return the declined session so the entry
+        // point shows "no longer active" instead of silently starting a new
+        // paid renewal. If staff have since sent a NEWER link, that is an
+        // explicit new cycle: free the declined row's token (keeping its
+        // status — the decline stays on record) and fall through to a
+        // fresh draft.
+        if ($row !== null && $row['status'] === self::STATUS_DECLINED) {
+            $declinedAt = (string) ($row['declined_at'] ?? '');
+            if ($declinedAt !== '' && strtotime($tokenCreatedAt) > strtotime($declinedAt)) {
+                Db::exec(
+                    'UPDATE renewal_sessions
+                        SET token = CONCAT(?, id, ?, LEFT(token, 35)), updated_at = NOW()
+                      WHERE id = ?',
+                    ['sup_', '_', $row['id']]
+                );
+                $row = null;
+            } else {
+                return new self($row);
+            }
+        }
 
         if ($row !== null) {
             $isCompleted = ($row['status'] === self::STATUS_COMPLETED);
@@ -632,6 +668,41 @@ class RenewalSession
                 SET status = ?, updated_at = NOW()
               WHERE id = ?',
             [self::STATUS_CANCELLED, $this->id]
+        );
+    }
+
+    /**
+     * Transition: any non-terminal state → declined (Section 6 decline
+     * workflow). Records the decline itself only — it does not touch
+     * `clients`, `members`, `client_pmts` or any other customer data; the
+     * caller (admin decline endpoint) is responsible for the
+     * refund-confirmed gate and the decline email.
+     *
+     * @throws RuntimeException if already completed/cancelled/declined
+     * @throws InvalidArgumentException if the reason is empty
+     */
+    public function decline(string $reason, string $declinedBy): void
+    {
+        $terminal = [self::STATUS_COMPLETED, self::STATUS_CANCELLED, self::STATUS_DECLINED];
+        if (in_array($this->status, $terminal, true)) {
+            throw new RuntimeException(
+                "Cannot decline: session {$this->id} is already in terminal state '{$this->status}'"
+            );
+        }
+        if (trim($reason) === '') {
+            throw new InvalidArgumentException('Decline reason cannot be empty.');
+        }
+
+        $this->status        = self::STATUS_DECLINED;
+        $this->declinedAt    = date('Y-m-d H:i:s');
+        $this->declineReason = $reason;
+        $this->declinedBy    = $declinedBy;
+
+        Db::exec(
+            'UPDATE renewal_sessions
+                SET status = ?, declined_at = NOW(), decline_reason = ?, declined_by = ?, updated_at = NOW()
+              WHERE id = ?',
+            [self::STATUS_DECLINED, $reason, $declinedBy, $this->id]
         );
     }
 
