@@ -200,6 +200,17 @@ $valueFor = static function (string $field, string $raw)
     return $raw;
 };
 
+// A removed buyer logs up to 4 rows (member_name + any non-empty
+// email/phone1/note) so a later decline can fully recreate the row
+// (BuyerManager::remove()) — but staff only need to see one "Buyer
+// removed: <name>" line, not four. Keep the member_name row, drop the
+// rest; they still exist in the DB for revertAppliedChanges() to read.
+$rawChanges = array_values(array_filter(
+    $rawChanges,
+    static fn(array $c): bool => (string) ($c['change_type'] ?? '') !== RenewalSession::CHANGE_BUYER_REMOVED
+        || (string) ($c['field_name'] ?? '') === 'member_name'
+));
+
 // Format each change row into a human-readable line for the Changes panel.
 // Spec section 8 defines the format. We support 6 change_type values.
 $formattedChanges = array_map(static function (array $c) use ($fieldLabels, $valueFor): array {

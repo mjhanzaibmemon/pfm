@@ -122,7 +122,22 @@ if ($isPost && $step === 'confirm' && !$errors) {
             <?php if ($type === 'application'): ?>
                 <li>No customer record or membership number was created.</li>
             <?php else: ?>
-                <li>No changes were made to the customer's record, membership dates, status or payment history by the decline itself.</li>
+                <?php $r = $result['reverted'] ?? null; ?>
+                <?php if ($r !== null && array_sum($r) > 0): ?>
+                    <li>The edits this renewal applied at submit were reverted back to how they were before:
+                        <?php
+                            $parts = [];
+                            if ($r['company'] > 0)          $parts[] = $r['company'] . ' company field' . ($r['company'] === 1 ? '' : 's');
+                            if ($r['contact'] > 0)           $parts[] = $r['contact'] . ' main-contact field' . ($r['contact'] === 1 ? '' : 's');
+                            if ($r['buyers_undone_add'] > 0) $parts[] = $r['buyers_undone_add'] . ' added buyer' . ($r['buyers_undone_add'] === 1 ? '' : 's') . ' removed';
+                            if ($r['buyers_restored'] > 0)   $parts[] = $r['buyers_restored'] . ' removed buyer' . ($r['buyers_restored'] === 1 ? '' : 's') . ' restored';
+                            if ($r['buyer_fields'] > 0)      $parts[] = $r['buyer_fields'] . ' buyer field edit' . ($r['buyer_fields'] === 1 ? '' : 's');
+                            echo htmlspecialchars(implode(', ', $parts));
+                        ?>.</li>
+                <?php else: ?>
+                    <li>This renewal hadn't changed anything on the customer's record, so there was nothing to revert.</li>
+                <?php endif; ?>
+                <li>Membership dates, status and payment history are otherwise untouched by the decline itself.</li>
             <?php endif; ?>
             <li>The refund was not issued by this system &mdash; it was recorded as already done by you in Stripe.</li>
         </ul>
@@ -188,10 +203,11 @@ pfm_admin_header('Decline — ' . $company, $type === 'application' ? 'New appli
     <?php if ($type === 'application'): ?>
         <div class="pfm-alert pfm-alert--info">Declining creates <strong>no customer record and no membership number</strong>.</div>
     <?php else: ?>
-        <div class="pfm-alert pfm-alert--warning">
-            <strong>Heads-up for renewals:</strong> declining changes nothing on the customer's record, membership dates, status or payments.
-            But any edits the customer made during this renewal (buyers, contact, company details) were applied when they
-            submitted &mdash; declining does <em>not</em> revert them. The review page's Changes Summary lists them if you need to undo any by hand.
+        <div class="pfm-alert pfm-alert--info">
+            <strong>Heads-up for renewals:</strong> any edits the customer made during this renewal (company details, main
+            contact, buyers added/removed/modified) will be <strong>reverted back to how they were before</strong> this renewal
+            — see the review page's Changes Summary for exactly what that is. Membership dates, status and payment history are
+            otherwise untouched.
         </div>
     <?php endif; ?>
 

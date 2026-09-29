@@ -415,8 +415,17 @@ final class ApplicationReview
      * send the decline email. The DB change happens first and is
      * authoritative; the email is best-effort and its outcome returned.
      *
+     * For a renewal (Section 6: "make zero changes to the existing
+     * customer's information, membership dates, status or payment
+     * history"), this also REVERTS the company/contact/buyer edits the
+     * customer's own submit already applied to `clients`/`members` — see
+     * RenewalSession::revertAppliedChanges() for exactly what that
+     * restores. A new application has nothing to revert (nothing is
+     * written to customer tables until approval).
+     *
      * @param  NewApplication|RenewalSession $item
-     * @return array{email:string}  sent | skipped:<why> | failed
+     * @return array{email:string, reverted?:array}  email: sent | skipped:<why> | failed;
+     *         reverted is RenewalSession::revertAppliedChanges()'s count array, present only for renewals
      * @throws RuntimeException if not awaiting review / already decided
      * @throws InvalidArgumentException if the reason is empty
      */
@@ -434,21 +443,32 @@ final class ApplicationReview
             throw new RuntimeException('Cannot decline: the decline email template or the customer\'s email address is missing.');
         }
 
-        $item->decline(trim($reason), $declinedBy);
+        $reverted = null;
+        if ($item instanceof RenewalSession) {
+            $reverted = self::tx(static function () use ($item, $reason, $declinedBy): array {
+                $counts = $item->revertAppliedChanges();
+                $item->decline(trim($reason), $declinedBy);
+                return $counts;
+            });
+        } else {
+            $item->decline(trim($reason), $declinedBy);
+        }
 
         try {
             if (ApplicationStripe::isReservedTestAddress($mail['to'])) {
                 error_log("[review] decline email for item {$item->id} not sent: {$mail['to']} is a reserved test domain.");
-                return ['email' => 'skipped: reserved test domain'];
+                return $reverted !== null ? ['email' => 'skipped: reserved test domain', 'reverted' => $reverted]
+                                           : ['email' => 'skipped: reserved test domain'];
             }
             require_once __DIR__ . '/Mailer.php';
             [$ok, $detail] = Mailer::send($mail['to'], $mail['subject'], $mail['body'], true);
-            error_log(sprintf('[review] decline email %s for %s #%d to %s detail=%s',
-                $ok ? 'sent' : 'FAILED', get_class($item), $item->id, $mail['to'], $detail));
-            return ['email' => $ok ? 'sent' : 'failed'];
+            error_log(sprintf('[review] decline email %s for %s #%d to %s detail=%s reverted=%s',
+                $ok ? 'sent' : 'FAILED', get_class($item), $item->id, $mail['to'], $detail, json_encode($reverted)));
+            return $reverted !== null ? ['email' => $ok ? 'sent' : 'failed', 'reverted' => $reverted]
+                                       : ['email' => $ok ? 'sent' : 'failed'];
         } catch (Throwable $e) {
             error_log('[review] decline email error: ' . $e->getMessage());
-            return ['email' => 'failed'];
+            return $reverted !== null ? ['email' => 'failed', 'reverted' => $reverted] : ['email' => 'failed'];
         }
     }
 }

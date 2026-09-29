@@ -756,6 +756,22 @@ class BuyerManager
             $buyer['member_name'],
             null
         );
+
+        // Snapshot email/phone/note too (each its own row, same shape as
+        // modify()'s per-field logging) — purgeRemovedBuyers() below
+        // HARD-deletes this member row at submit time (see that method's
+        // doc comment for why), so member_name alone isn't enough data to
+        // fully recreate the buyer if the renewal is later declined and
+        // reverted (RenewalSession::revertAppliedChanges()). Only the
+        // member_name row is shown in the admin Changes Summary
+        // (admin/review.php filters the rest out as revert-only metadata,
+        // not customer-facing "what changed").
+        foreach ([['email', $buyer['email'] ?? null], ['phone1', $buyer['phone1'] ?? null], ['note', $buyer['note'] ?? null]] as [$field, $val]) {
+            $val = trim((string) ($val ?? ''));
+            if ($val !== '') {
+                $session->logChange(RenewalSession::CHANGE_BUYER_REMOVED, $memberId, $field, $val, null);
+            }
+        }
     }
 
     /**

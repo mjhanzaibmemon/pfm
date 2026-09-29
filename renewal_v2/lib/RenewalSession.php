@@ -12,6 +12,9 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/Db.php';
+// revertAppliedChanges() calls pfm_normalize_phone() — declared here so
+// callers of RenewalSession don't all need to separately require it.
+require_once __DIR__ . '/PhoneFormat.php';
 
 class RenewalSession
 {
@@ -704,6 +707,181 @@ class RenewalSession
               WHERE id = ?',
             [self::STATUS_DECLINED, $reason, $declinedBy, $this->id]
         );
+    }
+
+    /** Columns `revertAppliedChanges()` is willing to write — closed set,
+     *  matching exactly what submit-application.php's org-fields loop and
+     *  contact-fields loop can log as company_changed / contact_changed. */
+    private const REVERT_CLIENTS_COLS = [
+        'co_name', 'business_type', 'business_license', 'bus_cat_id', 'bus_subcat_id',
+        'mailing_address', 'city', 'state', 'zip_code',
+        'website_url', 'acct_instagram', 'acct_facebook', 'main_contact_title',
+    ];
+    private const REVERT_MEMBER_TO_CLIENTS_COL = [
+        'member_name' => 'main_contact_name',
+        'email'       => 'main_contact_email',
+        'phone1'      => 'main_contact_phone',
+    ];
+    private const REVERT_BUYER_COLS = ['member_name', 'email', 'phone1', 'note'];
+
+    /**
+     * Undo everything submit-application.php wrote to `clients` and
+     * `members` for this session, using the audit trail in
+     * `renewal_changes`. The decline workflow (Section 6: "For a declined
+     * renewal: make zero changes to the existing customer's information
+     * … or payment history") calls this before decline() — a renewal
+     * applies the customer's edits at SUBMIT time (before payment/staff
+     * review), so "zero changes" on decline means reverting those edits
+     * back out, not merely refraining from making new ones.
+     *
+     * What is restored exactly:
+     *   - company_changed  → the `clients` column, back to old_value
+     *   - contact_changed  → both `members` (if the row still exists) AND
+     *                        the `clients` mirror column, back to old_value
+     *   - buyer_added      → the members row this session inserted is
+     *                        DELETEd (it never existed before). Skipped if
+     *                        the same member_id also has a buyer_removed
+     *                        snapshot in this session — that shape means
+     *                        "existing buyer removed then restored", not a
+     *                        genuine new buyer (BuyerManager::restore()
+     *                        logs a buyer_added row for a restore, on the
+     *                        buyer's real pre-existing member_id).
+     *   - buyer_modified   → the field is restored, if the member row
+     *                        still exists (it won't if also removed this
+     *                        session — the buyer_removed branch below
+     *                        already recreates it with pre-session values,
+     *                        which is what a modify-then-remove should
+     *                        revert to anyway).
+     *   - buyer_removed    → the row is recreated under its ORIGINAL
+     *                        member_id from BuyerManager::remove()'s
+     *                        snapshot (member_name required; email/phone1/
+     *                        note included when they were non-empty).
+     *                        Sessions from before that snapshot was added
+     *                        (2026-09-30) only logged member_name — those
+     *                        buyers come back with just a name.
+     *
+     * Known, accepted limitation: the rare "self-heal" case in
+     * submit-application.php (a client with NO existing primary `members`
+     * row gets one INSERTed fresh, logged as contact_changed with
+     * old_value=null) reverts the fields to NULL rather than removing the
+     * row — leaving an empty primary row instead of no row at all. Affects
+     * only clients with zero primary members rows before the renewal
+     * (~18 across all of prod per the self-heal comment); not solved here
+     * because there's no signal in renewal_changes to distinguish "this
+     * member_id is a self-heal insert" from an ordinary contact edit.
+     *
+     * Must run BEFORE decline() changes the session's status (there is no
+     * separate transaction here — the caller wraps both in one).
+     *
+     * @return array{company:int, contact:int, buyers_undone_add:int,
+     *               buyers_restored:int, buyer_fields:int}
+     *         Counts of what was reverted, for the decline confirmation screen.
+     */
+    public function revertAppliedChanges(): array
+    {
+        $changes = $this->getChanges(); // ASC by created_at — original order
+        $counts = ['company' => 0, 'contact' => 0, 'buyers_undone_add' => 0, 'buyers_restored' => 0, 'buyer_fields' => 0];
+
+        $removedSnapshots = []; // member_id => [field => old_value]
+        foreach ($changes as $c) {
+            if ((string) $c['change_type'] === self::CHANGE_BUYER_REMOVED && $c['target_id'] !== null) {
+                $removedSnapshots[(int) $c['target_id']][(string) $c['field_name']] = $c['old_value'];
+            }
+        }
+
+        $clientsUpdates = [];
+        $recreatedBuyer = [];
+
+        foreach ($changes as $c) {
+            $type   = (string) $c['change_type'];
+            $field  = (string) ($c['field_name'] ?? '');
+            $old    = $c['old_value'];
+            $target = $c['target_id'] !== null ? (int) $c['target_id'] : null;
+
+            if ($type === self::CHANGE_COMPANY_CHANGED) {
+                if (in_array($field, self::REVERT_CLIENTS_COLS, true)) {
+                    $clientsUpdates[$field] = $old;
+                    $counts['company']++;
+                }
+                continue;
+            }
+
+            if ($type === self::CHANGE_CONTACT_CHANGED) {
+                if ($field === 'main_contact_title') {
+                    $clientsUpdates['main_contact_title'] = $old;
+                    $counts['contact']++;
+                } elseif ($target !== null && isset(self::REVERT_MEMBER_TO_CLIENTS_COL[$field])) {
+                    if ((int) Db::scalar('SELECT COUNT(*) FROM members WHERE member_id = ?', [$target]) > 0) {
+                        $val = $field === 'phone1' ? pfm_normalize_phone($old) : $old;
+                        Db::exec("UPDATE members SET `{$field}` = ? WHERE member_id = ?", [$val, $target]);
+                    }
+                    $clientsUpdates[self::REVERT_MEMBER_TO_CLIENTS_COL[$field]] = $old;
+                    $counts['contact']++;
+                }
+                continue;
+            }
+
+            if ($type === self::CHANGE_BUYER_ADDED) {
+                // A restore-of-existing-buyer reuses this change_type on
+                // the buyer's real (pre-existing) member_id — recognisable
+                // because that same member_id also has a buyer_removed
+                // snapshot in this session. Only delete genuine new adds.
+                if ($target !== null && $target > 0 && !isset($removedSnapshots[$target])) {
+                    Db::exec('DELETE FROM members WHERE member_id = ? AND client_id = ?', [$target, $this->clientId]);
+                    $counts['buyers_undone_add']++;
+                }
+                continue;
+            }
+
+            if ($type === self::CHANGE_BUYER_MODIFIED) {
+                if ($target !== null && in_array($field, self::REVERT_BUYER_COLS, true)
+                    && (int) Db::scalar('SELECT COUNT(*) FROM members WHERE member_id = ?', [$target]) > 0) {
+                    $val = $field === 'phone1' ? pfm_normalize_phone($old) : $old;
+                    Db::exec("UPDATE members SET `{$field}` = ? WHERE member_id = ?", [$val, $target]);
+                    $counts['buyer_fields']++;
+                }
+                continue;
+            }
+
+            if ($type === self::CHANGE_BUYER_REMOVED) {
+                if ($target === null || $target <= 0 || isset($recreatedBuyer[$target])) {
+                    continue;
+                }
+                $recreatedBuyer[$target] = true;
+                $snap = $removedSnapshots[$target] ?? [];
+                $name = trim((string) ($snap['member_name'] ?? ''));
+                if ($name === '') {
+                    continue; // nothing to recreate from
+                }
+                if ((int) Db::scalar('SELECT COUNT(*) FROM members WHERE member_id = ?', [$target]) > 0) {
+                    continue; // still exists (remove+restore in this session) — nothing to undo
+                }
+                Db::exec(
+                    "INSERT INTO members (member_id, client_id, member_name, email, phone1, note, main_contact, include, wizard_removed_at)
+                     VALUES (?, ?, ?, ?, ?, ?, b'0', b'1', NULL)",
+                    [
+                        $target, $this->clientId, $name,
+                        isset($snap['email'])  ? $snap['email'] : null,
+                        isset($snap['phone1']) ? pfm_normalize_phone($snap['phone1']) : null,
+                        isset($snap['note'])   ? $snap['note']  : null,
+                    ]
+                );
+                $counts['buyers_restored']++;
+            }
+        }
+
+        if (!empty($clientsUpdates)) {
+            $set = [];
+            $params = [];
+            foreach ($clientsUpdates as $col => $val) {
+                $set[] = "`{$col}` = ?";
+                $params[] = ($val !== null && $val !== '') ? $val : null;
+            }
+            $params[] = $this->clientId;
+            Db::exec('UPDATE clients SET ' . implode(', ', $set) . ' WHERE client_id = ?', $params);
+        }
+
+        return $counts;
     }
 
     // ===== ADMIN-SIDE REVIEW WORKFLOW (Phase 4) =====
