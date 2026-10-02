@@ -12,12 +12,13 @@
 --   ~COMPANY NAME~   the customer's company name (existing convention)
 --   ~REASON~         the reason staff typed on the decline form
 --
--- !! DRAFT WORDING — needs Larissa's review. She can edit it any time in
--- the Email Notices grid (descript = 'declined_application'); no code
--- change or redeploy is needed. It is deliberately neutral so the same
--- template works for declined renewals AND declined new applications, and
--- says "refunded" because staff must confirm the manual Stripe refund
--- before a decline can be finalised.
+-- Wording APPROVED by Larissa on 2026-10-02 (she reviewed the original
+-- draft and asked for generic "Submission" wording in the subject, the
+-- opening and the refund line, because one template serves declined
+-- renewals AND declined new applications). She can still edit it any time
+-- in the Email Notices grid (descript = 'declined_application'); no code
+-- change or redeploy is needed. It says "refunded" because staff must
+-- confirm the manual Stripe refund before a decline can be finalised.
 --
 -- IDEMPOTENT: inserts only if no row with descript 'declined_application'
 -- exists, so re-running never creates a duplicate or overwrites edits.
@@ -26,15 +27,15 @@
 
 INSERT INTO `notifications` (`msg_subject`, `msg_body`, `descript`, `active`)
 SELECT
-  'Update on Your Portland Flower Market Buyer''s Pass Application',
+  'Update on Your Portland Flower Market Buyer’s Pass Submission',
   CONCAT(
     '<p>Dear ~COMPANY NAME~,</p>',
-    '<p>Thank you for your interest in the Portland Flower Market. After reviewing your submission, we are unable to approve it at this time.</p>',
+    '<p>Thank you for submitting your information to the Portland Flower Market. After reviewing your submission, we are unable to approve it at this time.</p>',
     '<p><strong>Reason:</strong> ~REASON~</p>',
-    '<p>Any payment you made has been refunded to your original method of payment.</p>',
+    '<p>Any payment associated with this submission has been refunded to the original method of payment.</p>',
     '<p>If you have any questions, please call us at <strong>503-289-1500</strong> or email <strong>info@ofgaflowers.com</strong>.</p>',
     '<p> </p>',
-    '<p>Best regards,<br />Buyers Pass Team<br />Portland Flower Market</p>'
+    '<p>Best regards,<br />Buyer’s Pass Team<br />Portland Flower Market</p>'
   ),
   'declined_application',
   b'1'
