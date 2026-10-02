@@ -371,14 +371,50 @@ class NewApplication
     }
 
     /**
+     * Pricing level a NEW applicant is charged: "Business-to-Business
+     * Membership" (level 13, $125) for every business category except
+     * Non-Profit, which gets "Club, School, Non-Profit Membership"
+     * (level 16, $175).
+     *
+     * Why NOT bus_categories.memb_lev_id (which this module first used,
+     * and which maps florist and Plant Sales to level 14, "Horticultural
+     * & Floral Trade", $50 base): Larissa spotted a $65 charge that
+     * should have been $125 (2026-10-02), and the production-mirror data
+     * confirms the rule above — of the 175 clients created through the
+     * legacy new-application form, every florist, Plant Sales, Art,
+     * Retail, Business Services and Food Services customer is level 13
+     * (florist 52 of 52); only Non-Profit is 16 (8 of 9; the odd one
+     * out is a staff override). Level 14 is a rate staff assign to a
+     * specific customer afterwards, never something a category implies.
+     * If PFM ever wants another category priced differently, change it
+     * here — this is the only place the rule lives.
+     */
+    public const LEVEL_STANDARD          = 13;
+    public const LEVEL_NONPROFIT         = 16;
+    public const CATEGORY_NONPROFIT_ID   = 8;
+
+    /** The level id for a category, or null when the category doesn't exist. */
+    public static function levelIdForCategory(int $busCatId): ?int
+    {
+        if ($busCatId <= 0) {
+            return null;
+        }
+        $exists = (int) Db::scalar('SELECT COUNT(*) FROM bus_categories WHERE bus_cat_id = ?', [$busCatId]);
+        if ($exists === 0) {
+            return null;
+        }
+        return $busCatId === self::CATEGORY_NONPROFIT_ID ? self::LEVEL_NONPROFIT : self::LEVEL_STANDARD;
+    }
+
+    /**
      * Membership level for a business category, shaped exactly like
      * StripeClient::getClientLevel() so it can be fed straight into
      * StripeClient::pricingBreakdown(). A new applicant has no
-     * clients.pricing_level_id yet — the level comes from the category
-     * picked on Step 2 (bus_categories.memb_lev_id → members_level).
-     * Single source of truth for Steps 4, 6 and the Stripe amount;
-     * price changes Larissa makes in members_level flow through
-     * automatically.
+     * clients.pricing_level_id yet, so the level comes from
+     * levelIdForCategory() (see the rule and its evidence above).
+     * Single source of truth for Steps 4, 6, 7, the Stripe amount and the
+     * level written to the new customer on approval; price changes Larissa
+     * makes in members_level flow through automatically.
      *
      * @return array|null members_level row (memb_lev_id, pricing_level,
      *                    curr_price, num_of_buyers, price_after) or null
@@ -386,18 +422,16 @@ class NewApplication
      */
     public static function getLevelForCategory(int $busCatId): ?array
     {
-        if ($busCatId <= 0) {
+        $levelId = self::levelIdForCategory($busCatId);
+        if ($levelId === null) {
             return null;
         }
         $level = Db::one(
-            'SELECT ml.memb_lev_id, ml.pricing_level, ml.curr_price,
-                    ml.num_of_buyers, ml.price_after
-               FROM bus_categories bc
-               JOIN members_level ml ON ml.memb_lev_id = bc.memb_lev_id
-              WHERE bc.bus_cat_id = ? LIMIT 1',
-            [$busCatId]
+            'SELECT memb_lev_id, pricing_level, curr_price, num_of_buyers, price_after
+               FROM members_level WHERE memb_lev_id = ? LIMIT 1',
+            [$levelId]
         );
-        if ($level === null) {
+        if ($level === null || $level['curr_price'] === null) {
             return null;
         }
         $level['memb_lev_id']   = (int) $level['memb_lev_id'];

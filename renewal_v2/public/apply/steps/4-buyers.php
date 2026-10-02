@@ -35,12 +35,11 @@
  * members rows.
  *
  * Pricing: a new applicant has no existing clients.pricing_level_id
- * to read (Section 13.4 territory) — the membership level instead
- * derives from the business category selected on Step 2
- * (bus_categories.memb_lev_id), confirmed against production data
- * during this step's design (every bus_categories row carries a
- * memb_lev_id pointing at members_level, with its own matching
- * stripe_price_id).
+ * to read, so the level comes from NewApplication::getLevelForCategory()
+ * — $125 "Business-to-Business" for every category except Non-Profit
+ * ($175). (This step originally read bus_categories.memb_lev_id, which
+ * wrongly priced florists at $50; see that method's doc comment for the
+ * data that corrected it.)
  */
 declare(strict_types=1);
 
