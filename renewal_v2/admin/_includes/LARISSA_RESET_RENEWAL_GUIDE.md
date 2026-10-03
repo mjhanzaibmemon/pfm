@@ -6,7 +6,7 @@
 
 ## Where to find it
 
-**Option 1 (recommended):** In the PFM admin sidebar, click **"Reset Renewal"** — it sits right under "Renewal Reviews". It opens in a new tab.
+**Option 1 (recommended):** In the PFM admin sidebar, click **"Reset Renewal"** — it sits right under "Application Reviews". It opens in a new tab.
 
 **Option 2:** After you click the **Email** button on the Renewals grid, the success page shows a small blue block titled *"Need to reset a specific customer's renewal?"* with an "Open Reset & Send Fresh Link" button. Same destination.
 
