@@ -106,7 +106,15 @@ require RNW_ROOT . '/public/_includes/progress-bar.php';
         PFM.api.post('create-payment.php', {})
             .then(function (data) {
                 if (data.redirect_url) {
-                    window.location.href = data.redirect_url;
+                    // Stripe Checkout refuses to render inside a frame. Staff reach
+                    // this wizard from the admin's "New Membership" button, which
+                    // loads it in an inner frame — so leave the frame for Stripe.
+                    var target = (window.top && window.top !== window) ? window.top : window;
+                    try {
+                        target.location.href = data.redirect_url;
+                    } catch (e) {
+                        window.location.href = data.redirect_url;
+                    }
                 } else {
                     throw new Error('Stripe did not return a redirect URL.');
                 }

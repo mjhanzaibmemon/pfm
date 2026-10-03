@@ -63,11 +63,23 @@ session_set_cookie_params([
 ]);
 session_start();
 
+// ── "Start a new application" switch — ?new=1 ───────────────────────
+// The retired ScriptCase "New Membership" door (/blank_new_member_steps_appn/,
+// used by the staff "+ Membership → New Membership" button and by every old
+// link) is redirected here by nginx with ?new=1. Staff enter several walk-in
+// applicants in a row on the same computer, so arriving this way must ALWAYS
+// start a fresh application — even when this browser's session still holds a
+// finished one (which would otherwise send staff straight to the previous
+// applicant's confirmation page). Plain /apply/ links keep resuming.
+if (isset($_GET['new'])) {
+    unset($_SESSION['new_application_token']);
+}
+
 // ── Token resolution — session ONLY, no URL param ──────────────────
 // Unlike the renewal wizard, there is no email link carrying a token
 // for a brand-new applicant to click, so there is nothing to read from
-// $_GET here. loadOrCreate() below either resumes the session's
-// existing token or mints a fresh one.
+// $_GET here (apart from the ?new=1 switch above). loadOrCreate() below
+// either resumes the session's existing token or mints a fresh one.
 $sessionToken = (string) ($_SESSION['new_application_token'] ?? '');
 
 // ── Load / create application ───────────────────────────────────────
