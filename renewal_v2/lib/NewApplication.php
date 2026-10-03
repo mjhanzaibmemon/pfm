@@ -327,24 +327,35 @@ class NewApplication
     // ===== DUPLICATE-NAME DETECTION (Section 3) =====
 
     /**
-     * Normalize a company name using the EXACT same transformation as
-     * the `clients.co_name_normalized` generated column (migration
-     * 019) — lowercase, trim, strip periods/apostrophes, collapse
-     * repeated spaces. Deliberately preserves business suffixes
-     * (LLC/Inc/Co/LLP) per Larissa's explicit correction — see Section
-     * 3 and migration 019's header comment for the full rationale.
+     * Characters treated as an apostrophe when comparing company names:
+     * straight ('), the curly right/left single quotes iPhone and Mac
+     * "smart punctuation" produce by default (’ ‘), modifier-letter
+     * apostrophe, prime, acute accent and backtick. Larissa's rule is to
+     * ignore apostrophes, and a customer stored as "Tasha's Petals" must
+     * still be caught when an applicant types "Tasha’s Petals".
+     */
+    private const APOSTROPHE_LIKE = ["'", "\u{2019}", "\u{2018}", "\u{02BC}", "\u{2032}", "\u{00B4}", '`'];
+
+    /**
+     * Normalize a company name for the duplicate check: lowercase, trim,
+     * strip periods and every apostrophe variant, collapse ANY run of
+     * whitespace (spaces, tabs, non-breaking spaces) to one space.
+     * Deliberately preserves business suffixes (LLC/Inc/Co/LLP) per
+     * Larissa's explicit correction — see Section 3.
      *
-     * MUST stay byte-for-byte in sync with migration 019's SQL
-     * expression, or the duplicate check silently stops matching
-     * correctly. If you ever change one, change both and re-verify
-     * with a spot-check query (see migration 019's VERIFY section).
+     * The `clients.co_name_normalized` generated column (migration 019) is
+     * only an approximation of this: it strips straight apostrophes and
+     * periods and collapses double spaces, but not curly apostrophes, and
+     * it leaves long runs of spaces and tabs (23 legacy names). Changing a
+     * generated column means a slow rebuild of the 9.4K-row clients table
+     * (5-6 min, blocking writes), so findDuplicateByCompanyName() applies
+     * the missing steps to the stored value in the query instead.
      */
     public static function normalizeCompanyName(string $name): string
     {
-        $name = trim($name);
-        $name = str_replace(['.', "'"], '', $name);
-        $name = preg_replace('/\s+/', ' ', $name) ?? $name;
-        return mb_strtolower($name);
+        $name = str_replace(['.', ...self::APOSTROPHE_LIKE], '', $name);
+        $name = preg_replace('/[\s\x{00A0}]+/u', ' ', $name) ?? $name;
+        return mb_strtolower(trim($name));
     }
 
     /**
@@ -364,8 +375,20 @@ class NewApplication
         if ($normalized === '') {
             return null;
         }
+
+        // Finish normalizing the stored value on the SQL side (see
+        // normalizeCompanyName's note): drop the apostrophe variants the
+        // generated column keeps, collapse whitespace of every kind, trim.
+        // A scan of ~9.4K rows with a few string functions is a few
+        // milliseconds, and the check runs once per blur / submit.
+        $stored = 'co_name_normalized';
+        foreach (array_slice(self::APOSTROPHE_LIKE, 1) as $ch) {
+            $stored = "REPLACE({$stored}, '{$ch}', '')";
+        }
+        $stored = "TRIM(REGEXP_REPLACE({$stored}, '[[:space:]]+', ' '))";
+
         return Db::one(
-            'SELECT client_id, co_name FROM clients WHERE co_name_normalized = ? LIMIT 1',
+            "SELECT client_id, co_name FROM clients WHERE {$stored} = ? LIMIT 1",
             [$normalized]
         );
     }
