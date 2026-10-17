@@ -333,9 +333,29 @@ require RNW_ROOT . '/public/_includes/progress-bar.php';
         checkDuplicate(coNameInput.value);
     });
 
+    // ZIP must be 5 digits or ZIP+4 (same rule the server enforces at
+    // submit time). The shared required() check only looks for "not
+    // empty", so a value like "1234" used to slip through this step
+    // and only get caught on Step 6.
+    var zipInput = document.getElementById('zip_code');
+    var ZIP_RE   = /^\d{5}(-\d{4})?$/;
+    zipInput.addEventListener('input', function () {
+        if (ZIP_RE.test(zipInput.value.trim())) {
+            var w = zipInput.closest('.pfm-field');
+            if (w) w.classList.remove('pfm-field--error');
+        }
+    });
+
     nextBtn.addEventListener('click', function () {
         if (!PFM.validate.required(form)) {
             PFM.toast.show('Please fill in the required fields highlighted in red.', 'danger');
+            return;
+        }
+        if (!ZIP_RE.test(zipInput.value.trim())) {
+            var zipWrap = zipInput.closest('.pfm-field');
+            if (zipWrap) zipWrap.classList.add('pfm-field--error');
+            PFM.toast.show('Please enter a valid ZIP code: 5 digits, or ZIP+4 like 97201-1234.', 'danger');
+            zipInput.focus();
             return;
         }
 

@@ -435,6 +435,10 @@ require RNW_ROOT . '/public/_includes/progress-bar.php';
                 PFM.toast.show('Buyer name cannot be empty.', 'danger');
                 return;
             }
+            if (newEmail !== '' && !PFM.validate.email(newEmail)) {
+                PFM.toast.show('Please enter a valid email address for this buyer, or leave the email blank.', 'danger');
+                return;
+            }
 
             buyers[idx] = { name: newName, email: newEmail, phone: newPhone, note: newNote };
             li.setAttribute('data-buyer-name',  newName);
@@ -463,6 +467,12 @@ require RNW_ROOT . '/public/_includes/progress-bar.php';
         }
         if (totalCount() >= maxBuyers) {
             PFM.toast.show('You\'ve reached the maximum of ' + maxBuyers + ' buyers.', 'warning');
+            return;
+        }
+        // Email is optional, but if one is typed it must look like an email.
+        if (emailIn.value.trim() !== '' && !PFM.validate.email(emailIn.value)) {
+            PFM.toast.show('Please enter a valid email address for this buyer, or leave the email blank.', 'danger');
+            emailIn.focus();
             return;
         }
 

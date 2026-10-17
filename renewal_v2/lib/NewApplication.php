@@ -578,6 +578,12 @@ class NewApplication
             if (!is_array($b) || trim((string) ($b['name'] ?? '')) === '') {
                 $add(4, 'buyer_missing_name', 'Buyer #' . ($i + 1) . ' is missing a name.');
             }
+            // Email is optional, but a typed one must be a real address
+            // (the browser checks this too; this is the server-side backstop).
+            $bEmail = is_array($b) ? trim((string) ($b['email'] ?? '')) : '';
+            if ($bEmail !== '' && filter_var($bEmail, FILTER_VALIDATE_EMAIL) === false) {
+                $add(4, 'buyer_invalid_email', 'Buyer #' . ($i + 1) . ' has an invalid email address.');
+            }
         }
 
         // ── Documents (Step 3 ID + Step 5 registry) ──
