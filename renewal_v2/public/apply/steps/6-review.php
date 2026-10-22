@@ -92,17 +92,19 @@ require RNW_ROOT . '/public/_includes/progress-bar.php';
 
     <?php if (!empty($problems)): ?>
         <div class="pfm-alert pfm-alert--danger" role="alert">
-            <strong>A few things need attention before you can submit:</strong>
-            <ul style="margin: 6px 0 0 18px; padding: 0;">
-                <?php foreach ($problems as $p): ?>
-                    <li>
-                        <?= htmlspecialchars($p['message']) ?>
-                        <?php if ($p['code'] !== 'duplicate_name'): ?>
-                            <a href="<?= htmlspecialchars(pfm_apply_step_url($p['step'])) ?>">Fix on Step <?= (int) $p['step'] ?> &rarr;</a>
-                        <?php endif; ?>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
+            <div>
+                <strong>A few things need attention before you can submit:</strong>
+                <ul style="margin: 6px 0 0 18px; padding: 0;">
+                    <?php foreach ($problems as $p): ?>
+                        <li>
+                            <?= htmlspecialchars($p['message']) ?>
+                            <?php if ($p['code'] !== 'duplicate_name'): ?>
+                                <a href="<?= htmlspecialchars(pfm_apply_step_url($p['step'])) ?>">Fix on Step <?= (int) $p['step'] ?> &rarr;</a>
+                            <?php endif; ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
         </div>
     <?php endif; ?>
 

@@ -103,11 +103,15 @@ require RNW_ROOT . '/public/_includes/progress-bar.php';
         "Save & Continue" button is disabled while this is visible.
     -->
     <div id="pfm-duplicate-alert" class="pfm-alert pfm-alert--danger" style="display:none;" role="alert">
-        We may already have a customer record for this business.
-        Please contact the Portland Flower Market at
-        <a href="mailto:info@ofgaflowers.com">info@ofgaflowers.com</a>
-        or 503-289-1500 so we can confirm your account and provide the
-        correct renewal link.
+        <?php /* The alert box is display:flex, so every direct child becomes a
+                 side-by-side column. One wrapper keeps the sentence in one piece. */ ?>
+        <div>
+            We may already have a customer record for this business.
+            Please contact the Portland Flower Market at
+            <a href="mailto:info@ofgaflowers.com">info@ofgaflowers.com</a>
+            or 503-289-1500 so we can confirm your account and provide the
+            correct renewal link.
+        </div>
     </div>
 
     <form id="pfm-form-org" autocomplete="off" novalidate>

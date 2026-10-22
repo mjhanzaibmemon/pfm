@@ -77,9 +77,11 @@ require RNW_ROOT . '/public/_includes/progress-bar.php';
         </ul>
     <?php else: ?>
         <div class="pfm-alert pfm-alert--warning">
-            <strong>Driver&rsquo;s License / Photo ID required.</strong>
-            We don&rsquo;t see a main contact ID uploaded yet. Please
-            <a href="<?= htmlspecialchars(pfm_apply_step_url(3)) ?>">go back to Step 3</a> and upload one.
+            <div>
+                <strong>Driver&rsquo;s License / Photo ID required.</strong>
+                We don&rsquo;t see a main contact ID uploaded yet. Please
+                <a href="<?= htmlspecialchars(pfm_apply_step_url(3)) ?>">go back to Step 3</a> and upload one.
+            </div>
         </div>
     <?php endif; ?>
 

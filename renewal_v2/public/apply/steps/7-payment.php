@@ -49,8 +49,10 @@ require RNW_ROOT . '/public/_includes/progress-bar.php';
 
     <?php if ($cancelled): ?>
         <div class="pfm-alert pfm-alert--info">
-            No charge was made &mdash; your application is still saved.
-            Click <strong>Continue to Stripe</strong> below whenever you're ready to complete payment.
+            <div>
+                No charge was made &mdash; your application is still saved.
+                Click <strong>Continue to Stripe</strong> below whenever you're ready to complete payment.
+            </div>
         </div>
     <?php endif; ?>
 
@@ -76,8 +78,10 @@ require RNW_ROOT . '/public/_includes/progress-bar.php';
         </div>
     <?php else: ?>
         <div class="pfm-alert pfm-alert--warning">
-            We couldn't determine your membership fee. Please contact
-            <a href="mailto:<?= htmlspecialchars(PFM_RNW_SUPPORT_EMAIL) ?>"><?= htmlspecialchars(PFM_RNW_SUPPORT_EMAIL) ?></a>.
+            <div>
+                We couldn't determine your membership fee. Please contact
+                <a href="mailto:<?= htmlspecialchars(PFM_RNW_SUPPORT_EMAIL) ?>"><?= htmlspecialchars(PFM_RNW_SUPPORT_EMAIL) ?></a>.
+            </div>
         </div>
     <?php endif; ?>
 
